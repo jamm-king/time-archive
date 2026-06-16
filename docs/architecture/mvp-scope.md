@@ -10,7 +10,7 @@ MVP 1 should focus on primary sale and moderated display.
 
 ### Included
 
-- Season 1 with a fixed total length, such as 10,000 seconds
+- One canonical 24-hour archive timeline with exactly 86,400 seconds
 - Fullscreen timeline player
 - Default placeholder for unowned seconds
 - Approved media display for owned seconds
@@ -34,7 +34,7 @@ MVP 1 should focus on primary sale and moderated display.
 - Seller payout automation
 - Likes, comments, follows, profiles, or feeds
 - Analytics dashboards
-- Multiple seasons
+- Multiple timelines, seasons, or editions
 - Complex media editing
 - Public user pages
 

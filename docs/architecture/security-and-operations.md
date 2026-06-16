@@ -208,7 +208,7 @@ Dependency policy:
 
 Product legal clarity:
 
-- Users buy a limited right to display approved media in a specific season and time range.
+- Users buy a limited right to display approved media in a specific time range of the canonical 24-hour archive.
 - Users do not buy time itself.
 - Users do not acquire copyright in other users' media.
 - Platform terms should define moderation rights, takedown rights, refund policy, and resale rules.

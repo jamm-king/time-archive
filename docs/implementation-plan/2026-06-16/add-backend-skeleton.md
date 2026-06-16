@@ -124,7 +124,7 @@ License compatibility:
 
 Added the initial Kotlin and Spring Boot backend skeleton for Time Archive.
 
-The skeleton follows the documented modular monolith and Hexagonal Architecture direction with a Spring Boot entry point, domain package, domain port package, adapter package placeholders, application package, and configuration package. The first meaningful domain logic is the `TimeRange` value object, which enforces inclusive start and exclusive end semantics and provides duration, containment, overlap, and season-boundary validation behavior.
+The skeleton follows the documented modular monolith and Hexagonal Architecture direction with a Spring Boot entry point, domain package, domain port package, adapter package placeholders, application package, and configuration package. The first meaningful domain logic is the `TimeRange` value object, which enforces inclusive start and exclusive end semantics and provides duration, containment, overlap, and archive-boundary validation behavior.
 
 ## Files Changed
 
@@ -172,7 +172,7 @@ The skeleton follows the documented modular monolith and Hexagonal Architecture 
 
 ## Follow-Up Recommendations
 
-- Add the first Flyway migration for seasons and ownership records.
-- Add application use cases and ports for querying the current season and timeline manifest.
+- Add the first Flyway migration for canonical archive ownership records.
+- Add application use cases and ports for querying archive metadata and timeline manifest.
 - Add a basic health or info endpoint smoke test once web adapters are introduced.
 - Add GitHub Actions CI workflow after confirming the desired first CI gate.

@@ -257,7 +257,7 @@ Focus:
 Initial smoke tests should verify:
 
 - Health endpoint responds.
-- Current season endpoint responds.
+- Archive metadata endpoint responds.
 - Timeline manifest endpoint responds.
 - Admin authentication path is reachable.
 - Payment webhook endpoint rejects invalid signatures.

@@ -40,14 +40,14 @@ class TimeRangeTest {
     }
 
     @Test
-    fun `requires range to fit within season duration`() {
+    fun `requires range to fit within archive duration`() {
         val range = TimeRange(startSecond = 90, endSecond = 100)
 
         assertThat(range.requireWithin(totalSeconds = 100)).isSameAs(range)
     }
 
     @Test
-    fun `rejects range beyond season duration`() {
+    fun `rejects range beyond archive duration`() {
         assertThatIllegalArgumentException()
             .isThrownBy { TimeRange(startSecond = 90, endSecond = 101).requireWithin(totalSeconds = 100) }
             .withMessage("endSecond must be less than or equal to totalSeconds")
