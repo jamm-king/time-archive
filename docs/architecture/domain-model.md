@@ -91,11 +91,19 @@ Current ownership is represented by active records where `validUntil` is null.
 - `buyerId`
 - `startSecond`
 - `endSecond`
-- `amount`
+- `amountCents`
+- `currency`
 - `status`
 - `expiresAt`
 - `createdAt`
 - `updatedAt`
+
+Reservation pricing uses integer cents:
+
+```text
+amountCents = durationSeconds * 100
+currency = USD
+```
 
 Suggested statuses:
 
@@ -287,6 +295,7 @@ Important constraints:
 - Time range start and end values must be valid.
 - Time ranges must stay within the canonical 86,400-second archive.
 - Active ownership ranges must not overlap.
+- Active purchase reservation ranges must not overlap while status is `HELD` or `CHECKOUT_CREATED`.
 - Payment provider event IDs must be unique.
 - Idempotency keys must be unique.
 - Offer status transitions must be controlled.

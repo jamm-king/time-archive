@@ -32,12 +32,13 @@ The browser redirect after payment is not the source of truth. Final ownership m
 Within one database transaction:
 
 - Validate range boundaries.
+- Mark overdue active reservations as `EXPIRED`.
 - Check active ownership overlap.
-- Check active reservation overlap if the product policy requires temporary holds.
+- Check active reservation overlap.
 - Insert reservation with `expiresAt`.
 - Insert audit log.
 
-Reservation expiration should be handled by a scheduled worker or background job.
+Reservation expiration should also be handled by a scheduled worker or background job. PostgreSQL overlap constraints exclude expired reservations only after their status is updated to `EXPIRED`.
 
 ## Payment Webhook Transaction
 
