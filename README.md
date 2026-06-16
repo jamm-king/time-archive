@@ -42,6 +42,8 @@ The development-stage OpenAPI contract is available at:
 
 Current purchase APIs are not production authentication boundaries yet. Request-body `buyerId` is temporary development-stage behavior and must be replaced by authenticated server-side identity before production.
 
+The fake payment webhook API is also development-stage only. Production payment confirmation must use verified provider webhooks.
+
 ## Planned Technology Stack
 
 - Kotlin

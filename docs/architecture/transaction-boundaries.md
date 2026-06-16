@@ -61,6 +61,8 @@ Checkout creation does not grant ownership and does not create a completed purch
 
 Webhook handling must be idempotent.
 
+The current fake payment webhook endpoint exists only to exercise this transaction boundary locally. A production provider webhook must verify the provider signature before entering the payment completion transaction.
+
 Within one database transaction:
 
 - Insert or find the payment event by provider event ID.
