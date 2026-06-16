@@ -62,6 +62,31 @@ class JdbcPurchaseReservationRepository(
         return reservation
     }
 
+    override fun findByIdForUpdate(id: UUID): PurchaseReservation? {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+
+        return jdbcTemplate.query(
+            """
+            select
+                id,
+                buyer_id,
+                start_second,
+                end_second,
+                amount_cents,
+                currency,
+                status,
+                expires_at,
+                created_at,
+                updated_at
+            from purchase_reservations
+            where id = :id
+            for update
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toPurchaseReservation() }.firstOrNull()
+    }
+
     override fun findActiveOverlapping(range: TimeRange): List<PurchaseReservation> {
         val parameters = MapSqlParameterSource()
             .addValue("startSecond", range.startSecond)
@@ -100,6 +125,23 @@ class JdbcPurchaseReservationRepository(
                 updated_at = :now
             where status in ('HELD', 'CHECKOUT_CREATED')
               and expires_at <= :now
+            """.trimIndent(),
+            parameters,
+        )
+    }
+
+    override fun markCompleted(id: UUID, now: Instant): Int {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+            .addValue("now", Timestamp.from(now), Types.TIMESTAMP)
+
+        return jdbcTemplate.update(
+            """
+            update purchase_reservations
+            set status = 'COMPLETED',
+                updated_at = :now
+            where id = :id
+              and status in ('HELD', 'CHECKOUT_CREATED')
             """.trimIndent(),
             parameters,
         )

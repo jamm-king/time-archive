@@ -142,11 +142,18 @@ class ReserveTimeRangeTest {
             return reservation
         }
 
+        override fun findByIdForUpdate(id: UUID): PurchaseReservation? = saved.find { it.id == id }
+
         override fun findActiveOverlapping(range: TimeRange): List<PurchaseReservation> = overlaps
 
         override fun expireOverdue(now: Instant): Int {
             expireOverdueCalledWith = now
             return 0
         }
+
+        override fun markCompleted(
+            id: UUID,
+            now: Instant,
+        ): Int = 0
     }
 }
