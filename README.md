@@ -47,6 +47,58 @@ Architecture documents are available in:
 
 Redis, Kafka, and Jenkins may be considered later if concrete operational needs justify them.
 
+## Local Development
+
+Prerequisites:
+
+- JDK 21
+- Docker
+- Gradle, or the Gradle wrapper after it is generated
+
+Start local infrastructure:
+
+```text
+docker compose up -d
+```
+
+Run tests:
+
+```text
+gradle test
+```
+
+Build the backend:
+
+```text
+gradle build
+```
+
+Build the Docker image:
+
+```text
+docker build -t time-archive-api:local .
+```
+
+Run the backend:
+
+```text
+gradle bootRun
+```
+
+The local application expects PostgreSQL at:
+
+```text
+jdbc:postgresql://localhost:5432/time_archive
+```
+
+Environment variables can override the default database settings:
+
+```text
+TIME_ARCHIVE_DATABASE_URL
+TIME_ARCHIVE_DATABASE_USERNAME
+TIME_ARCHIVE_DATABASE_PASSWORD
+```
+
 ## Development Principles
 
 - Follow Hexagonal Architecture.
