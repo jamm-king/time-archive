@@ -1,0 +1,259 @@
+openapi: 3.1.0
+info:
+  title: Time Archive API
+  version: 0.1.0
+  description: |
+    Development-stage API contract for the Time Archive MVP purchase flow.
+
+    The current API exposes reservation and checkout creation only. It does not
+    implement production authentication, real payment provider integration, or
+    payment completion through browser redirects.
+
+    The `buyerId` request field is temporary development-stage behavior. Before
+    production, buyer identity must come from authenticated server-side identity.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Purchase
+    description: Primary purchase reservation and checkout operations.
+paths:
+  /api/purchase/reservations:
+    post:
+      tags:
+        - Purchase
+      operationId: createPurchaseReservation
+      summary: Create a purchase reservation
+      description: |
+        Creates a temporary hold for an available range in the canonical
+        24-hour Time Archive timeline.
+
+        This endpoint is development-stage only because `buyerId` is accepted
+        from the request body. Production APIs must derive buyer identity from
+        authenticated server-side identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReservationRequest"
+      responses:
+        "201":
+          description: Reservation created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "409":
+          description: The requested time range is already owned or reserved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/purchase/reservations/{reservationId}/checkout:
+    post:
+      tags:
+        - Purchase
+      operationId: createCheckout
+      summary: Create checkout for a held reservation
+      description: |
+        Creates a provider-neutral checkout session for a held, unexpired
+        reservation and transitions the reservation to `CHECKOUT_CREATED`.
+
+        The returned checkout URL is only a payment-provider redirect target.
+        It is not proof of payment and must not grant ownership. Ownership can
+        only be granted by verified payment confirmation.
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Reservation identifier.
+      responses:
+        "200":
+          description: Checkout session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSessionResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          description: Reservation was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Reservation is expired or not payable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+components:
+  responses:
+    InvalidRequest:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+    UnexpectedError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+  schemas:
+    CreateReservationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - buyerId
+        - startSecond
+        - endSecond
+      properties:
+        buyerId:
+          type: string
+          format: uuid
+          description: Temporary development-stage buyer identifier.
+          examples:
+            - "00000000-0000-0000-0000-000000000001"
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+          description: Inclusive start second in the canonical 24-hour timeline.
+          examples:
+            - 3600
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+          description: Exclusive end second in the canonical 24-hour timeline.
+          examples:
+            - 3660
+    ReservationResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - reservationId
+        - buyerId
+        - startSecond
+        - endSecond
+        - amountCents
+        - currency
+        - status
+        - expiresAt
+      properties:
+        reservationId:
+          type: string
+          format: uuid
+        buyerId:
+          type: string
+          format: uuid
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+        amountCents:
+          type: integer
+          format: int64
+          minimum: 1
+        currency:
+          type: string
+          enum:
+            - USD
+        status:
+          type: string
+          enum:
+            - HELD
+            - CHECKOUT_CREATED
+            - COMPLETED
+            - EXPIRED
+            - CANCELLED
+        expiresAt:
+          type: string
+          format: date-time
+    CheckoutSessionResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - provider
+        - providerReference
+        - checkoutUrl
+      properties:
+        provider:
+          type: string
+          minLength: 1
+          examples:
+            - fake
+        providerReference:
+          type: string
+          minLength: 1
+          examples:
+            - fake_checkout_00000000-0000-0000-0000-000000000010
+        checkoutUrl:
+          type: string
+          format: uri
+          examples:
+            - https://payments.example.test/checkout/00000000-0000-0000-0000-000000000010
+    ApiErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - details
+      properties:
+        code:
+          $ref: "#/components/schemas/ApiErrorCode"
+        message:
+          type: string
+          minLength: 1
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiErrorDetail"
+    ApiErrorCode:
+      type: string
+      enum:
+        - INVALID_REQUEST
+        - RESOURCE_NOT_FOUND
+        - TIME_RANGE_ALREADY_OWNED
+        - TIME_RANGE_ALREADY_RESERVED
+        - RESERVATION_EXPIRED
+        - RESERVATION_NOT_PAYABLE
+        - UNEXPECTED_ERROR
+    ApiErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field path related to the error. Use `null` for non-field errors.
+          nullable: true
+          examples:
+            - startSecond
+        message:
+          type: string
+          minLength: 1

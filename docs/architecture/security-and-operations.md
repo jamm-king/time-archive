@@ -16,6 +16,8 @@ Recommended controls:
 - Separate admin authorization checks
 - Re-authentication or stronger checks for sensitive admin actions
 
+Current development-stage purchase APIs may accept `buyerId` in the request body only to enable local and early MVP verification before user authentication exists. This is not production-safe. Production APIs must derive buyer identity from authenticated server-side identity and must ignore any client-provided owner or buyer identity claims.
+
 Roles:
 
 - `USER`
