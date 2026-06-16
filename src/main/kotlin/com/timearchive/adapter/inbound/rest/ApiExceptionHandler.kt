@@ -1,12 +1,17 @@
 package com.timearchive.adapter.inbound.rest
 
+import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.validation.FieldError
+import org.springframework.validation.method.MethodValidationException
+import org.springframework.validation.method.ParameterValidationResult
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
@@ -31,12 +36,52 @@ class ApiExceptionHandler {
     @ExceptionHandler(
         HttpMessageNotReadableException::class,
         MethodArgumentTypeMismatchException::class,
+        MissingServletRequestParameterException::class,
     )
     fun handleInvalidRequest(): ResponseEntity<ApiErrorResponse> =
         errorResponse(
             status = HttpStatus.BAD_REQUEST,
             code = "INVALID_REQUEST",
             message = "Invalid request",
+        )
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(exception: ConstraintViolationException): ResponseEntity<ApiErrorResponse> =
+        errorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            code = "INVALID_REQUEST",
+            message = "Request validation failed",
+            details = exception.constraintViolations.map {
+                ApiErrorDetail(
+                    field = it.propertyPath.lastOrNull()?.name,
+                    message = it.message,
+                )
+            },
+        )
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleHandlerMethodValidation(exception: HandlerMethodValidationException): ResponseEntity<ApiErrorResponse> =
+        methodValidationErrorResponse(exception.parameterValidationResults)
+
+    @ExceptionHandler(MethodValidationException::class)
+    fun handleMethodValidation(exception: MethodValidationException): ResponseEntity<ApiErrorResponse> =
+        methodValidationErrorResponse(exception.parameterValidationResults)
+
+    private fun methodValidationErrorResponse(
+        parameterValidationResults: List<ParameterValidationResult>,
+    ): ResponseEntity<ApiErrorResponse> =
+        errorResponse(
+            status = HttpStatus.BAD_REQUEST,
+            code = "INVALID_REQUEST",
+            message = "Request validation failed",
+            details = parameterValidationResults.flatMap { result ->
+                result.resolvableErrors.map {
+                    ApiErrorDetail(
+                        field = result.methodParameter.parameterName,
+                        message = it.defaultMessage ?: "Invalid value",
+                    )
+                }
+            },
         )
 
     @ExceptionHandler(IllegalArgumentException::class)

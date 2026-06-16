@@ -234,14 +234,74 @@ Overall MVP 1 completion would move from roughly 45-50% to roughly 50-55%.
 
 - [x] Latest `main` pulled.
 - [x] Implementation plan created.
-- [ ] Implementation branch created.
-- [ ] OpenAPI contract updated.
-- [ ] Availability use case added.
-- [ ] Spring configuration updated.
-- [ ] REST DTOs added.
-- [ ] Availability endpoint added.
-- [ ] Unit tests added.
-- [ ] Controller tests added.
-- [ ] Documentation updates completed if needed.
-- [ ] Verification commands run.
-- [ ] Completion details recorded.
+- [x] Implementation branch created.
+- [x] OpenAPI contract updated.
+- [x] Availability use case added.
+- [x] Spring configuration updated.
+- [x] REST DTOs added.
+- [x] Availability endpoint added.
+- [x] Unit tests added.
+- [x] Controller tests added.
+- [x] Documentation updates completed if needed.
+- [x] `.\gradlew.bat test` passed.
+- [x] `.\gradlew.bat build` passed.
+- [x] Docker image build passed.
+- [x] Completion details recorded.
+
+## Implementation Notes
+
+- Added `GET /api/archive/availability` to `docs/api/openapi.yaml`.
+- Added `CheckAvailability` as an application use case.
+- Reused `OwnershipRepository.findActiveOverlapping` and `PurchaseReservationRepository.findActiveOverlapping`.
+- Expired overdue reservations before checking active reservation conflicts.
+- Returned only conflict type and range in the public API response.
+- Added `AvailabilityController` and response DTOs under the inbound REST adapter.
+- Added method validation error handling for query parameter validation.
+- Kept reservation creation as the source of truth for concurrency and overlap enforcement.
+
+## Completion Summary
+
+The availability read API was implemented. Clients can now check whether a candidate range is currently available before creating a reservation.
+
+The endpoint is intentionally advisory. Availability can change after the read response, so reservation creation still performs the authoritative transaction-time overlap checks.
+
+## Files Changed
+
+- `docs/api/openapi.yaml`
+- `docs/implementation-plan/2026-06-16/add-availability-read-api.md`
+- `src/main/kotlin/com/timearchive/application/CheckAvailability.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/AvailabilityController.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/AvailabilityDtos.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/ApiExceptionHandler.kt`
+- `src/main/kotlin/com/timearchive/configuration/ApplicationUseCaseConfiguration.kt`
+- `src/test/kotlin/com/timearchive/application/CheckAvailabilityTest.kt`
+- `src/test/kotlin/com/timearchive/adapter/inbound/rest/AvailabilityControllerTest.kt`
+
+## Tests Run and Results
+
+- `.\gradlew.bat test`: passed.
+- `.\gradlew.bat build`: passed.
+- `docker build -t time-archive-api:local .`: passed.
+
+## Manual Verification Results
+
+- Verified available response shape through controller tests.
+- Verified unavailable response includes only conflict type and range.
+- Verified missing and malformed query parameters return `INVALID_REQUEST`.
+- Verified invalid range ordering maps to `INVALID_REQUEST`.
+- Verified use case expires overdue reservations before reading overlaps.
+- Verified use case reports ownership and reservation conflicts separately.
+
+## Known Limitations
+
+- Availability is an advisory read and can become stale before reservation creation.
+- No caching is implemented yet.
+- No broader timeline read model exists yet.
+- The endpoint does not return all timeline segments, only conflicts for one candidate range.
+
+## Follow-Up Recommendations
+
+- Add timeline segment read APIs before frontend timeline playback work.
+- Keep overlap enforcement in reservation creation even after availability reads are added.
+- Add rate limiting if availability reads become an abuse vector.
+- Add explicit application exceptions later to replace message-based error mapping.

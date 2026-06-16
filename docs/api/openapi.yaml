@@ -15,9 +15,54 @@ servers:
   - url: http://localhost:8080
     description: Local development
 tags:
+  - name: Archive
+    description: Public archive read operations.
   - name: Purchase
     description: Primary purchase reservation and checkout operations.
 paths:
+  /api/archive/availability:
+    get:
+      tags:
+        - Archive
+      operationId: checkAvailability
+      summary: Check time range availability
+      description: |
+        Checks whether a candidate range in the canonical 24-hour Time Archive
+        timeline is available for reservation.
+
+        Availability is an advisory read. Reservation creation remains the
+        source of truth because another request may reserve the range after this
+        response is returned.
+      parameters:
+        - name: startSecond
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 86399
+          description: Inclusive start second in the canonical 24-hour timeline.
+        - name: endSecond
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 86400
+          description: Exclusive end second in the canonical 24-hour timeline.
+      responses:
+        "200":
+          description: Availability result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/purchase/reservations:
     post:
       tags:
@@ -214,6 +259,54 @@ components:
           format: uri
           examples:
             - https://payments.example.test/checkout/00000000-0000-0000-0000-000000000010
+    AvailabilityResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - startSecond
+        - endSecond
+        - available
+        - conflicts
+      properties:
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+        available:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailabilityConflict"
+    AvailabilityConflict:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - startSecond
+        - endSecond
+      properties:
+        type:
+          type: string
+          enum:
+            - OWNERSHIP
+            - RESERVATION
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
     ApiErrorResponse:
       type: object
       additionalProperties: false
