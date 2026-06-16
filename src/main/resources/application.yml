@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: time-archive
+  datasource:
+    url: ${TIME_ARCHIVE_DATABASE_URL:jdbc:postgresql://localhost:5432/time_archive}
+    username: ${TIME_ARCHIVE_DATABASE_USERNAME:time_archive}
+    password: ${TIME_ARCHIVE_DATABASE_PASSWORD:time_archive}
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

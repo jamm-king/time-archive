@@ -1,0 +1,15 @@
+.git
+.gradle
+.kotlin
+build
+out
+target
+logs
+tmp
+temp
+uploads
+media
+storage
+.env
+.env.*
+docker-compose.override.yml

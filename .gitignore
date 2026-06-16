@@ -11,6 +11,7 @@ Thumbs.db
 
 # Java / Kotlin / Gradle
 .gradle/
+.kotlin/
 build/
 out/
 target/
