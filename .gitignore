@@ -1,0 +1,49 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Java / Kotlin / Gradle
+.gradle/
+build/
+out/
+target/
+*.class
+
+# Logs
+*.log
+logs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+application-secret.yml
+application-secret.yaml
+
+# Docker
+docker-compose.override.yml
+
+# Test and coverage reports
+coverage/
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Generated media and uploads
+uploads/
+media/
+storage/
