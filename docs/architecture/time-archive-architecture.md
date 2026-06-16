@@ -119,6 +119,8 @@ Payment Provider
   - Payment event verification
 ```
 
+The current MVP implementation contains a fake outbound payment adapter for local checkout foundation work. It preserves the `PaymentPort` boundary and must be replaced by a real provider adapter before production payment collection.
+
 ## Hexagonal Architecture
 
 The domain layer must not depend on Spring, databases, object storage, payment providers, or other adapters. Domain rules should be expressed through entities, value objects, domain services, and ports.

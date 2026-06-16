@@ -100,6 +100,29 @@ class JdbcPurchaseReservationRepositoryIntegrationTest {
         assertThat(repository.findActiveOverlapping(TimeRange(startSecond = 10, endSecond = 20))).isEmpty()
     }
 
+    @Test
+    fun `marks held reservation as checkout created`() {
+        val now = Instant.parse("2026-06-16T00:00:00Z")
+        val reservation = repository.save(heldReservation(startSecond = 10, endSecond = 20))
+
+        val updated = repository.markCheckoutCreated(reservation.id, now)
+
+        assertThat(updated).isEqualTo(1)
+        assertThat(reservationStatus(reservation.id)).isEqualTo("CHECKOUT_CREATED")
+    }
+
+    @Test
+    fun `does not mark non held reservation as checkout created`() {
+        val now = Instant.parse("2026-06-16T00:00:00Z")
+        val reservation = repository.save(heldReservation(startSecond = 10, endSecond = 20))
+        repository.markCheckoutCreated(reservation.id, now)
+
+        val updated = repository.markCheckoutCreated(reservation.id, now)
+
+        assertThat(updated).isZero()
+        assertThat(reservationStatus(reservation.id)).isEqualTo("CHECKOUT_CREATED")
+    }
+
     private fun heldReservation(
         startSecond: Long,
         endSecond: Long,
@@ -157,6 +180,13 @@ class JdbcPurchaseReservationRepositoryIntegrationTest {
             endSecond,
         )
     }
+
+    private fun reservationStatus(id: UUID): String =
+        jdbcTemplate.queryForObject(
+            "select status from purchase_reservations where id = ?",
+            String::class.java,
+            id,
+        ) ?: ""
 
     companion object {
         @Container
