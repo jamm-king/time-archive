@@ -12,6 +12,7 @@ The current backend has core application use cases for reservation, checkout cre
 - Add request and response DTOs for inbound HTTP boundaries.
 - Add centralized API error handling with stable error codes.
 - Add validation for request body fields.
+- Add an OpenAPI contract before controller implementation.
 - Add Spring bean wiring for application use cases that are not currently registered as beans.
 - Add controller tests for validation, success responses, and error responses.
 - Document temporary development-stage authentication assumptions clearly.
@@ -39,6 +40,7 @@ Expected new or changed files:
 - `src/main/kotlin/com/timearchive/configuration/ApplicationUseCaseConfiguration.kt`
 - `src/main/kotlin/com/timearchive/configuration/SecurityConfiguration.kt`
 - `src/test/kotlin/com/timearchive/adapter/inbound/rest/PurchaseControllerTest.kt`
+- `docs/api/openapi.yaml`
 - `docs/implementation-plan/2026-06-16/add-rest-api-foundation.md`
 
 Potentially changed files:
@@ -63,6 +65,7 @@ Potentially changed files:
 - Do not put business rules in controllers.
 - Keep request and response DTOs out of the domain layer.
 - Use application use cases as the boundary from HTTP into core behavior.
+- Define `docs/api/openapi.yaml` before writing controllers.
 - Add a centralized exception handler before adding multiple controllers.
 - Use stable API error codes from the first REST endpoint.
 - Do not expose payment finalization as a browser-success callback.
@@ -70,7 +73,7 @@ Potentially changed files:
 
 ## Recommended Endpoint Shape
 
-Initial development-stage endpoints:
+Initial development-stage endpoints defined in `docs/api/openapi.yaml`:
 
 ```text
 POST /api/purchase/reservations
@@ -158,6 +161,12 @@ This step may initially map current `IllegalArgumentException` and `IllegalState
 
 ## Testing Plan
 
+### OpenAPI Contract Review
+
+- Verify endpoint paths, request schemas, response schemas, and error schemas are defined before implementation.
+- Verify development-stage identity assumptions are documented in the operation descriptions.
+- Verify checkout response does not imply payment completion.
+
 ### Controller Tests
 
 - Creates a reservation with valid input.
@@ -214,30 +223,99 @@ Overall MVP 1 completion would move from roughly 35-40% to roughly 45-50%.
 
 1. Create an implementation branch from latest `main`.
 2. Add this implementation plan.
-3. Add use case Spring configuration.
-4. Add REST DTOs.
-5. Add centralized API error response and exception handler.
-6. Add minimal explicit Spring Security configuration.
-7. Add reservation creation endpoint.
-8. Add checkout creation endpoint.
-9. Add focused controller tests.
-10. Update architecture or README docs if endpoint behavior is documented.
-11. Run verification commands.
-12. Record completion details in this plan.
-13. Commit and push the implementation branch.
+3. Add `docs/api/openapi.yaml`.
+4. Update this plan with OpenAPI-first progress.
+5. Add use case Spring configuration.
+6. Add REST DTOs.
+7. Add centralized API error response and exception handler.
+8. Add minimal explicit Spring Security configuration.
+9. Add reservation creation endpoint.
+10. Add checkout creation endpoint.
+11. Add focused controller tests.
+12. Update architecture or README docs if endpoint behavior is documented.
+13. Run verification commands.
+14. Record completion details in this plan.
+15. Commit and push the implementation branch.
 
 ## Progress
 
 - [x] Latest `main` pulled.
 - [x] Implementation plan created.
-- [ ] Implementation branch created.
-- [ ] Use case Spring configuration added.
-- [ ] REST DTOs added.
-- [ ] API error handling added.
-- [ ] Security configuration added.
-- [ ] Reservation endpoint added.
-- [ ] Checkout endpoint added.
-- [ ] Controller tests added.
-- [ ] Documentation updates completed if needed.
-- [ ] Verification commands run.
-- [ ] Completion details recorded.
+- [x] Implementation branch created.
+- [x] OpenAPI contract added.
+- [x] Use case Spring configuration added.
+- [x] REST DTOs added.
+- [x] API error handling added.
+- [x] Security configuration added.
+- [x] Reservation endpoint added.
+- [x] Checkout endpoint added.
+- [x] Controller tests added.
+- [x] Documentation updates completed if needed.
+- [x] `.\gradlew.bat test` passed.
+- [x] `.\gradlew.bat build` passed.
+- [x] Docker image build passed.
+- [x] Completion details recorded.
+
+## Implementation Notes
+
+- Added a static OpenAPI contract at `docs/api/openapi.yaml` before controller implementation.
+- Exposed `POST /api/purchase/reservations` for development-stage reservation creation.
+- Exposed `POST /api/purchase/reservations/{reservationId}/checkout` for development-stage checkout creation.
+- Added inbound REST DTOs separate from domain models.
+- Added centralized API error responses with stable error codes.
+- Added minimal explicit Spring Security configuration that permits `/api/**` for development-stage access and denies unrelated routes.
+- Added Spring bean configuration for current application use cases and `ClockPort`.
+- Kept payment completion out of the public REST API because real webhook verification does not exist yet.
+- Documented request-body `buyerId` as temporary development-stage behavior only.
+
+## Completion Summary
+
+The REST API foundation was implemented using an OpenAPI-first workflow. A static OpenAPI contract now defines the development-stage purchase reservation and checkout endpoints, and the backend exposes matching inbound REST adapters.
+
+The implementation adds request validation, stable API error responses, explicit Spring Security behavior, and Spring bean wiring for existing application use cases.
+
+## Files Changed
+
+- `README.md`
+- `docs/api/openapi.yaml`
+- `docs/architecture/security-and-operations.md`
+- `docs/implementation-plan/2026-06-16/add-rest-api-foundation.md`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/ApiErrorResponse.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/ApiExceptionHandler.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/PurchaseController.kt`
+- `src/main/kotlin/com/timearchive/adapter/inbound/rest/PurchaseDtos.kt`
+- `src/main/kotlin/com/timearchive/configuration/ApplicationUseCaseConfiguration.kt`
+- `src/main/kotlin/com/timearchive/configuration/SecurityConfiguration.kt`
+- `src/test/kotlin/com/timearchive/adapter/inbound/rest/PurchaseControllerTest.kt`
+
+## Tests Run and Results
+
+- `.\gradlew.bat test`: passed.
+- `.\gradlew.bat build`: passed.
+- `docker build -t time-archive-api:local .`: passed.
+
+## Manual Verification Results
+
+- Verified controller-level reservation creation response shape with MockMvc.
+- Verified request validation returns `INVALID_REQUEST`.
+- Verified reservation overlap maps to `TIME_RANGE_ALREADY_RESERVED`.
+- Verified checkout creation response shape with MockMvc.
+- Verified malformed reservation ID returns `INVALID_REQUEST`.
+- Verified missing reservation maps to `RESOURCE_NOT_FOUND`.
+- Verified unexpected internal exception details are not exposed.
+
+## Known Limitations
+
+- Purchase APIs are development-stage only because `buyerId` is accepted from the request body.
+- `/api/**` is temporarily permitted by Spring Security for local MVP verification.
+- Payment completion is not exposed as a public endpoint.
+- Real payment provider integration and webhook signature verification do not exist yet.
+- Error mapping still depends on existing exception messages. Explicit application exceptions should replace this once the API surface stabilizes.
+
+## Follow-Up Recommendations
+
+- Introduce authenticated user identity and remove request-body `buyerId`.
+- Replace generic exception mapping with explicit application/domain exceptions.
+- Add availability read APIs before frontend purchase UI work.
+- Add real payment provider checkout attempts with idempotency keys before production payment collection.
+- Add verified webhook inbound adapter for payment completion.

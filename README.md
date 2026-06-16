@@ -12,7 +12,7 @@ Each purchased second can display owner-submitted media, such as an image or sho
 
 ## Status
 
-This project is currently in the architecture and planning phase.
+This project is currently in early MVP backend development.
 
 The initial focus is to design a simple but high-integrity system for:
 
@@ -33,6 +33,14 @@ Architecture documents are available in:
 - [Domain Model](docs/architecture/domain-model.md)
 - [Transaction Boundaries](docs/architecture/transaction-boundaries.md)
 - [Security and Operations](docs/architecture/security-and-operations.md)
+
+## API Contract
+
+The development-stage OpenAPI contract is available at:
+
+- [OpenAPI](docs/api/openapi.yaml)
+
+Current purchase APIs are not production authentication boundaries yet. Request-body `buyerId` is temporary development-stage behavior and must be replaced by authenticated server-side identity before production.
 
 ## Planned Technology Stack
 
