@@ -40,6 +40,23 @@ Within one database transaction:
 
 Reservation expiration should also be handled by a scheduled worker or background job. PostgreSQL overlap constraints exclude expired reservations only after their status is updated to `EXPIRED`.
 
+## Checkout Creation Transaction
+
+The current checkout foundation creates a provider-neutral checkout session for a held reservation and then transitions the reservation from `HELD` to `CHECKOUT_CREATED`.
+
+Within the current application use case:
+
+- Load the reservation with a row-level lock.
+- Validate the reservation exists.
+- Validate the reservation status is `HELD`.
+- Validate the reservation is not expired.
+- Create a checkout session through `PaymentPort`.
+- Mark the reservation as `CHECKOUT_CREATED`.
+
+This is acceptable for the fake local payment adapter because it performs no network I/O. A real payment provider adapter should avoid holding a database lock across a slow external call. Before adding a real provider, introduce a persisted checkout attempt, a provider idempotency key, or a shorter transaction split around the status transition.
+
+Checkout creation does not grant ownership and does not create a completed purchase. Payment finalization remains owned by the verified webhook flow.
+
 ## Payment Webhook Transaction
 
 Webhook handling must be idempotent.

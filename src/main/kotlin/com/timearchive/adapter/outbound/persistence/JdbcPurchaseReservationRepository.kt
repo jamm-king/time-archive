@@ -130,6 +130,23 @@ class JdbcPurchaseReservationRepository(
         )
     }
 
+    override fun markCheckoutCreated(id: UUID, now: Instant): Int {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+            .addValue("now", Timestamp.from(now), Types.TIMESTAMP)
+
+        return jdbcTemplate.update(
+            """
+            update purchase_reservations
+            set status = 'CHECKOUT_CREATED',
+                updated_at = :now
+            where id = :id
+              and status = 'HELD'
+            """.trimIndent(),
+            parameters,
+        )
+    }
+
     override fun markCompleted(id: UUID, now: Instant): Int {
         val parameters = MapSqlParameterSource()
             .addValue("id", id)

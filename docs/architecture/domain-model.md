@@ -113,6 +113,29 @@ Suggested statuses:
 - `EXPIRED`
 - `CANCELLED`
 
+### CheckoutRequest
+
+Checkout requests are provider-neutral command models used to create a payment checkout session for a held reservation.
+
+- `reservationId`
+- `buyerId`
+- `startSecond`
+- `endSecond`
+- `amountCents`
+- `currency`
+
+Checkout creation must not create ownership or mark payment as confirmed. It only prepares payment collection for a valid reservation.
+
+### CheckoutSession
+
+Checkout sessions are provider-neutral responses returned by `PaymentPort`.
+
+- `provider`
+- `providerReference`
+- `checkoutUrl`
+
+The checkout URL is a redirect target only. It must not be treated as payment confirmation.
+
 ### Purchase
 
 - `id`

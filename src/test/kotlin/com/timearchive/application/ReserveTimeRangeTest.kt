@@ -151,6 +151,11 @@ class ReserveTimeRangeTest {
             return 0
         }
 
+        override fun markCheckoutCreated(
+            id: UUID,
+            now: Instant,
+        ): Int = 0
+
         override fun markCompleted(
             id: UUID,
             now: Instant,

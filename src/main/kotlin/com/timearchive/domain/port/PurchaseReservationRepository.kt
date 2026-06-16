@@ -14,5 +14,7 @@ interface PurchaseReservationRepository {
 
     fun expireOverdue(now: Instant): Int
 
+    fun markCheckoutCreated(id: UUID, now: Instant): Int
+
     fun markCompleted(id: UUID, now: Instant): Int
 }
