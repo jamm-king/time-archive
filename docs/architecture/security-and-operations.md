@@ -36,6 +36,8 @@ Required controls:
 - Use environment variables or a secret manager.
 - Store only payment references needed for reconciliation.
 
+The development-stage fake payment webhook endpoint is for local MVP verification only. It must not be exposed as a production payment confirmation path. Production payment webhooks must verify provider signatures before calling payment completion logic.
+
 ## Media Upload Security
 
 User uploads are high risk.

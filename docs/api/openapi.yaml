@@ -19,6 +19,8 @@ tags:
     description: Public archive read operations.
   - name: Purchase
     description: Primary purchase reservation and checkout operations.
+  - name: Payment
+    description: Development-stage payment event operations.
 paths:
   /api/archive/availability:
     get:
@@ -137,6 +139,48 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "409":
           description: Reservation is expired or not payable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/internal/payments/fake/webhooks/primary-purchase-completed:
+    post:
+      tags:
+        - Payment
+      operationId: completeFakePrimaryPurchasePayment
+      summary: Complete primary purchase with a fake payment event
+      description: |
+        Development-stage endpoint for local primary purchase verification.
+
+        This endpoint simulates a payment provider webhook and calls the
+        primary purchase completion workflow. It is not production-safe.
+        Production payment providers must use verified webhook signatures and
+        must not trust browser redirects as payment confirmation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FakePrimaryPurchasePaymentWebhookRequest"
+      responses:
+        "200":
+          description: Payment event processed or already processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrimaryPurchasePaymentWebhookResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          description: Reservation was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Payment event or reservation state prevents completion.
           content:
             application/json:
               schema:
@@ -307,6 +351,68 @@ components:
           format: int64
           minimum: 1
           maximum: 86400
+    FakePrimaryPurchasePaymentWebhookRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - providerEventId
+        - eventType
+        - payloadHash
+        - reservationId
+        - paymentReference
+      properties:
+        providerEventId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - evt_local_1
+        eventType:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - payment_intent.succeeded
+        payloadHash:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Development-stage payload hash supplied by local test clients.
+          examples:
+            - sha256-local-test-payload
+        reservationId:
+          type: string
+          format: uuid
+        paymentReference:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - pi_local_1
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          nullable: true
+          examples:
+            - local-request-1
+    PrimaryPurchasePaymentWebhookResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - purchaseId
+        - ownershipRecordId
+        - alreadyProcessed
+      properties:
+        purchaseId:
+          type: string
+          format: uuid
+        ownershipRecordId:
+          type: string
+          format: uuid
+          nullable: true
+        alreadyProcessed:
+          type: boolean
     ApiErrorResponse:
       type: object
       additionalProperties: false
@@ -333,6 +439,7 @@ components:
         - TIME_RANGE_ALREADY_RESERVED
         - RESERVATION_EXPIRED
         - RESERVATION_NOT_PAYABLE
+        - PAYMENT_EVENT_ALREADY_PROCESSING
         - UNEXPECTED_ERROR
     ApiErrorDetail:
       type: object

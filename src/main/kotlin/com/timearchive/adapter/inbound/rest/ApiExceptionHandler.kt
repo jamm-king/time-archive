@@ -96,6 +96,12 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.CONFLICT, "RESERVATION_EXPIRED", "Reservation is expired")
             message.contains("reservation is not held") || message.contains("reservation is not payable") ->
                 errorResponse(HttpStatus.CONFLICT, "RESERVATION_NOT_PAYABLE", "Reservation is not payable")
+            message.contains("payment event is already being processed") ->
+                errorResponse(
+                    HttpStatus.CONFLICT,
+                    "PAYMENT_EVENT_ALREADY_PROCESSING",
+                    "Payment event is already being processed",
+                )
             else ->
                 errorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request")
         }
