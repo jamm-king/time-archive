@@ -50,10 +50,11 @@ Within one database transaction:
 - If already processed, return success without repeating side effects.
 - Load the purchase or reservation with a lock.
 - Validate current status.
-- Mark payment as confirmed.
-- Create active ownership records.
-- Mark purchase as `OWNERSHIP_GRANTED`.
+- Re-check active ownership overlap.
+- Create purchase as `OWNERSHIP_GRANTED`.
+- Create active ownership record.
 - Mark reservation as `COMPLETED`.
+- Mark payment event as processed.
 - Insert audit logs.
 - Insert outbox events for media manifest invalidation and notifications.
 

@@ -119,7 +119,7 @@ Suggested statuses:
 - `buyerId`
 - `startSecond`
 - `endSecond`
-- `amount`
+- `amountCents`
 - `currency`
 - `status`
 - `reservationId`
@@ -127,6 +127,13 @@ Suggested statuses:
 - `paymentReference`
 - `createdAt`
 - `updatedAt`
+
+Primary purchase records use integer cents and remain payment-provider neutral:
+
+```text
+amountCents = durationSeconds * 100
+currency = USD
+```
 
 Suggested statuses:
 
@@ -224,6 +231,8 @@ Suggested statuses:
 
 `providerEventId` must be unique per provider.
 
+The pair `(provider, providerEventId)` is the primary idempotency key for payment webhook processing.
+
 ### AuditLog
 
 - `id`
@@ -253,6 +262,8 @@ Audit logs should be append-only.
 - `processedAt`
 - `retryCount`
 - `lastError`
+
+Outbox events should be inserted in the same database transaction as the state change they describe.
 
 ## Domain Services
 
