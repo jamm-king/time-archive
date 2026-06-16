@@ -10,7 +10,7 @@ COPY build.gradle.kts build.gradle.kts
 COPY gradle.properties gradle.properties
 COPY src src
 
-RUN chmod +x ./gradlew
+RUN sed -i 's/\r$//' ./gradlew && chmod +x ./gradlew
 RUN ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine

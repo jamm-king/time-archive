@@ -31,7 +31,6 @@ The browser redirect after payment is not the source of truth. Final ownership m
 
 Within one database transaction:
 
-- Validate season status.
 - Validate range boundaries.
 - Check active ownership overlap.
 - Check active reservation overlap if the product policy requires temporary holds.

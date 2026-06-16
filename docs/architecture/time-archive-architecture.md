@@ -181,15 +181,15 @@ The player is read-heavy and should not query transactional tables every second.
 Recommended player flow:
 
 ```text
-GET /api/seasons/current
-GET /api/seasons/{seasonId}/timeline?from=0&to=300
+GET /api/archive
+GET /api/timeline?from=0&to=300
 ```
 
 The response should contain approved timeline segments for a window of seconds. Later, this can evolve into CDN-cacheable manifest chunks:
 
 ```text
-/seasons/1/manifest/chunk-0.json
-/seasons/1/manifest/chunk-1.json
+/archive/manifest/chunk-0.json
+/archive/manifest/chunk-1.json
 ```
 
 Each chunk can cover 300 or 600 seconds. Ownership, media approval, or hide actions should invalidate or regenerate affected chunks.

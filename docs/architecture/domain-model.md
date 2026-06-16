@@ -29,7 +29,7 @@ Required validation:
 
 - `startSecond >= 0`
 - `endSecond > startSecond`
-- `endSecond <= season.totalSeconds`
+- `endSecond <= 86,400`
 
 ## Core Entities
 
@@ -43,28 +43,22 @@ Required validation:
 - `createdAt`
 - `updatedAt`
 
-### Season
+### ArchiveTimeline
 
-- `id`
-- `title`
-- `totalSeconds`
-- `status`
-- `createdAt`
-- `updatedAt`
+Time Archive has one canonical 24-hour archive timeline. It is a fixed product constraint, not a user-facing collection, season, or edition.
 
-Suggested statuses:
+```text
+totalSeconds = 86,400
+valid seconds = 0 through 86,399
+```
 
-- `DRAFT`
-- `ACTIVE`
-- `PAUSED`
-- `ARCHIVED`
+The timeline may be represented as a domain policy or value object instead of a database table.
 
 ### OwnershipRecord
 
 Ownership should be stored as history.
 
 - `id`
-- `seasonId`
 - `startSecond`
 - `endSecond`
 - `ownerId`
@@ -95,7 +89,6 @@ Current ownership is represented by active records where `validUntil` is null.
 
 - `id`
 - `buyerId`
-- `seasonId`
 - `startSecond`
 - `endSecond`
 - `amount`
@@ -116,7 +109,6 @@ Suggested statuses:
 
 - `id`
 - `buyerId`
-- `seasonId`
 - `startSecond`
 - `endSecond`
 - `amount`
@@ -269,7 +261,6 @@ Potential domain services:
 
 MVP 1:
 
-- `CreateSeason`
 - `QueryTimeline`
 - `CheckAvailability`
 - `ReserveTimeRange`
@@ -293,9 +284,9 @@ MVP 2:
 
 Important constraints:
 
-- Season total seconds must be positive.
 - Time range start and end values must be valid.
-- Active ownership ranges in the same season must not overlap.
+- Time ranges must stay within the canonical 86,400-second archive.
+- Active ownership ranges must not overlap.
 - Payment provider event IDs must be unique.
 - Idempotency keys must be unique.
 - Offer status transitions must be controlled.
