@@ -2,6 +2,7 @@ package com.timearchive.configuration
 
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CreateCheckout
+import com.timearchive.application.CheckAvailability
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
@@ -28,6 +29,18 @@ class ApplicationUseCaseConfiguration {
         clockPort: ClockPort,
     ): ReserveTimeRange =
         ReserveTimeRange(
+            ownershipRepository = ownershipRepository,
+            purchaseReservationRepository = purchaseReservationRepository,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun checkAvailability(
+        ownershipRepository: OwnershipRepository,
+        purchaseReservationRepository: PurchaseReservationRepository,
+        clockPort: ClockPort,
+    ): CheckAvailability =
+        CheckAvailability(
             ownershipRepository = ownershipRepository,
             purchaseReservationRepository = purchaseReservationRepository,
             clockPort = clockPort,
