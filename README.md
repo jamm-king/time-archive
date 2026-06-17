@@ -71,6 +71,9 @@ Start local infrastructure:
 docker compose up -d
 ```
 
+PostgreSQL uses a PostgreSQL 18-compatible named volume mounted at `/var/lib/postgresql`.
+If an older local `postgres-data` volume exists, it is left untouched and unused.
+
 Run tests:
 
 ```text
