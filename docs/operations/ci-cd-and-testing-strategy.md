@@ -193,6 +193,11 @@ Production deployments should use `{git-sha}`.
 
 ## Testing Strategy
 
+Verification scripts should be maintained as shell scripts only. They must run
+in GitHub Actions on Ubuntu and should also run on Windows through Git Bash.
+Avoid adding parallel PowerShell variants because duplicated scripts can drift
+from CI behavior.
+
 Time Archive needs multiple test layers because ownership, payments, and moderation cannot be validated with unit tests alone.
 
 ### Unit Tests

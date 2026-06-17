@@ -124,13 +124,10 @@ Verify the local development-stage purchase flow:
 ./scripts/verify-local-purchase-flow.sh
 ```
 
-On Windows:
-
-```text
-.\scripts\verify-local-purchase-flow.ps1
-```
-
 See [Local Purchase Flow Verification](docs/manual-verification/local-purchase-flow.md) for details.
+
+Verification scripts are maintained as shell scripts. On Windows, run them
+through Git Bash.
 
 Verify the local development-stage media upload flow:
 

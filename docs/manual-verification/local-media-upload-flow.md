@@ -3,6 +3,9 @@
 This document describes the local development-stage media upload verification
 flow.
 
+Verification scripts are maintained as shell scripts. They run in GitHub Actions
+on Ubuntu and on Windows through Git Bash.
+
 The script verifies:
 
 - API health

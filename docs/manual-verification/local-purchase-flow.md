@@ -2,7 +2,8 @@
 
 This document describes how to verify the local development-stage primary purchase flow.
 
-The shell script is the canonical script for future CI integration. The PowerShell script is provided for Windows local convenience.
+Verification scripts are maintained as shell scripts. They run in GitHub Actions
+on Ubuntu and on Windows through Git Bash.
 
 ## Prerequisites
 
@@ -13,8 +14,6 @@ The shell script is the canonical script for future CI integration. The PowerShe
   - Bash
   - `curl`
   - `python3` or `python`
-- For the PowerShell script:
-  - PowerShell 7 or Windows PowerShell
 
 ## Start the Local Stack
 
@@ -46,23 +45,7 @@ When the API container starts slowly, override the health wait timeout:
 HEALTH_TIMEOUT_SECONDS=180 ./scripts/verify-local-purchase-flow.sh
 ```
 
-## Run the PowerShell Script
-
-```powershell
-.\scripts\verify-local-purchase-flow.ps1
-```
-
-If PowerShell script execution is blocked by local execution policy:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\verify-local-purchase-flow.ps1
-```
-
-Override the tested range:
-
-```powershell
-.\scripts\verify-local-purchase-flow.ps1 -StartSecond 200 -EndSecond 210
-```
+On Windows, run the shell script from Git Bash.
 
 ## Verified Steps
 
@@ -84,10 +67,6 @@ The scripts do not reset local database state. Use another range:
 
 ```bash
 START_SECOND=300 END_SECOND=310 ./scripts/verify-local-purchase-flow.sh
-```
-
-```powershell
-.\scripts\verify-local-purchase-flow.ps1 -StartSecond 300 -EndSecond 310
 ```
 
 ### API Is Not Running
