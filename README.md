@@ -132,6 +132,14 @@ On Windows:
 
 See [Local Purchase Flow Verification](docs/manual-verification/local-purchase-flow.md) for details.
 
+Verify the local development-stage media upload flow:
+
+```text
+./scripts/verify-local-media-upload-flow.sh
+```
+
+See [Local Media Upload Flow Verification](docs/manual-verification/local-media-upload-flow.md) for details.
+
 The local application expects PostgreSQL at:
 
 ```text
@@ -150,6 +158,7 @@ Environment variables can override local S3-compatible storage settings:
 
 ```text
 TIME_ARCHIVE_STORAGE_S3_ENDPOINT
+TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT
 TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL
 TIME_ARCHIVE_STORAGE_S3_BUCKET
 TIME_ARCHIVE_STORAGE_S3_REGION

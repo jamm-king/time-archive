@@ -22,6 +22,7 @@ time-archive:
   storage:
     s3:
       endpoint: ${TIME_ARCHIVE_STORAGE_S3_ENDPOINT:http://localhost:9000}
+      presigned-url-endpoint: ${TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT:${TIME_ARCHIVE_STORAGE_S3_ENDPOINT:http://localhost:9000}}
       public-base-url: ${TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL:http://localhost:9000/time-archive-media}
       bucket: ${TIME_ARCHIVE_STORAGE_S3_BUCKET:time-archive-media}
       region: ${TIME_ARCHIVE_STORAGE_S3_REGION:us-east-1}

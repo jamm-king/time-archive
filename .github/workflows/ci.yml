@@ -58,3 +58,29 @@ jobs:
       - name: Stop local stack
         if: always()
         run: docker compose down
+
+  local-media-upload-flow:
+    name: Local media upload flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start local stack
+        run: docker compose up -d --build
+
+      - name: Verify local media upload flow
+        env:
+          START_SECOND: "2000"
+          END_SECOND: "2001"
+        run: ./scripts/verify-local-media-upload-flow.sh
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop local stack
+        if: always()
+        run: docker compose down

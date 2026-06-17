@@ -7,7 +7,8 @@ services:
       TIME_ARCHIVE_DATABASE_URL: jdbc:postgresql://postgres:5432/time_archive
       TIME_ARCHIVE_DATABASE_USERNAME: time_archive
       TIME_ARCHIVE_DATABASE_PASSWORD: time_archive
-      TIME_ARCHIVE_STORAGE_S3_ENDPOINT: http://localhost:9000
+      TIME_ARCHIVE_STORAGE_S3_ENDPOINT: http://minio:9000
+      TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT: http://localhost:9000
       TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL: http://localhost:9000/time-archive-media
       TIME_ARCHIVE_STORAGE_S3_BUCKET: time-archive-media
       TIME_ARCHIVE_STORAGE_S3_REGION: us-east-1
