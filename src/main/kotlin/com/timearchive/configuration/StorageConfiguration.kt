@@ -30,14 +30,14 @@ class StorageConfiguration {
 
     @Bean
     fun s3Presigner(
-        @Value("\${time-archive.storage.s3.endpoint}") endpoint: String,
+        @Value("\${time-archive.storage.s3.presigned-url-endpoint}") presignedUrlEndpoint: String,
         @Value("\${time-archive.storage.s3.region}") region: String,
         @Value("\${time-archive.storage.s3.access-key}") accessKey: String,
         @Value("\${time-archive.storage.s3.secret-key}") secretKey: String,
         @Value("\${time-archive.storage.s3.path-style-access}") pathStyleAccess: Boolean,
     ): S3Presigner =
         S3Presigner.builder()
-            .endpointOverride(URI.create(endpoint))
+            .endpointOverride(URI.create(presignedUrlEndpoint))
             .region(Region.of(region))
             .credentialsProvider(credentialsProvider(accessKey, secretKey))
             .serviceConfiguration(s3Configuration(pathStyleAccess))
