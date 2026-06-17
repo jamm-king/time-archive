@@ -1,8 +1,11 @@
 * text=auto
 
 gradlew text eol=lf
+**/gradlew text eol=lf
 Dockerfile text eol=lf
+**/Dockerfile text eol=lf
 .dockerignore text eol=lf
+**/.dockerignore text eol=lf
 .gitignore text eol=lf
 .gitattributes text eol=lf
 *.sh text eol=lf
