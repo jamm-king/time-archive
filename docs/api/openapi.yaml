@@ -72,6 +72,49 @@ paths:
           $ref: "#/components/responses/InvalidRequest"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/timeline:
+    get:
+      tags:
+        - Archive
+      operationId: listPublicTimelineSegments
+      summary: List public timeline segments
+      description: |
+        Lists approved media segments for a requested window of the canonical
+        24-hour Time Archive timeline.
+
+        The response is public-player safe. It only includes approved media
+        URLs and does not expose owner identifiers, original upload URLs, or
+        moderation metadata.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 86399
+          description: Inclusive start second in the canonical 24-hour timeline.
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 86400
+          description: Exclusive end second in the canonical 24-hour timeline.
+      responses:
+        "200":
+          description: Public timeline segments for the requested window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicTimelineResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/purchase/reservations:
     post:
       tags:
@@ -901,6 +944,66 @@ components:
           $ref: "#/components/schemas/MediaAssetResponse"
         alreadyCompleted:
           type: boolean
+    PublicTimelineResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - segments
+      properties:
+        from:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+        to:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTimelineSegmentResponse"
+    PublicTimelineSegmentResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - startSecond
+        - endSecond
+        - mediaAssetId
+        - mediaType
+        - mediaUrl
+        - thumbnailUrl
+        - externalLink
+      properties:
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+        mediaAssetId:
+          type: string
+          format: uuid
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        mediaUrl:
+          type: string
+          format: uri
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+        externalLink:
+          type: string
+          format: uri
+          nullable: true
     MediaAssetResponse:
       type: object
       additionalProperties: false
