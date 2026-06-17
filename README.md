@@ -137,6 +137,14 @@ Verify the local development-stage media upload flow:
 
 See [Local Media Upload Flow Verification](docs/manual-verification/local-media-upload-flow.md) for details.
 
+Verify the local development-stage public timeline flow:
+
+```text
+./scripts/verify-local-public-timeline-flow.sh
+```
+
+See [Local Public Timeline Flow Verification](docs/manual-verification/local-public-timeline-flow.md) for details.
+
 The local application expects PostgreSQL at:
 
 ```text
