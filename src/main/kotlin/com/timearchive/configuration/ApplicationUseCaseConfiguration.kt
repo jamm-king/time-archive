@@ -10,6 +10,7 @@ import com.timearchive.application.CheckAvailability
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListMediaModerationQueue
 import com.timearchive.application.ListOwnedRangeMediaAssets
+import com.timearchive.application.ListPublicTimelineSegments
 import com.timearchive.application.RejectMediaAsset
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
@@ -21,6 +22,7 @@ import com.timearchive.domain.port.OutboxPort
 import com.timearchive.domain.port.OwnershipRepository
 import com.timearchive.domain.port.PaymentEventRepository
 import com.timearchive.domain.port.PaymentPort
+import com.timearchive.domain.port.PublicTimelineSegmentRepository
 import com.timearchive.domain.port.PurchaseRepository
 import com.timearchive.domain.port.PurchaseReservationRepository
 import com.timearchive.domain.port.TransactionPort
@@ -138,6 +140,12 @@ class ApplicationUseCaseConfiguration {
         mediaAssetRepository: MediaAssetRepository,
     ): ListMediaModerationQueue =
         ListMediaModerationQueue(mediaAssetRepository = mediaAssetRepository)
+
+    @Bean
+    fun listPublicTimelineSegments(
+        publicTimelineSegmentRepository: PublicTimelineSegmentRepository,
+    ): ListPublicTimelineSegments =
+        ListPublicTimelineSegments(publicTimelineSegmentRepository = publicTimelineSegmentRepository)
 
     @Bean
     fun approveMediaAsset(

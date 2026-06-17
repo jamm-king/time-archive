@@ -202,6 +202,27 @@ Admin moderation can transition uploaded media to `APPROVED` or `REJECTED`, and
 can transition approved media to `HIDDEN`. Approval requires an explicit
 `approvedFileUrl` so original upload URLs remain distinct from public media URLs.
 
+### PublicTimelineSegment
+
+Public timeline reads use a player-safe read model derived from active
+ownership records and approved media assets.
+
+Fields:
+
+- `startSecond`
+- `endSecond`
+- `mediaAssetId`
+- `mediaType`
+- `mediaUrl`
+- `thumbnailUrl`
+- `externalLink`
+
+Public timeline segments MUST NOT expose owner identifiers, original upload
+URLs, moderation status, or internal storage verification details.
+
+The initial implementation returns approved occupied segments for a requested
+window. It does not return placeholder segments for unowned or empty seconds.
+
 ### Offer
 
 MVP 2 entity.

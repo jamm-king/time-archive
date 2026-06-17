@@ -187,7 +187,12 @@ GET /api/archive
 GET /api/timeline?from=0&to=300
 ```
 
-The response should contain approved timeline segments for a window of seconds. Later, this can evolve into CDN-cacheable manifest chunks:
+The response contains approved occupied timeline segments for a window of
+seconds. Public segment responses expose approved playback URLs only and do not
+include owner identifiers, original upload URLs, or moderation metadata.
+
+The initial implementation may query PostgreSQL through a dedicated read-model
+port. Later, this can evolve into CDN-cacheable manifest chunks:
 
 ```text
 /archive/manifest/chunk-0.json
