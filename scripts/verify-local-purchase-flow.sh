@@ -10,6 +10,7 @@ PAYMENT_REFERENCE="${PAYMENT_REFERENCE:-pi_local_${START_SECOND}_${END_SECOND}}"
 REQUEST_ID="${REQUEST_ID:-local-request-${START_SECOND}-${END_SECOND}}"
 EVENT_TYPE="${EVENT_TYPE:-payment_intent.succeeded}"
 PAYLOAD_HASH="${PAYLOAD_HASH:-sha256-local-${START_SECOND}-${END_SECOND}}"
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-120}"
 
 export BASE_URL
 export BUYER_ID
@@ -20,6 +21,7 @@ export PAYMENT_REFERENCE
 export REQUEST_ID
 export EVENT_TYPE
 export PAYLOAD_HASH
+export HEALTH_TIMEOUT_SECONDS
 
 log() {
   printf '[verify] %s\n' "$1"
@@ -101,15 +103,39 @@ request_json() {
   rm -f "$response_file"
 }
 
+wait_for_health() {
+  local deadline status
+
+  deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
+  while (( SECONDS < deadline )); do
+    status="$(
+      curl -sS "$BASE_URL/actuator/health" 2>/dev/null |
+        "$PYTHON_BIN" -c '
+import json
+import sys
+
+try:
+    print(json.load(sys.stdin).get("status", ""))
+except Exception:
+    print("")
+'
+    )"
+    if [[ "$status" == "UP" ]]; then
+      return
+    fi
+    sleep 2
+  done
+
+  fail "API health did not become UP within ${HEALTH_TIMEOUT_SECONDS}s"
+}
+
 require_command curl
 PYTHON_BIN="$(detect_python)"
 
 log "Using BASE_URL=$BASE_URL"
 log "Using range [$START_SECOND, $END_SECOND)"
 
-health="$(request_json GET "$BASE_URL/actuator/health")"
-health_status="$(printf '%s' "$health" | json_get status)"
-[[ "$health_status" == "UP" ]] || fail "Expected health UP, got $health_status"
+wait_for_health
 log "Health check passed"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"

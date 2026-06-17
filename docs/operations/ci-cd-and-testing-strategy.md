@@ -108,6 +108,7 @@ Initial required checks:
 - Backend test
 - Backend build
 - Docker image build
+- Local purchase flow verification through Docker Compose
 
 Future frontend checks:
 
@@ -257,10 +258,11 @@ Focus:
 Initial smoke tests should verify:
 
 - Health endpoint responds.
-- Archive metadata endpoint responds.
-- Timeline manifest endpoint responds.
-- Admin authentication path is reachable.
-- Payment webhook endpoint rejects invalid signatures.
+- Availability endpoint responds.
+- Reservation creation succeeds.
+- Checkout creation succeeds.
+- Fake payment webhook completion succeeds in local verification.
+- Duplicate fake payment webhook is idempotent.
 
 Staging E2E tests should verify:
 

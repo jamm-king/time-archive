@@ -40,6 +40,12 @@ Override the tested range when the default range is already unavailable:
 START_SECOND=200 END_SECOND=210 ./scripts/verify-local-purchase-flow.sh
 ```
 
+When the API container starts slowly, override the health wait timeout:
+
+```bash
+HEALTH_TIMEOUT_SECONDS=180 ./scripts/verify-local-purchase-flow.sh
+```
+
 ## Run the PowerShell Script
 
 ```powershell
