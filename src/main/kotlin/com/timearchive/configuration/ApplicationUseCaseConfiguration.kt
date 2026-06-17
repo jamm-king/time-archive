@@ -3,12 +3,15 @@ package com.timearchive.configuration
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.CreateOwnedRangeMediaAsset
+import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
 import com.timearchive.application.ListOwnedRangeMediaAssets
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
+import com.timearchive.domain.port.MediaObjectStoragePort
+import com.timearchive.domain.port.MediaUploadRequestRepository
 import com.timearchive.domain.port.OutboxPort
 import com.timearchive.domain.port.OwnershipRepository
 import com.timearchive.domain.port.PaymentEventRepository
@@ -18,6 +21,8 @@ import com.timearchive.domain.port.PurchaseReservationRepository
 import com.timearchive.domain.port.TransactionPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.beans.factory.annotation.Value
+import java.time.Duration
 import java.time.Instant
 
 @Configuration
@@ -75,6 +80,24 @@ class ApplicationUseCaseConfiguration {
             ownershipRepository = ownershipRepository,
             mediaAssetRepository = mediaAssetRepository,
             clockPort = clockPort,
+        )
+
+    @Bean
+    fun createOwnedRangeMediaUploadRequest(
+        transactionPort: TransactionPort,
+        ownershipRepository: OwnershipRepository,
+        mediaUploadRequestRepository: MediaUploadRequestRepository,
+        mediaObjectStoragePort: MediaObjectStoragePort,
+        clockPort: ClockPort,
+        @Value("\${time-archive.storage.s3.upload-url-expiration-seconds}") uploadUrlExpirationSeconds: Long,
+    ): CreateOwnedRangeMediaUploadRequest =
+        CreateOwnedRangeMediaUploadRequest(
+            transactionPort = transactionPort,
+            ownershipRepository = ownershipRepository,
+            mediaUploadRequestRepository = mediaUploadRequestRepository,
+            mediaObjectStoragePort = mediaObjectStoragePort,
+            clockPort = clockPort,
+            uploadUrlTtl = Duration.ofSeconds(uploadUrlExpirationSeconds),
         )
 
     @Bean

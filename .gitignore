@@ -45,6 +45,6 @@ temp/
 *.swo
 
 # Generated media and uploads
-uploads/
-media/
-storage/
+/uploads/
+/media/
+/storage/

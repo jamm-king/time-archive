@@ -194,6 +194,8 @@ Only `APPROVED` media may be used by the public timeline player.
 
 Current persistence stores media assets against `ownershipRecordId` and redundantly stores `ownerId` for future authorization checks. The initial persistence layer supports uploaded and approved media reads, but upload, object storage, and moderation use cases are implemented separately.
 
+`MediaUploadRequest` stores short-lived S3-compatible upload preparation state before a `MediaAsset` is created. It records the owner, ownership record, media type, expected content type, expected content length, server-generated object key, storage URL, status, and expiration. Upload request creation does not prove that the object was uploaded or safe; completion and processing must verify the object before media enters moderation.
+
 ### Offer
 
 MVP 2 entity.

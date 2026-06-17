@@ -7,11 +7,22 @@ services:
       TIME_ARCHIVE_DATABASE_URL: jdbc:postgresql://postgres:5432/time_archive
       TIME_ARCHIVE_DATABASE_USERNAME: time_archive
       TIME_ARCHIVE_DATABASE_PASSWORD: time_archive
+      TIME_ARCHIVE_STORAGE_S3_ENDPOINT: http://localhost:9000
+      TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL: http://localhost:9000/time-archive-media
+      TIME_ARCHIVE_STORAGE_S3_BUCKET: time-archive-media
+      TIME_ARCHIVE_STORAGE_S3_REGION: us-east-1
+      TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY: time_archive_minio
+      TIME_ARCHIVE_STORAGE_S3_SECRET_KEY: time_archive_minio_secret
+      TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS: "true"
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:18-alpine
@@ -41,5 +52,37 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: time-archive-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: time_archive_minio
+      MINIO_ROOT_PASSWORD: time_archive_minio_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: time-archive-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 time_archive_minio time_archive_minio_secret
+        mc mb --ignore-existing local/time-archive-media
+
 volumes:
   postgres-18-data:
+  minio-data:

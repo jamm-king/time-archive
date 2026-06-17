@@ -1,6 +1,7 @@
 package com.timearchive.adapter.inbound.rest
 
 import com.timearchive.application.CreateOwnedRangeMediaAsset
+import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.ListOwnedRangeMediaAssets
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -18,8 +19,30 @@ import java.util.UUID
 @RequestMapping("/api/owned-ranges/{ownershipRecordId}/media")
 class OwnedRangeMediaController(
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset,
+    private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest,
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets,
 ) {
+    @PostMapping("/upload-requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createUploadRequest(
+        @RequestHeader("X-User-Id") currentUserId: UUID,
+        @PathVariable ownershipRecordId: UUID,
+        @Valid @RequestBody request: CreateMediaUploadRequest,
+    ): MediaUploadRequestResponse {
+        val result = createOwnedRangeMediaUploadRequest.create(
+            CreateOwnedRangeMediaUploadRequest.Command(
+                currentUserId = currentUserId,
+                ownershipRecordId = ownershipRecordId,
+                mediaType = requireNotNull(request.mediaType),
+                originalFilename = requireNotNull(request.originalFilename),
+                contentType = requireNotNull(request.contentType),
+                contentLengthBytes = requireNotNull(request.contentLengthBytes),
+            ),
+        )
+
+        return MediaUploadRequestResponse.from(result)
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
