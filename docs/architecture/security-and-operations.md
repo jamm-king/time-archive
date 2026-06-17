@@ -67,6 +67,10 @@ Current media persistence stores URLs and moderation state only. Actual upload h
 
 Owned range media APIs currently use the `X-User-Id` request header as development-stage identity input. This is not production-safe. Production media APIs must derive the current user from authenticated server-side identity and must reject client-provided owner identity claims. The current API is metadata-only and does not prove that the referenced file exists, belongs to the caller, or passed file signature and content safety checks.
 
+Upload request APIs issue short-lived S3-compatible presigned upload URLs and store server-generated object keys in `media_upload_requests`. Local development uses MinIO through the same S3-compatible storage port that can later target Cloudflare R2. Upload request creation still does not prove that the object was uploaded correctly; a completion step must verify the object key, expected content length, expected content type, ownership, expiration, and actual file signature before a `MediaAsset` is created or moved into moderation.
+
+Cloudflare R2 should be connected after the MinIO local flow and upload completion verification are implemented. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and public delivery base URL should come from environment or secret management.
+
 ## Moderation
 
 Moderation status:

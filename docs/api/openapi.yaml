@@ -249,6 +249,60 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/owned-ranges/{ownershipRecordId}/media/upload-requests:
+    post:
+      tags:
+        - Media
+      operationId: createOwnedRangeMediaUploadRequest
+      summary: Create a presigned media upload request
+      description: |
+        Creates a short-lived S3-compatible presigned PUT URL for an active
+        ownership record owned by the current user.
+
+        The server generates the object key and records upload request metadata
+        for a later completion step. This endpoint does not prove that the file
+        was uploaded and does not create a `MediaAsset`.
+
+        `X-User-Id` is temporary development-stage behavior. Production APIs
+        must derive the current user from authenticated server-side identity.
+      parameters:
+        - $ref: "#/components/parameters/OwnershipRecordId"
+        - $ref: "#/components/parameters/CurrentUserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMediaUploadRequest"
+      responses:
+        "201":
+          description: Upload request created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUploadRequestResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "403":
+          description: The current user does not own the requested range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Ownership record was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Ownership record is not active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/internal/payments/fake/webhooks/primary-purchase-completed:
     post:
       tags:
@@ -502,6 +556,96 @@ components:
           nullable: true
           examples:
             - https://example.com/archive-note
+    CreateMediaUploadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - mediaType
+        - originalFilename
+        - contentType
+        - contentLengthBytes
+      properties:
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        originalFilename:
+          type: string
+          minLength: 1
+          maxLength: 255
+          examples:
+            - original.png
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: |
+            Expected upload content type. The current MVP policy allows
+            `image/jpeg`, `image/png`, `image/webp`, and `video/mp4`.
+          examples:
+            - image/png
+        contentLengthBytes:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Expected upload size in bytes.
+          examples:
+            - 1048576
+    MediaUploadRequestResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - uploadRequestId
+        - ownershipRecordId
+        - ownerId
+        - mediaType
+        - originalFilename
+        - contentType
+        - contentLengthBytes
+        - originalFileUrl
+        - uploadUrl
+        - requiredHeaders
+        - status
+        - expiresAt
+        - createdAt
+      properties:
+        uploadRequestId:
+          type: string
+          format: uuid
+        ownershipRecordId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+        contentLengthBytes:
+          type: integer
+          format: int64
+        originalFileUrl:
+          type: string
+          format: uri
+          description: Server-generated storage URL for later completion verification.
+        uploadUrl:
+          type: string
+          format: uri
+          description: Short-lived presigned PUT URL.
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers the client must send with the PUT upload.
+        status:
+          $ref: "#/components/schemas/MediaUploadRequestStatus"
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
     MediaAssetResponse:
       type: object
       additionalProperties: false
@@ -569,6 +713,12 @@ components:
         - REJECTED
         - HIDDEN
         - DELETED_BY_OWNER
+    MediaUploadRequestStatus:
+      type: string
+      enum:
+        - REQUESTED
+        - COMPLETED
+        - EXPIRED
     FakePrimaryPurchasePaymentWebhookRequest:
       type: object
       additionalProperties: false

@@ -3,9 +3,11 @@ package com.timearchive.adapter.inbound.rest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.timearchive.application.CreateOwnedRangeMediaAsset
+import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.ListOwnedRangeMediaAssets
 import com.timearchive.domain.model.MediaAsset
 import com.timearchive.domain.model.MediaType
+import com.timearchive.domain.model.MediaUploadRequest
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -21,6 +23,7 @@ import java.util.UUID
 
 class OwnedRangeMediaControllerTest {
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset = mockk()
+    private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest = mockk()
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets = mockk()
     private val objectMapper: ObjectMapper = ObjectMapper()
         .registerModule(KotlinModule.Builder().build())
@@ -35,11 +38,56 @@ class OwnedRangeMediaControllerTest {
             .standaloneSetup(
                 OwnedRangeMediaController(
                     createOwnedRangeMediaAsset = createOwnedRangeMediaAsset,
+                    createOwnedRangeMediaUploadRequest = createOwnedRangeMediaUploadRequest,
                     listOwnedRangeMediaAssets = listOwnedRangeMediaAssets,
                 ),
             )
             .setControllerAdvice(ApiExceptionHandler())
             .build()
+    }
+
+    @Test
+    fun `creates media upload request for owned range`() {
+        every { createOwnedRangeMediaUploadRequest.create(any()) } returns uploadRequestResult()
+
+        mockMvc.post("/api/owned-ranges/$ownershipRecordId/media/upload-requests") {
+            header("X-User-Id", currentUserId.toString())
+            contentType = APPLICATION_JSON
+            content = objectMapper.writeValueAsString(
+                mapOf(
+                    "mediaType" to "IMAGE",
+                    "originalFilename" to "original.png",
+                    "contentType" to "image/png",
+                    "contentLengthBytes" to 1024,
+                ),
+            )
+        }
+            .andExpect {
+                status { isCreated() }
+                jsonPath("$.uploadRequestId") { value("00000000-0000-0000-0000-000000000704") }
+                jsonPath("$.ownershipRecordId") { value(ownershipRecordId.toString()) }
+                jsonPath("$.ownerId") { value(currentUserId.toString()) }
+                jsonPath("$.mediaType") { value("IMAGE") }
+                jsonPath("$.originalFilename") { value("original.png") }
+                jsonPath("$.contentType") { value("image/png") }
+                jsonPath("$.contentLengthBytes") { value(1024) }
+                jsonPath("$.uploadUrl") { value("http://localhost:9000/time-archive-media/media/originals/test") }
+                jsonPath("$.requiredHeaders['content-type']") { value("image/png") }
+                jsonPath("$.status") { value("REQUESTED") }
+            }
+
+        verify {
+            createOwnedRangeMediaUploadRequest.create(
+                CreateOwnedRangeMediaUploadRequest.Command(
+                    currentUserId = currentUserId,
+                    ownershipRecordId = ownershipRecordId,
+                    mediaType = MediaType.IMAGE,
+                    originalFilename = "original.png",
+                    contentType = "image/png",
+                    contentLengthBytes = 1024,
+                ),
+            )
+        }
     }
 
     @Test
@@ -153,5 +201,24 @@ class OwnedRangeMediaControllerTest {
             thumbnailUrl = "https://cdn.example.com/thumb.png",
             externalLink = "https://example.com",
             now = Instant.parse("2026-06-17T00:00:00Z"),
+        )
+
+    private fun uploadRequestResult(): CreateOwnedRangeMediaUploadRequest.Result =
+        CreateOwnedRangeMediaUploadRequest.Result(
+            uploadRequest = MediaUploadRequest.requested(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000704"),
+                ownershipRecordId = ownershipRecordId,
+                ownerId = currentUserId,
+                mediaType = MediaType.IMAGE,
+                originalFilename = "original.png",
+                contentType = "image/png",
+                contentLengthBytes = 1024,
+                objectKey = "media/originals/test",
+                originalFileUrl = "http://localhost:9000/time-archive-media/media/originals/test",
+                now = Instant.parse("2026-06-17T00:00:00Z"),
+                expiresAt = Instant.parse("2026-06-17T00:10:00Z"),
+            ),
+            uploadUrl = "http://localhost:9000/time-archive-media/media/originals/test",
+            requiredHeaders = mapOf("content-type" to "image/png"),
         )
 }

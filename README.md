@@ -68,11 +68,19 @@ Prerequisites:
 Start local infrastructure for local JVM development:
 
 ```text
-docker compose up -d postgres redis
+docker compose up -d postgres redis minio minio-init
 ```
 
 PostgreSQL uses a PostgreSQL 18-compatible named volume mounted at `/var/lib/postgresql`.
 If an older local `postgres-data` volume exists, it is left untouched and unused.
+
+MinIO provides local S3-compatible object storage:
+
+```text
+S3 API: http://localhost:9000
+Console: http://localhost:9001
+Bucket: time-archive-media
+```
 
 Run tests:
 
@@ -136,6 +144,19 @@ Environment variables can override the default database settings:
 TIME_ARCHIVE_DATABASE_URL
 TIME_ARCHIVE_DATABASE_USERNAME
 TIME_ARCHIVE_DATABASE_PASSWORD
+```
+
+Environment variables can override local S3-compatible storage settings:
+
+```text
+TIME_ARCHIVE_STORAGE_S3_ENDPOINT
+TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL
+TIME_ARCHIVE_STORAGE_S3_BUCKET
+TIME_ARCHIVE_STORAGE_S3_REGION
+TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY
+TIME_ARCHIVE_STORAGE_S3_SECRET_KEY
+TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS
+TIME_ARCHIVE_STORAGE_S3_UPLOAD_URL_EXPIRATION_SECONDS
 ```
 
 ## Development Principles
