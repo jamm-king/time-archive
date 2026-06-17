@@ -69,6 +69,7 @@ Repository layout:
 
 ```text
 apps/api  Spring Boot backend
+apps/web  Next.js frontend
 docs      Architecture, API, operation, and implementation documents
 scripts   Local verification scripts
 ```
@@ -115,6 +116,28 @@ Run the backend:
 ```text
 cd apps/api
 ./gradlew bootRun
+```
+
+Install frontend dependencies:
+
+```text
+cd apps/web
+npm install
+```
+
+Run the frontend:
+
+```text
+cd apps/web
+npm run dev
+```
+
+Verify the frontend:
+
+```text
+cd apps/web
+npm run lint
+npm run build
 ```
 
 Start the full local backend stack in Docker:
