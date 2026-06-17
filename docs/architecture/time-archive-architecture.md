@@ -62,6 +62,10 @@ The frontend lives under `apps/web`. The initial rendering strategy is
 CSR-first for the fullscreen player, while Next.js still allows future static or
 server-rendered routes for share, legal, and informational pages.
 
+During local development, the web app can proxy public timeline reads through a
+same-origin Next.js route handler to avoid browser CORS coupling between the web
+dev server and the backend API.
+
 ### CI/CD and Infrastructure
 
 - GitHub Actions for CI/CD
