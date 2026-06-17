@@ -51,10 +51,16 @@ PostgreSQL is preferred over MySQL because Time Archive benefits from strong tra
 
 ### Frontend
 
-- React or Next.js
+- Next.js
+- React
 - TypeScript
+- Tailwind CSS
 - Fullscreen media-first UI
 - CDN-cached static assets and timeline manifests where possible
+
+The frontend lives under `apps/web`. The initial rendering strategy is
+CSR-first for the fullscreen player, while Next.js still allows future static or
+server-rendered routes for share, legal, and informational pages.
 
 ### CI/CD and Infrastructure
 
