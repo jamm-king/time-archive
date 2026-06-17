@@ -2,10 +2,13 @@ package com.timearchive.configuration
 
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CreateCheckout
+import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CheckAvailability
+import com.timearchive.application.ListOwnedRangeMediaAssets
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
+import com.timearchive.domain.port.MediaAssetRepository
 import com.timearchive.domain.port.OutboxPort
 import com.timearchive.domain.port.OwnershipRepository
 import com.timearchive.domain.port.PaymentEventRepository
@@ -58,6 +61,30 @@ class ApplicationUseCaseConfiguration {
             purchaseReservationRepository = purchaseReservationRepository,
             paymentPort = paymentPort,
             clockPort = clockPort,
+        )
+
+    @Bean
+    fun createOwnedRangeMediaAsset(
+        transactionPort: TransactionPort,
+        ownershipRepository: OwnershipRepository,
+        mediaAssetRepository: MediaAssetRepository,
+        clockPort: ClockPort,
+    ): CreateOwnedRangeMediaAsset =
+        CreateOwnedRangeMediaAsset(
+            transactionPort = transactionPort,
+            ownershipRepository = ownershipRepository,
+            mediaAssetRepository = mediaAssetRepository,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun listOwnedRangeMediaAssets(
+        ownershipRepository: OwnershipRepository,
+        mediaAssetRepository: MediaAssetRepository,
+    ): ListOwnedRangeMediaAssets =
+        ListOwnedRangeMediaAssets(
+            ownershipRepository = ownershipRepository,
+            mediaAssetRepository = mediaAssetRepository,
         )
 
     @Bean

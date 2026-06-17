@@ -11,6 +11,9 @@ info:
 
     The `buyerId` request field is temporary development-stage behavior. Before
     production, buyer identity must come from authenticated server-side identity.
+
+    Owned range media endpoints temporarily accept `X-User-Id` as a
+    development-stage stand-in for authenticated server-side identity.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -19,6 +22,8 @@ tags:
     description: Public archive read operations.
   - name: Purchase
     description: Primary purchase reservation and checkout operations.
+  - name: Media
+    description: Owned range media metadata operations.
   - name: Payment
     description: Development-stage payment event operations.
 paths:
@@ -145,6 +150,105 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/owned-ranges/{ownershipRecordId}/media:
+    post:
+      tags:
+        - Media
+      operationId: createOwnedRangeMediaAsset
+      summary: Attach media metadata to an owned range
+      description: |
+        Creates a `MediaAsset` in `UPLOADED` status for an active ownership
+        record owned by the current user.
+
+        This endpoint accepts media metadata URLs only. It does not upload file
+        bytes, validate object storage state, or approve media for public
+        display.
+
+        `X-User-Id` is temporary development-stage behavior. Production APIs
+        must derive the current user from authenticated server-side identity.
+      parameters:
+        - $ref: "#/components/parameters/OwnershipRecordId"
+        - $ref: "#/components/parameters/CurrentUserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOwnedRangeMediaRequest"
+      responses:
+        "201":
+          description: Media asset created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "403":
+          description: The current user does not own the requested range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Ownership record was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Ownership record is not active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+    get:
+      tags:
+        - Media
+      operationId: listOwnedRangeMediaAssets
+      summary: List media metadata for an owned range
+      description: |
+        Lists media assets attached to an active ownership record owned by the
+        current user. Owner reads include all moderation statuses.
+
+        `X-User-Id` is temporary development-stage behavior. Production APIs
+        must derive the current user from authenticated server-side identity.
+      parameters:
+        - $ref: "#/components/parameters/OwnershipRecordId"
+        - $ref: "#/components/parameters/CurrentUserId"
+      responses:
+        "200":
+          description: Media assets attached to the owned range.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "403":
+          description: The current user does not own the requested range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Ownership record was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Ownership record is not active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/internal/payments/fake/webhooks/primary-purchase-completed:
     post:
       tags:
@@ -188,6 +292,23 @@ paths:
         "500":
           $ref: "#/components/responses/UnexpectedError"
 components:
+  parameters:
+    OwnershipRecordId:
+      name: ownershipRecordId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Ownership record identifier.
+    CurrentUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Temporary development-stage current user identifier.
   responses:
     InvalidRequest:
       description: Request validation failed.
@@ -351,6 +472,103 @@ components:
           format: int64
           minimum: 1
           maximum: 86400
+    CreateOwnedRangeMediaRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - mediaType
+        - originalFileUrl
+      properties:
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        originalFileUrl:
+          type: string
+          minLength: 1
+          format: uri
+          description: Original media file URL. This is not public until moderation approves a derived asset.
+          examples:
+            - https://cdn.example.test/uploads/original.png
+        thumbnailUrl:
+          type: string
+          minLength: 1
+          format: uri
+          nullable: true
+          examples:
+            - https://cdn.example.test/uploads/thumb.png
+        externalLink:
+          type: string
+          minLength: 1
+          format: uri
+          nullable: true
+          examples:
+            - https://example.com/archive-note
+    MediaAssetResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - mediaAssetId
+        - ownershipRecordId
+        - ownerId
+        - mediaType
+        - originalFileUrl
+        - approvedFileUrl
+        - thumbnailUrl
+        - externalLink
+        - moderationStatus
+        - publiclyVisible
+        - createdAt
+        - updatedAt
+      properties:
+        mediaAssetId:
+          type: string
+          format: uuid
+        ownershipRecordId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        originalFileUrl:
+          type: string
+          format: uri
+        approvedFileUrl:
+          type: string
+          format: uri
+          nullable: true
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+        externalLink:
+          type: string
+          format: uri
+          nullable: true
+        moderationStatus:
+          $ref: "#/components/schemas/ModerationStatus"
+        publiclyVisible:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MediaType:
+      type: string
+      enum:
+        - IMAGE
+        - VIDEO
+    ModerationStatus:
+      type: string
+      enum:
+        - UPLOADED
+        - PENDING_REVIEW
+        - APPROVED
+        - REJECTED
+        - HIDDEN
+        - DELETED_BY_OWNER
     FakePrimaryPurchasePaymentWebhookRequest:
       type: object
       additionalProperties: false
@@ -440,6 +658,8 @@ components:
         - RESERVATION_EXPIRED
         - RESERVATION_NOT_PAYABLE
         - PAYMENT_EVENT_ALREADY_PROCESSING
+        - OWNERSHIP_ACCESS_DENIED
+        - OWNERSHIP_NOT_ACTIVE
         - UNEXPECTED_ERROR
     ApiErrorDetail:
       type: object
