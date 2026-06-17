@@ -2,6 +2,7 @@ package com.timearchive.adapter.inbound.rest
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.ListOwnedRangeMediaAssets
@@ -22,6 +23,7 @@ import java.time.Instant
 import java.util.UUID
 
 class OwnedRangeMediaControllerTest {
+    private val completeOwnedRangeMediaUpload: CompleteOwnedRangeMediaUpload = mockk()
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset = mockk()
     private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest = mockk()
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets = mockk()
@@ -37,6 +39,7 @@ class OwnedRangeMediaControllerTest {
         mockMvc = MockMvcBuilders
             .standaloneSetup(
                 OwnedRangeMediaController(
+                    completeOwnedRangeMediaUpload = completeOwnedRangeMediaUpload,
                     createOwnedRangeMediaAsset = createOwnedRangeMediaAsset,
                     createOwnedRangeMediaUploadRequest = createOwnedRangeMediaUploadRequest,
                     listOwnedRangeMediaAssets = listOwnedRangeMediaAssets,
@@ -44,6 +47,32 @@ class OwnedRangeMediaControllerTest {
             )
             .setControllerAdvice(ApiExceptionHandler())
             .build()
+    }
+
+    @Test
+    fun `completes media upload request`() {
+        every { completeOwnedRangeMediaUpload.complete(any()) } returns completeUploadResult()
+
+        mockMvc.post("/api/owned-ranges/$ownershipRecordId/media/upload-requests/00000000-0000-0000-0000-000000000704/complete") {
+            header("X-User-Id", currentUserId.toString())
+        }
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.uploadRequestId") { value("00000000-0000-0000-0000-000000000704") }
+                jsonPath("$.alreadyCompleted") { value(false) }
+                jsonPath("$.mediaAsset.mediaAssetId") { value("00000000-0000-0000-0000-000000000703") }
+                jsonPath("$.mediaAsset.moderationStatus") { value("UPLOADED") }
+            }
+
+        verify {
+            completeOwnedRangeMediaUpload.complete(
+                CompleteOwnedRangeMediaUpload.Command(
+                    currentUserId = currentUserId,
+                    ownershipRecordId = ownershipRecordId,
+                    uploadRequestId = UUID.fromString("00000000-0000-0000-0000-000000000704"),
+                ),
+            )
+        }
     }
 
     @Test
@@ -220,5 +249,15 @@ class OwnedRangeMediaControllerTest {
             ),
             uploadUrl = "http://localhost:9000/time-archive-media/media/originals/test",
             requiredHeaders = mapOf("content-type" to "image/png"),
+        )
+
+    private fun completeUploadResult(): CompleteOwnedRangeMediaUpload.Result =
+        CompleteOwnedRangeMediaUpload.Result(
+            uploadRequest = uploadRequestResult().uploadRequest.complete(
+                mediaAssetId = UUID.fromString("00000000-0000-0000-0000-000000000703"),
+                now = Instant.parse("2026-06-17T00:01:00Z"),
+            ),
+            mediaAsset = mediaAsset(),
+            alreadyCompleted = false,
         )
 }

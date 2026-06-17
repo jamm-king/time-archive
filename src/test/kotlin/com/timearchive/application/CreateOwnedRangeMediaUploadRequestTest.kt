@@ -149,8 +149,16 @@ class CreateOwnedRangeMediaUploadRequestTest {
 
         override fun findById(id: UUID): MediaUploadRequest? = saved.find { it.id == id }
 
+        override fun findByIdForUpdate(id: UUID): MediaUploadRequest? = saved.find { it.id == id }
+
         override fun findByOwnershipRecordId(ownershipRecordId: UUID): List<MediaUploadRequest> =
             saved.filter { it.ownershipRecordId == ownershipRecordId }
+
+        override fun markCompleted(
+            id: UUID,
+            mediaAssetId: UUID,
+            now: Instant,
+        ): Int = 0
     }
 
     private class FakeMediaObjectStoragePort : MediaObjectStoragePort {
@@ -166,5 +174,7 @@ class CreateOwnedRangeMediaUploadRequestTest {
                 requiredHeaders = mapOf("content-type" to command.contentType),
             )
         }
+
+        override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
     }
 }

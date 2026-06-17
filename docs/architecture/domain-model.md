@@ -196,6 +196,8 @@ Current persistence stores media assets against `ownershipRecordId` and redundan
 
 `MediaUploadRequest` stores short-lived S3-compatible upload preparation state before a `MediaAsset` is created. It records the owner, ownership record, media type, expected content type, expected content length, server-generated object key, storage URL, status, and expiration. Upload request creation does not prove that the object was uploaded or safe; completion and processing must verify the object before media enters moderation.
 
+Upload completion verifies object storage metadata before creating a `MediaAsset`. A completed upload request stores the created `mediaAssetId`, which makes repeated completion requests idempotent.
+
 ### Offer
 
 MVP 2 entity.

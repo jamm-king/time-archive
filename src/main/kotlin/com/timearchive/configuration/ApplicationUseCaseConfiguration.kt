@@ -1,6 +1,7 @@
 package com.timearchive.configuration
 
 import com.timearchive.application.CompletePrimaryPurchase
+import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
@@ -98,6 +99,24 @@ class ApplicationUseCaseConfiguration {
             mediaObjectStoragePort = mediaObjectStoragePort,
             clockPort = clockPort,
             uploadUrlTtl = Duration.ofSeconds(uploadUrlExpirationSeconds),
+        )
+
+    @Bean
+    fun completeOwnedRangeMediaUpload(
+        transactionPort: TransactionPort,
+        ownershipRepository: OwnershipRepository,
+        mediaUploadRequestRepository: MediaUploadRequestRepository,
+        mediaAssetRepository: MediaAssetRepository,
+        mediaObjectStoragePort: MediaObjectStoragePort,
+        clockPort: ClockPort,
+    ): CompleteOwnedRangeMediaUpload =
+        CompleteOwnedRangeMediaUpload(
+            transactionPort = transactionPort,
+            ownershipRepository = ownershipRepository,
+            mediaUploadRequestRepository = mediaUploadRequestRepository,
+            mediaAssetRepository = mediaAssetRepository,
+            mediaObjectStoragePort = mediaObjectStoragePort,
+            clockPort = clockPort,
         )
 
     @Bean

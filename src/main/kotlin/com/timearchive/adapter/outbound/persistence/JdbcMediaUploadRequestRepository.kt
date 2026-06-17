@@ -27,6 +27,7 @@ class JdbcMediaUploadRequestRepository(
             .addValue("objectKey", request.objectKey)
             .addValue("originalFileUrl", request.originalFileUrl)
             .addValue("status", request.status.name)
+            .addValue("mediaAssetId", request.mediaAssetId)
             .addValue("expiresAt", Timestamp.from(request.expiresAt))
             .addValue("createdAt", Timestamp.from(request.createdAt))
             .addValue("updatedAt", Timestamp.from(request.updatedAt))
@@ -44,6 +45,7 @@ class JdbcMediaUploadRequestRepository(
                 object_key,
                 original_file_url,
                 status,
+                media_asset_id,
                 expires_at,
                 created_at,
                 updated_at
@@ -58,6 +60,7 @@ class JdbcMediaUploadRequestRepository(
                 :objectKey,
                 :originalFileUrl,
                 :status,
+                :mediaAssetId,
                 :expiresAt,
                 :createdAt,
                 :updatedAt
@@ -82,6 +85,20 @@ class JdbcMediaUploadRequestRepository(
         ) { rs, _ -> rs.toMediaUploadRequest() }.firstOrNull()
     }
 
+    override fun findByIdForUpdate(id: UUID): MediaUploadRequest? {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+
+        return jdbcTemplate.query(
+            """
+            $selectSql
+            where id = :id
+            for update
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toMediaUploadRequest() }.firstOrNull()
+    }
+
     override fun findByOwnershipRecordId(ownershipRecordId: UUID): List<MediaUploadRequest> {
         val parameters = MapSqlParameterSource()
             .addValue("ownershipRecordId", ownershipRecordId)
@@ -96,6 +113,29 @@ class JdbcMediaUploadRequestRepository(
         ) { rs, _ -> rs.toMediaUploadRequest() }
     }
 
+    override fun markCompleted(
+        id: UUID,
+        mediaAssetId: UUID,
+        now: java.time.Instant,
+    ): Int {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+            .addValue("mediaAssetId", mediaAssetId)
+            .addValue("updatedAt", Timestamp.from(now))
+
+        return jdbcTemplate.update(
+            """
+            update media_upload_requests
+            set status = 'COMPLETED',
+                media_asset_id = :mediaAssetId,
+                updated_at = :updatedAt
+            where id = :id
+              and status = 'REQUESTED'
+            """.trimIndent(),
+            parameters,
+        )
+    }
+
     private fun ResultSet.toMediaUploadRequest(): MediaUploadRequest =
         MediaUploadRequest(
             id = getObject("id", UUID::class.java),
@@ -108,6 +148,7 @@ class JdbcMediaUploadRequestRepository(
             objectKey = getString("object_key"),
             originalFileUrl = getString("original_file_url"),
             status = MediaUploadRequestStatus.valueOf(getString("status")),
+            mediaAssetId = getObject("media_asset_id", UUID::class.java),
             expiresAt = getTimestamp("expires_at").toInstant(),
             createdAt = getTimestamp("created_at").toInstant(),
             updatedAt = getTimestamp("updated_at").toInstant(),
@@ -126,6 +167,7 @@ class JdbcMediaUploadRequestRepository(
             object_key,
             original_file_url,
             status,
+            media_asset_id,
             expires_at,
             created_at,
             updated_at

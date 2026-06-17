@@ -3,6 +3,10 @@ package com.timearchive.adapter.outbound.storage
 import com.timearchive.domain.port.MediaObjectStoragePort
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.services.s3.model.S3Exception
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException
+import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
@@ -11,6 +15,7 @@ import java.time.Instant
 
 @Component
 class S3CompatibleMediaObjectStorageAdapter(
+    private val s3Client: S3Client,
     private val s3Presigner: S3Presigner,
     @Value("\${time-archive.storage.s3.bucket}") private val bucket: String,
     @Value("\${time-archive.storage.s3.public-base-url}") private val publicBaseUrl: String,
@@ -41,5 +46,29 @@ class S3CompatibleMediaObjectStorageAdapter(
             requiredHeaders = presignedRequest.signedHeaders()
                 .mapValues { (_, values) -> values.joinToString(",") },
         )
+    }
+
+    override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? {
+        val request = HeadObjectRequest.builder()
+            .bucket(bucket)
+            .key(objectKey)
+            .build()
+
+        return try {
+            val response = s3Client.headObject(request)
+            MediaObjectStoragePort.ObjectMetadata(
+                objectKey = objectKey,
+                contentType = response.contentType(),
+                contentLengthBytes = response.contentLength(),
+            )
+        } catch (_: NoSuchKeyException) {
+            null
+        } catch (exception: S3Exception) {
+            if (exception.statusCode() == 404) {
+                null
+            } else {
+                throw exception
+            }
+        }
     }
 }
