@@ -198,6 +198,10 @@ Current persistence stores media assets against `ownershipRecordId` and redundan
 
 Upload completion verifies object storage metadata before creating a `MediaAsset`. A completed upload request stores the created `mediaAssetId`, which makes repeated completion requests idempotent.
 
+Admin moderation can transition uploaded media to `APPROVED` or `REJECTED`, and
+can transition approved media to `HIDDEN`. Approval requires an explicit
+`approvedFileUrl` so original upload URLs remain distinct from public media URLs.
+
 ### Offer
 
 MVP 2 entity.

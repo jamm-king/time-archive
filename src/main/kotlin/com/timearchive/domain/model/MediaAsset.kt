@@ -36,6 +36,45 @@ data class MediaAsset(
     val isPubliclyVisible: Boolean
         get() = moderationStatus == ModerationStatus.APPROVED
 
+    fun approve(
+        approvedFileUrl: String,
+        thumbnailUrl: String?,
+        now: Instant,
+    ): MediaAsset {
+        require(moderationStatus == ModerationStatus.UPLOADED || moderationStatus == ModerationStatus.PENDING_REVIEW) {
+            "media asset is not approvable"
+        }
+
+        return copy(
+            approvedFileUrl = approvedFileUrl,
+            thumbnailUrl = thumbnailUrl ?: this.thumbnailUrl,
+            moderationStatus = ModerationStatus.APPROVED,
+            updatedAt = now,
+        )
+    }
+
+    fun reject(now: Instant): MediaAsset {
+        require(moderationStatus == ModerationStatus.UPLOADED || moderationStatus == ModerationStatus.PENDING_REVIEW) {
+            "media asset is not rejectable"
+        }
+
+        return copy(
+            moderationStatus = ModerationStatus.REJECTED,
+            updatedAt = now,
+        )
+    }
+
+    fun hide(now: Instant): MediaAsset {
+        require(moderationStatus == ModerationStatus.APPROVED) {
+            "media asset is not hideable"
+        }
+
+        return copy(
+            moderationStatus = ModerationStatus.HIDDEN,
+            updatedAt = now,
+        )
+    }
+
     companion object {
         fun uploaded(
             id: UUID,

@@ -91,6 +91,11 @@ Important distinction:
 
 Only `APPROVED` media can appear in the public timeline.
 
+Admin moderation APIs currently use the `X-Admin-Id` request header as
+development-stage identity input. This is not production-safe. Production admin
+APIs must derive admin identity and permissions from authenticated server-side
+identity, enforce RBAC, and audit moderation actions.
+
 ## External Links
 
 External links attached to media should be treated as user-generated content.

@@ -4,6 +4,7 @@ import com.timearchive.domain.model.AcquisitionType
 import com.timearchive.domain.model.MediaAsset
 import com.timearchive.domain.model.MediaType
 import com.timearchive.domain.model.MediaUploadRequest
+import com.timearchive.domain.model.ModerationStatus
 import com.timearchive.domain.model.OwnershipRecord
 import com.timearchive.domain.model.TimeRange
 import com.timearchive.domain.port.ClockPort
@@ -201,11 +202,17 @@ class CompleteOwnedRangeMediaUploadTest {
             return asset
         }
 
+        override fun update(asset: MediaAsset): MediaAsset = asset
+
         override fun findById(id: UUID): MediaAsset? = existing?.takeIf { it.id == id }
+
+        override fun findByIdForUpdate(id: UUID): MediaAsset? = existing?.takeIf { it.id == id }
 
         override fun findByOwnershipRecordId(ownershipRecordId: UUID): List<MediaAsset> = emptyList()
 
         override fun findApprovedByOwnershipRecordId(ownershipRecordId: UUID): List<MediaAsset> = emptyList()
+
+        override fun findByModerationStatus(status: ModerationStatus): List<MediaAsset> = emptyList()
 
         override fun findByOwnerId(ownerId: UUID): List<MediaAsset> = emptyList()
     }
