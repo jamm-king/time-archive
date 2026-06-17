@@ -192,6 +192,8 @@ Suggested moderation statuses:
 
 Only `APPROVED` media may be used by the public timeline player.
 
+Current persistence stores media assets against `ownershipRecordId` and redundantly stores `ownerId` for future authorization checks. The initial persistence layer supports uploaded and approved media reads, but upload, object storage, and moderation use cases are implemented separately.
+
 ### Offer
 
 MVP 2 entity.

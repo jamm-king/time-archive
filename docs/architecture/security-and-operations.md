@@ -63,6 +63,8 @@ Recommended MVP media policy:
 - Use muted autoplay for public playback.
 - Reject files that cannot be safely processed.
 
+Current media persistence stores URLs and moderation state only. Actual upload handling must still validate file size, file signature, media type, and ownership before creating a media asset.
+
 ## Moderation
 
 Moderation status:
