@@ -132,6 +132,13 @@ cd apps/web
 npm run dev
 ```
 
+The local frontend proxies timeline API reads to the backend. Override the
+backend API base URL when needed:
+
+```text
+TIME_ARCHIVE_API_BASE_URL=http://localhost:8080 npm run dev
+```
+
 Verify the frontend:
 
 ```text
