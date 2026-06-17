@@ -80,6 +80,31 @@ class JdbcMediaAssetRepositoryIntegrationTest {
     }
 
     @Test
+    fun `finds media assets by moderation status`() {
+        val uploaded = repository.save(uploadedMediaAsset())
+        repository.save(approvedMediaAsset())
+
+        val result = repository.findByModerationStatus(ModerationStatus.UPLOADED)
+
+        assertThat(result).containsExactly(uploaded)
+    }
+
+    @Test
+    fun `updates moderation state`() {
+        val uploaded = repository.save(uploadedMediaAsset())
+        val approved = uploaded.approve(
+            approvedFileUrl = "s3://bucket/approved/${UUID.randomUUID()}.png",
+            thumbnailUrl = "s3://bucket/thumb/${UUID.randomUUID()}.png",
+            now = uploaded.updatedAt.plusSeconds(1),
+        )
+
+        repository.update(approved)
+
+        val result = repository.findById(uploaded.id)
+        assertThat(result).isEqualTo(approved)
+    }
+
+    @Test
     fun `finds media assets by owner id`() {
         val ownerId = UUID.randomUUID()
         val first = repository.save(uploadedMediaAsset(ownerId = ownerId))

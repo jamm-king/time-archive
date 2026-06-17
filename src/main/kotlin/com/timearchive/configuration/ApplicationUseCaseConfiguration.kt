@@ -1,12 +1,16 @@
 package com.timearchive.configuration
 
+import com.timearchive.application.ApproveMediaAsset
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
+import com.timearchive.application.HideMediaAsset
+import com.timearchive.application.ListMediaModerationQueue
 import com.timearchive.application.ListOwnedRangeMediaAssets
+import com.timearchive.application.RejectMediaAsset
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
@@ -127,6 +131,48 @@ class ApplicationUseCaseConfiguration {
         ListOwnedRangeMediaAssets(
             ownershipRepository = ownershipRepository,
             mediaAssetRepository = mediaAssetRepository,
+        )
+
+    @Bean
+    fun listMediaModerationQueue(
+        mediaAssetRepository: MediaAssetRepository,
+    ): ListMediaModerationQueue =
+        ListMediaModerationQueue(mediaAssetRepository = mediaAssetRepository)
+
+    @Bean
+    fun approveMediaAsset(
+        transactionPort: TransactionPort,
+        mediaAssetRepository: MediaAssetRepository,
+        clockPort: ClockPort,
+    ): ApproveMediaAsset =
+        ApproveMediaAsset(
+            transactionPort = transactionPort,
+            mediaAssetRepository = mediaAssetRepository,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun rejectMediaAsset(
+        transactionPort: TransactionPort,
+        mediaAssetRepository: MediaAssetRepository,
+        clockPort: ClockPort,
+    ): RejectMediaAsset =
+        RejectMediaAsset(
+            transactionPort = transactionPort,
+            mediaAssetRepository = mediaAssetRepository,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun hideMediaAsset(
+        transactionPort: TransactionPort,
+        mediaAssetRepository: MediaAssetRepository,
+        clockPort: ClockPort,
+    ): HideMediaAsset =
+        HideMediaAsset(
+            transactionPort = transactionPort,
+            mediaAssetRepository = mediaAssetRepository,
+            clockPort = clockPort,
         )
 
     @Bean

@@ -24,6 +24,8 @@ tags:
     description: Primary purchase reservation and checkout operations.
   - name: Media
     description: Owned range media metadata operations.
+  - name: Admin
+    description: Development-stage admin operations.
   - name: Payment
     description: Development-stage payment event operations.
 paths:
@@ -358,6 +360,147 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/admin/media/assets:
+    get:
+      tags:
+        - Admin
+      operationId: listAdminMediaAssets
+      summary: List media assets for moderation
+      description: |
+        Lists media assets by moderation status for admin review.
+
+        `X-Admin-Id` is temporary development-stage behavior. Production APIs
+        must derive admin identity and permissions from authenticated server-side
+        identity and RBAC.
+      parameters:
+        - $ref: "#/components/parameters/AdminId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ModerationStatus"
+          description: Moderation status to list. Defaults to `UPLOADED`.
+      responses:
+        "200":
+          description: Media assets matching the moderation status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/admin/media/assets/{mediaAssetId}/approve:
+    post:
+      tags:
+        - Admin
+      operationId: approveMediaAsset
+      summary: Approve media asset
+      description: |
+        Approves an uploaded media asset and sets the approved public media URL.
+
+        `X-Admin-Id` is temporary development-stage behavior. Production APIs
+        must derive admin identity and permissions from authenticated server-side
+        identity and RBAC.
+      parameters:
+        - $ref: "#/components/parameters/AdminId"
+        - $ref: "#/components/parameters/MediaAssetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveMediaAssetRequest"
+      responses:
+        "200":
+          description: Media asset approved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+        "409":
+          description: Media asset is not approvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/admin/media/assets/{mediaAssetId}/reject:
+    post:
+      tags:
+        - Admin
+      operationId: rejectMediaAsset
+      summary: Reject media asset
+      description: |
+        Rejects an uploaded media asset before public approval.
+
+        `X-Admin-Id` is temporary development-stage behavior. Production APIs
+        must derive admin identity and permissions from authenticated server-side
+        identity and RBAC.
+      parameters:
+        - $ref: "#/components/parameters/AdminId"
+        - $ref: "#/components/parameters/MediaAssetId"
+      responses:
+        "200":
+          description: Media asset rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+        "409":
+          description: Media asset is not rejectable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/admin/media/assets/{mediaAssetId}/hide:
+    post:
+      tags:
+        - Admin
+      operationId: hideMediaAsset
+      summary: Hide approved media asset
+      description: |
+        Hides previously approved media from public timeline eligibility.
+
+        `X-Admin-Id` is temporary development-stage behavior. Production APIs
+        must derive admin identity and permissions from authenticated server-side
+        identity and RBAC.
+      parameters:
+        - $ref: "#/components/parameters/AdminId"
+        - $ref: "#/components/parameters/MediaAssetId"
+      responses:
+        "200":
+          description: Media asset hidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+        "409":
+          description: Media asset is not hideable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/internal/payments/fake/webhooks/primary-purchase-completed:
     post:
       tags:
@@ -418,9 +561,31 @@ components:
         type: string
         format: uuid
       description: Temporary development-stage current user identifier.
+    AdminId:
+      name: X-Admin-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Temporary development-stage admin identifier.
+    MediaAssetId:
+      name: mediaAssetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Media asset identifier.
   responses:
     InvalidRequest:
       description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+    ResourceNotFound:
+      description: Resource was not found.
       content:
         application/json:
           schema:
@@ -644,6 +809,26 @@ components:
           description: Expected upload size in bytes.
           examples:
             - 1048576
+    ApproveMediaAssetRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - approvedFileUrl
+      properties:
+        approvedFileUrl:
+          type: string
+          minLength: 1
+          format: uri
+          description: Public media URL approved for timeline use.
+          examples:
+            - https://cdn.example.test/approved.png
+        thumbnailUrl:
+          type: string
+          minLength: 1
+          format: uri
+          nullable: true
+          examples:
+            - https://cdn.example.test/thumb.png
     MediaUploadRequestResponse:
       type: object
       additionalProperties: false
@@ -884,6 +1069,9 @@ components:
         - MEDIA_UPLOAD_REQUEST_NOT_COMPLETABLE
         - MEDIA_UPLOAD_OBJECT_NOT_FOUND
         - MEDIA_UPLOAD_OBJECT_MISMATCH
+        - MEDIA_ASSET_NOT_APPROVABLE
+        - MEDIA_ASSET_NOT_REJECTABLE
+        - MEDIA_ASSET_NOT_HIDEABLE
         - UNEXPECTED_ERROR
     ApiErrorDetail:
       type: object

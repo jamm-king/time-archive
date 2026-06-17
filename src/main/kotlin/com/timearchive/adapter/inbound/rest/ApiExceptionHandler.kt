@@ -115,6 +115,12 @@ class ApiExceptionHandler {
             message.contains("uploaded media content length does not match upload request") ||
                 message.contains("uploaded media content type does not match upload request") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_MISMATCH", "Uploaded media object does not match upload request")
+            message.contains("media asset is not approvable") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_APPROVABLE", "Media asset is not approvable")
+            message.contains("media asset is not rejectable") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_REJECTABLE", "Media asset is not rejectable")
+            message.contains("media asset is not hideable") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_HIDEABLE", "Media asset is not hideable")
             else ->
                 errorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request")
         }
@@ -130,6 +136,8 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Ownership record was not found")
             message.contains("media upload request not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Media upload request was not found")
+            message.contains("media asset not found") ->
+                errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Media asset was not found")
             message.contains("uploaded media object not found") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_NOT_FOUND", "Uploaded media object was not found")
             message.contains("checkout status transition failed") ->

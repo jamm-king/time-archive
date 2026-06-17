@@ -3,6 +3,7 @@ package com.timearchive.application
 import com.timearchive.domain.model.AcquisitionType
 import com.timearchive.domain.model.MediaAsset
 import com.timearchive.domain.model.MediaType
+import com.timearchive.domain.model.ModerationStatus
 import com.timearchive.domain.model.OwnershipRecord
 import com.timearchive.domain.model.TimeRange
 import com.timearchive.domain.port.MediaAssetRepository
@@ -109,12 +110,19 @@ class ListOwnedRangeMediaAssetsTest {
     ) : MediaAssetRepository {
         override fun save(asset: MediaAsset): MediaAsset = asset
 
+        override fun update(asset: MediaAsset): MediaAsset = asset
+
         override fun findById(id: UUID): MediaAsset? = assets.find { it.id == id }
+
+        override fun findByIdForUpdate(id: UUID): MediaAsset? = assets.find { it.id == id }
 
         override fun findByOwnershipRecordId(ownershipRecordId: UUID): List<MediaAsset> =
             assets.filter { it.ownershipRecordId == ownershipRecordId }
 
         override fun findApprovedByOwnershipRecordId(ownershipRecordId: UUID): List<MediaAsset> = emptyList()
+
+        override fun findByModerationStatus(status: ModerationStatus): List<MediaAsset> =
+            assets.filter { it.moderationStatus == status }
 
         override fun findByOwnerId(ownerId: UUID): List<MediaAsset> = assets.filter { it.ownerId == ownerId }
     }

@@ -64,12 +64,52 @@ class JdbcMediaAssetRepository(
         return asset
     }
 
+    override fun update(asset: MediaAsset): MediaAsset {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", asset.id)
+            .addValue("approvedFileUrl", asset.approvedFileUrl)
+            .addValue("thumbnailUrl", asset.thumbnailUrl)
+            .addValue("externalLink", asset.externalLink)
+            .addValue("moderationStatus", asset.moderationStatus.name)
+            .addValue("updatedAt", Timestamp.from(asset.updatedAt), Types.TIMESTAMP)
+
+        val updatedRows = jdbcTemplate.update(
+            """
+            update media_assets
+            set approved_file_url = :approvedFileUrl,
+                thumbnail_url = :thumbnailUrl,
+                external_link = :externalLink,
+                moderation_status = :moderationStatus,
+                updated_at = :updatedAt
+            where id = :id
+            """.trimIndent(),
+            parameters,
+        )
+        check(updatedRows == 1) { "media asset update failed" }
+
+        return asset
+    }
+
     override fun findById(id: UUID): MediaAsset? {
         val parameters = MapSqlParameterSource()
             .addValue("id", id)
 
         return jdbcTemplate.query(
             "$selectSql where id = :id",
+            parameters,
+        ) { rs, _ -> rs.toMediaAsset() }.firstOrNull()
+    }
+
+    override fun findByIdForUpdate(id: UUID): MediaAsset? {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+
+        return jdbcTemplate.query(
+            """
+            $selectSql
+            where id = :id
+            for update
+            """.trimIndent(),
             parameters,
         ) { rs, _ -> rs.toMediaAsset() }.firstOrNull()
     }
@@ -97,6 +137,20 @@ class JdbcMediaAssetRepository(
             $selectSql
             where ownership_record_id = :ownershipRecordId
               and moderation_status = 'APPROVED'
+            order by created_at, id
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toMediaAsset() }
+    }
+
+    override fun findByModerationStatus(status: ModerationStatus): List<MediaAsset> {
+        val parameters = MapSqlParameterSource()
+            .addValue("status", status.name)
+
+        return jdbcTemplate.query(
+            """
+            $selectSql
+            where moderation_status = :status
             order by created_at, id
             """.trimIndent(),
             parameters,
