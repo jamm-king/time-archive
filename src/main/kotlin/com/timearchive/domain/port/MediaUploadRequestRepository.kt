@@ -8,5 +8,13 @@ interface MediaUploadRequestRepository {
 
     fun findById(id: UUID): MediaUploadRequest?
 
+    fun findByIdForUpdate(id: UUID): MediaUploadRequest?
+
     fun findByOwnershipRecordId(ownershipRecordId: UUID): List<MediaUploadRequest>
+
+    fun markCompleted(
+        id: UUID,
+        mediaAssetId: UUID,
+        now: java.time.Instant,
+    ): Int
 }

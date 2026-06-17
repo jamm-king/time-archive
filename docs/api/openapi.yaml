@@ -303,6 +303,61 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/owned-ranges/{ownershipRecordId}/media/upload-requests/{uploadRequestId}/complete:
+    post:
+      tags:
+        - Media
+      operationId: completeOwnedRangeMediaUpload
+      summary: Complete and verify a media upload request
+      description: |
+        Verifies that the expected object exists in S3-compatible storage and
+        matches the stored upload request metadata. On success, the upload
+        request is marked `COMPLETED` and an `UPLOADED` `MediaAsset` is created.
+
+        The endpoint is idempotent for already completed upload requests and
+        returns the existing media asset.
+
+        `X-User-Id` is temporary development-stage behavior. Production APIs
+        must derive the current user from authenticated server-side identity.
+      parameters:
+        - $ref: "#/components/parameters/OwnershipRecordId"
+        - name: uploadRequestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Upload request identifier.
+        - $ref: "#/components/parameters/CurrentUserId"
+      responses:
+        "200":
+          description: Upload request completed or already completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteMediaUploadResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "403":
+          description: The current user does not own the requested range.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Ownership record or upload request was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Upload request or uploaded object cannot be completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/internal/payments/fake/webhooks/primary-purchase-completed:
     post:
       tags:
@@ -646,6 +701,21 @@ components:
         createdAt:
           type: string
           format: date-time
+    CompleteMediaUploadResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - uploadRequestId
+        - mediaAsset
+        - alreadyCompleted
+      properties:
+        uploadRequestId:
+          type: string
+          format: uuid
+        mediaAsset:
+          $ref: "#/components/schemas/MediaAssetResponse"
+        alreadyCompleted:
+          type: boolean
     MediaAssetResponse:
       type: object
       additionalProperties: false
@@ -810,6 +880,10 @@ components:
         - PAYMENT_EVENT_ALREADY_PROCESSING
         - OWNERSHIP_ACCESS_DENIED
         - OWNERSHIP_NOT_ACTIVE
+        - MEDIA_UPLOAD_REQUEST_EXPIRED
+        - MEDIA_UPLOAD_REQUEST_NOT_COMPLETABLE
+        - MEDIA_UPLOAD_OBJECT_NOT_FOUND
+        - MEDIA_UPLOAD_OBJECT_MISMATCH
         - UNEXPECTED_ERROR
     ApiErrorDetail:
       type: object

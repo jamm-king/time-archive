@@ -14,6 +14,7 @@ data class MediaUploadRequest(
     val objectKey: String,
     val originalFileUrl: String,
     val status: MediaUploadRequestStatus,
+    val mediaAssetId: UUID?,
     val expiresAt: Instant,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -24,8 +25,30 @@ data class MediaUploadRequest(
         require(contentLengthBytes > 0) { "contentLengthBytes must be greater than 0" }
         require(objectKey.isNotBlank()) { "objectKey must not be blank" }
         require(originalFileUrl.isNotBlank()) { "originalFileUrl must not be blank" }
+        require(status != MediaUploadRequestStatus.COMPLETED || mediaAssetId != null) {
+            "completed upload request must have mediaAssetId"
+        }
+        require(status == MediaUploadRequestStatus.COMPLETED || mediaAssetId == null) {
+            "incomplete upload request must not have mediaAssetId"
+        }
         require(expiresAt.isAfter(createdAt)) { "expiresAt must be after createdAt" }
         require(!updatedAt.isBefore(createdAt)) { "updatedAt must not be before createdAt" }
+    }
+
+    fun complete(
+        mediaAssetId: UUID,
+        now: Instant,
+    ): MediaUploadRequest {
+        require(status == MediaUploadRequestStatus.REQUESTED) {
+            "upload request is not completable"
+        }
+        require(!now.isAfter(expiresAt)) { "upload request is expired" }
+
+        return copy(
+            status = MediaUploadRequestStatus.COMPLETED,
+            mediaAssetId = mediaAssetId,
+            updatedAt = now,
+        )
     }
 
     companion object {
@@ -53,6 +76,7 @@ data class MediaUploadRequest(
                 objectKey = objectKey,
                 originalFileUrl = originalFileUrl,
                 status = MediaUploadRequestStatus.REQUESTED,
+                mediaAssetId = null,
                 expiresAt = expiresAt,
                 createdAt = now,
                 updatedAt = now,

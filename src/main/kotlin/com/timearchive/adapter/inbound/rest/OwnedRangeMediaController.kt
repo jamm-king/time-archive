@@ -1,5 +1,6 @@
 package com.timearchive.adapter.inbound.rest
 
+import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.ListOwnedRangeMediaAssets
@@ -18,6 +19,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/owned-ranges/{ownershipRecordId}/media")
 class OwnedRangeMediaController(
+    private val completeOwnedRangeMediaUpload: CompleteOwnedRangeMediaUpload,
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset,
     private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest,
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets,
@@ -41,6 +43,23 @@ class OwnedRangeMediaController(
         )
 
         return MediaUploadRequestResponse.from(result)
+    }
+
+    @PostMapping("/upload-requests/{uploadRequestId}/complete")
+    fun completeUploadRequest(
+        @RequestHeader("X-User-Id") currentUserId: UUID,
+        @PathVariable ownershipRecordId: UUID,
+        @PathVariable uploadRequestId: UUID,
+    ): CompleteMediaUploadResponse {
+        val result = completeOwnedRangeMediaUpload.complete(
+            CompleteOwnedRangeMediaUpload.Command(
+                currentUserId = currentUserId,
+                ownershipRecordId = ownershipRecordId,
+                uploadRequestId = uploadRequestId,
+            ),
+        )
+
+        return CompleteMediaUploadResponse.from(result)
     }
 
     @PostMapping

@@ -28,6 +28,9 @@ class JdbcMediaUploadRequestRepositoryIntegrationTest {
     private lateinit var uploadRequestRepository: JdbcMediaUploadRequestRepository
 
     @Autowired
+    private lateinit var mediaAssetRepository: JdbcMediaAssetRepository
+
+    @Autowired
     private lateinit var ownershipRepository: JdbcOwnershipRepository
 
     @Autowired
@@ -38,6 +41,7 @@ class JdbcMediaUploadRequestRepositoryIntegrationTest {
     @BeforeEach
     fun deleteRecords() {
         jdbcTemplate.execute("delete from media_upload_requests")
+        jdbcTemplate.execute("delete from media_assets")
         jdbcTemplate.execute("delete from ownership_records")
     }
 
@@ -61,6 +65,34 @@ class JdbcMediaUploadRequestRepositoryIntegrationTest {
         assertThatThrownBy {
             uploadRequestRepository.save(request.copy(id = UUID.randomUUID()))
         }.isInstanceOf(DataIntegrityViolationException::class.java)
+    }
+
+    @Test
+    fun `marks upload request completed with media asset id`() {
+        val ownership = ownershipRepository.save(activeOwnership())
+        val request = uploadRequest(ownership)
+        uploadRequestRepository.save(request)
+        val mediaAsset = mediaAssetRepository.save(
+            com.timearchive.domain.model.MediaAsset.uploaded(
+                id = UUID.randomUUID(),
+                ownershipRecordId = ownership.id,
+                ownerId = ownership.ownerId,
+                mediaType = MediaType.IMAGE,
+                originalFileUrl = request.originalFileUrl,
+                now = now,
+            ),
+        )
+
+        val updatedRows = uploadRequestRepository.markCompleted(
+            id = request.id,
+            mediaAssetId = mediaAsset.id,
+            now = now.plusSeconds(1),
+        )
+
+        val result = uploadRequestRepository.findById(request.id)
+        assertThat(updatedRows).isEqualTo(1)
+        assertThat(result?.status?.name).isEqualTo("COMPLETED")
+        assertThat(result?.mediaAssetId).isEqualTo(mediaAsset.id)
     }
 
     private fun activeOwnership(): OwnershipRecord =

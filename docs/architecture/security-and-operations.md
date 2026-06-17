@@ -69,6 +69,8 @@ Owned range media APIs currently use the `X-User-Id` request header as developme
 
 Upload request APIs issue short-lived S3-compatible presigned upload URLs and store server-generated object keys in `media_upload_requests`. Local development uses MinIO through the same S3-compatible storage port that can later target Cloudflare R2. Upload request creation still does not prove that the object was uploaded correctly; a completion step must verify the object key, expected content length, expected content type, ownership, expiration, and actual file signature before a `MediaAsset` is created or moved into moderation.
 
+The initial upload completion implementation verifies ownership, expiration, object existence, expected content length, and expected content type before creating an `UPLOADED` `MediaAsset`. It does not yet inspect file signatures, scan malware, transcode video, or generate thumbnails, so moderation and processing must still treat uploaded media as untrusted.
+
 Cloudflare R2 should be connected after the MinIO local flow and upload completion verification are implemented. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and public delivery base URL should come from environment or secret management.
 
 ## Moderation

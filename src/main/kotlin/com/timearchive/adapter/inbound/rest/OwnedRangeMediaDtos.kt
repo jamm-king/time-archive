@@ -3,6 +3,7 @@ package com.timearchive.adapter.inbound.rest
 import com.timearchive.domain.model.MediaAsset
 import com.timearchive.domain.model.MediaType
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
+import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.NotNull
@@ -97,5 +98,20 @@ data class MediaUploadRequestResponse(
                 createdAt = uploadRequest.createdAt,
             )
         }
+    }
+}
+
+data class CompleteMediaUploadResponse(
+    val uploadRequestId: UUID,
+    val mediaAsset: MediaAssetResponse,
+    val alreadyCompleted: Boolean,
+) {
+    companion object {
+        fun from(result: CompleteOwnedRangeMediaUpload.Result): CompleteMediaUploadResponse =
+            CompleteMediaUploadResponse(
+                uploadRequestId = result.uploadRequest.id,
+                mediaAsset = MediaAssetResponse.from(result.mediaAsset),
+                alreadyCompleted = result.alreadyCompleted,
+            )
     }
 }

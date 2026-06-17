@@ -108,6 +108,13 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.FORBIDDEN, "OWNERSHIP_ACCESS_DENIED", "Ownership access denied")
             message.contains("ownership record is not active") ->
                 errorResponse(HttpStatus.CONFLICT, "OWNERSHIP_NOT_ACTIVE", "Ownership record is not active")
+            message.contains("media upload request is expired") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_REQUEST_EXPIRED", "Media upload request is expired")
+            message.contains("media upload request is not completable") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_REQUEST_NOT_COMPLETABLE", "Media upload request is not completable")
+            message.contains("uploaded media content length does not match upload request") ||
+                message.contains("uploaded media content type does not match upload request") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_MISMATCH", "Uploaded media object does not match upload request")
             else ->
                 errorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request")
         }
@@ -121,6 +128,10 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Reservation was not found")
             message.contains("ownership record not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Ownership record was not found")
+            message.contains("media upload request not found") ->
+                errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Media upload request was not found")
+            message.contains("uploaded media object not found") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_NOT_FOUND", "Uploaded media object was not found")
             message.contains("checkout status transition failed") ->
                 errorResponse(HttpStatus.CONFLICT, "RESERVATION_NOT_PAYABLE", "Reservation is not payable")
             else ->
