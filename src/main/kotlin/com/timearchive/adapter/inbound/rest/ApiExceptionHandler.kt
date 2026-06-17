@@ -4,11 +4,12 @@ import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
-import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.validation.FieldError
 import org.springframework.validation.method.MethodValidationException
 import org.springframework.validation.method.ParameterValidationResult
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingRequestHeaderException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.HandlerMethodValidationException
@@ -36,6 +37,7 @@ class ApiExceptionHandler {
     @ExceptionHandler(
         HttpMessageNotReadableException::class,
         MethodArgumentTypeMismatchException::class,
+        MissingRequestHeaderException::class,
         MissingServletRequestParameterException::class,
     )
     fun handleInvalidRequest(): ResponseEntity<ApiErrorResponse> =
@@ -102,6 +104,10 @@ class ApiExceptionHandler {
                     "PAYMENT_EVENT_ALREADY_PROCESSING",
                     "Payment event is already being processed",
                 )
+            message.contains("ownership record is not owned by current user") ->
+                errorResponse(HttpStatus.FORBIDDEN, "OWNERSHIP_ACCESS_DENIED", "Ownership access denied")
+            message.contains("ownership record is not active") ->
+                errorResponse(HttpStatus.CONFLICT, "OWNERSHIP_NOT_ACTIVE", "Ownership record is not active")
             else ->
                 errorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request")
         }
@@ -113,6 +119,8 @@ class ApiExceptionHandler {
         return when {
             message.contains("purchase reservation not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Reservation was not found")
+            message.contains("ownership record not found") ->
+                errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Ownership record was not found")
             message.contains("checkout status transition failed") ->
                 errorResponse(HttpStatus.CONFLICT, "RESERVATION_NOT_PAYABLE", "Reservation is not payable")
             else ->

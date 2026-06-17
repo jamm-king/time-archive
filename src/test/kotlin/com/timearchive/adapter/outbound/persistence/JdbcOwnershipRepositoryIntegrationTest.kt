@@ -47,6 +47,17 @@ class JdbcOwnershipRepositoryIntegrationTest {
     }
 
     @Test
+    fun `finds ownership by id`() {
+        val record = activeOwnership(startSecond = 10, endSecond = 20)
+
+        repository.save(record)
+
+        val result = repository.findById(record.id)
+
+        assertThat(result).isEqualTo(record)
+    }
+
+    @Test
     fun `rejects overlapping active ownership`() {
         repository.save(activeOwnership(startSecond = 10, endSecond = 20))
 

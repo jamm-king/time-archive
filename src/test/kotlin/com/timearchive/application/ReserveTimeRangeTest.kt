@@ -128,6 +128,8 @@ class ReserveTimeRangeTest {
     ) : OwnershipRepository {
         override fun save(record: OwnershipRecord): OwnershipRecord = record
 
+        override fun findById(id: UUID): OwnershipRecord? = null
+
         override fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord> = overlaps
     }
 

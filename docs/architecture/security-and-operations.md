@@ -65,6 +65,8 @@ Recommended MVP media policy:
 
 Current media persistence stores URLs and moderation state only. Actual upload handling must still validate file size, file signature, media type, and ownership before creating a media asset.
 
+Owned range media APIs currently use the `X-User-Id` request header as development-stage identity input. This is not production-safe. Production media APIs must derive the current user from authenticated server-side identity and must reject client-provided owner identity claims. The current API is metadata-only and does not prove that the referenced file exists, belongs to the caller, or passed file signature and content safety checks.
+
 ## Moderation
 
 Moderation status:
