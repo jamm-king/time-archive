@@ -268,6 +268,8 @@ Initial smoke tests should verify:
 - Checkout creation succeeds.
 - Fake payment webhook completion succeeds in local verification.
 - Duplicate fake payment webhook is idempotent.
+- Media upload completion succeeds in local verification.
+- Admin-approved media appears in the public timeline in local verification.
 
 Staging E2E tests should verify:
 
