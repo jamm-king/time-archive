@@ -78,15 +78,21 @@ request_json() {
   status_file="$(mktemp)"
 
   if [[ -n "$body" ]]; then
-    curl -sS -X "$method" "$url" \
+    if ! curl -sS -X "$method" "$url" \
       -H "Content-Type: application/json" \
       -d "$body" \
       -o "$response_file" \
-      -w "%{http_code}" > "$status_file"
+      -w "%{http_code}" > "$status_file"; then
+      rm -f "$response_file" "$status_file"
+      fail "Request failed: $method $url"
+    fi
   else
-    curl -sS -X "$method" "$url" \
+    if ! curl -sS -X "$method" "$url" \
       -o "$response_file" \
-      -w "%{http_code}" > "$status_file"
+      -w "%{http_code}" > "$status_file"; then
+      rm -f "$response_file" "$status_file"
+      fail "Request failed: $method $url"
+    fi
   fi
 
   status="$(cat "$status_file")"
@@ -109,7 +115,7 @@ wait_for_health() {
   deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
   while (( SECONDS < deadline )); do
     status="$(
-      curl -sS "$BASE_URL/actuator/health" 2>/dev/null |
+      { curl -sS "$BASE_URL/actuator/health" 2>/dev/null || true; } |
         "$PYTHON_BIN" -c '
 import json
 import sys

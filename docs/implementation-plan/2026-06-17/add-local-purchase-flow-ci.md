@@ -75,12 +75,18 @@ The script has been stabilized locally. This task connects it to CI so pull requ
 - Docker Compose logs are printed only on failure.
 - Docker Compose is stopped in an `always()` cleanup step.
 - The shell verification script now waits for `/actuator/health` to become `UP` before continuing.
+- Follow-up fix: the initial health wait still exited on transient `curl` failures because of `set -euo pipefail`. The health check now treats failed `curl` attempts as empty health responses and keeps retrying until timeout.
 
 ## Verification Results
 
 - `C:\Program Files\Git\bin\bash.exe -lc "cd /d/develop/time-archive && START_SECOND=120 END_SECOND=130 ./scripts/verify-local-purchase-flow.sh"`: passed.
 - `.\gradlew.bat test`: passed.
 - `.\gradlew.bat build`: passed.
+- Follow-up CI failure observed: GitHub Actions exited with curl code 56 during the initial health wait.
+- Follow-up fix verified locally after script retry behavior update:
+  - `C:\Program Files\Git\bin\bash.exe -lc "cd /d/develop/time-archive && START_SECOND=130 END_SECOND=140 ./scripts/verify-local-purchase-flow.sh"`: passed.
+  - `.\gradlew.bat test`: passed.
+  - `.\gradlew.bat build`: passed.
 
 ## Completion Summary
 
