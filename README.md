@@ -65,10 +65,10 @@ Prerequisites:
 - Docker
 - Gradle, or the Gradle wrapper after it is generated
 
-Start local infrastructure:
+Start local infrastructure for local JVM development:
 
 ```text
-docker compose up -d
+docker compose up -d postgres redis
 ```
 
 PostgreSQL uses a PostgreSQL 18-compatible named volume mounted at `/var/lib/postgresql`.
@@ -96,6 +96,18 @@ Run the backend:
 
 ```text
 gradle bootRun
+```
+
+Start the full local backend stack in Docker:
+
+```text
+docker compose up -d --build
+```
+
+Check the containerized API:
+
+```text
+curl http://localhost:8080/actuator/health
 ```
 
 The local application expects PostgreSQL at:
