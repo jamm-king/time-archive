@@ -25,13 +25,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Test
+        working-directory: apps/api
         run: ./gradlew test --no-daemon
 
       - name: Build
+        working-directory: apps/api
         run: ./gradlew build --no-daemon
 
       - name: Docker build
-        run: docker build -t time-archive-api:${{ github.sha }} .
+        run: docker build -t time-archive-api:${{ github.sha }} apps/api
 
   local-purchase-flow:
     name: Local purchase flow

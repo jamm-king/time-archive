@@ -65,6 +65,14 @@ Prerequisites:
 - Docker
 - Gradle, or the Gradle wrapper after it is generated
 
+Repository layout:
+
+```text
+apps/api  Spring Boot backend
+docs      Architecture, API, operation, and implementation documents
+scripts   Local verification scripts
+```
+
 Start local infrastructure for local JVM development:
 
 ```text
@@ -85,25 +93,28 @@ Bucket: time-archive-media
 Run tests:
 
 ```text
-gradle test
+cd apps/api
+./gradlew test
 ```
 
 Build the backend:
 
 ```text
-gradle build
+cd apps/api
+./gradlew build
 ```
 
 Build the Docker image:
 
 ```text
-docker build -t time-archive-api:local .
+docker build -t time-archive-api:local apps/api
 ```
 
 Run the backend:
 
 ```text
-gradle bootRun
+cd apps/api
+./gradlew bootRun
 ```
 
 Start the full local backend stack in Docker:

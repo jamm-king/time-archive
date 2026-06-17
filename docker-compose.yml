@@ -1,7 +1,7 @@
 services:
   api:
     build:
-      context: .
+      context: ./apps/api
     container_name: time-archive-api
     environment:
       TIME_ARCHIVE_DATABASE_URL: jdbc:postgresql://postgres:5432/time_archive

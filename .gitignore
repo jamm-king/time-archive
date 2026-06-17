@@ -13,8 +13,13 @@ Thumbs.db
 .gradle/
 .kotlin/
 build/
+**/.gradle/
+**/.kotlin/
+**/build/
 out/
 target/
+**/out/
+**/target/
 *.class
 
 # Logs

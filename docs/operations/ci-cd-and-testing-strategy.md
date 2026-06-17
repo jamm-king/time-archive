@@ -50,6 +50,7 @@ Expected commands after implementation exists:
 
 ```text
 docker compose up -d
+cd apps/api
 ./gradlew test
 ./gradlew bootRun
 ```
@@ -188,6 +189,8 @@ Recommended tags:
 time-archive-api:{git-sha}
 time-archive-api:main-latest
 ```
+
+The backend Docker image is built from `apps/api`.
 
 Production deployments should use `{git-sha}`.
 
