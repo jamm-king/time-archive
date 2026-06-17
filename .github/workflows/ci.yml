@@ -154,8 +154,31 @@ jobs:
 
       - name: Verify web app
         run: |
-          curl --fail --silent --show-error http://localhost:3000 >/dev/null
-          curl --fail --silent --show-error "http://localhost:3000/api/timeline?from=0&to=1"
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error http://localhost:3000 >/dev/null; then
+              break
+            fi
+
+            if [ "$attempt" -eq 60 ]; then
+              echo "Web app did not become ready" >&2
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error "http://localhost:3000/api/timeline?from=0&to=1"; then
+              break
+            fi
+
+            if [ "$attempt" -eq 60 ]; then
+              echo "Timeline proxy did not become ready" >&2
+              exit 1
+            fi
+
+            sleep 2
+          done
 
       - name: Docker compose logs
         if: failure()

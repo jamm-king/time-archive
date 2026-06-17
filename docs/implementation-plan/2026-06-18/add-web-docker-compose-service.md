@@ -100,6 +100,11 @@ route handler can call the backend API inside the Compose network.
 - `GET http://localhost:8080/actuator/health` - passed with API status `UP`
 - `docker compose down` - passed
 - `git diff --check` - passed
+- `docker compose config` after CI readiness fix - passed
+- `docker compose up -d --build` after CI readiness fix - passed
+- Retried web root and timeline proxy smoke checks after CI readiness fix -
+  passed with `{"from":0,"to":1,"segments":[]}`
+- `docker compose down` after CI readiness fix - passed
 
 ## Manual Verification Results
 
@@ -166,3 +171,8 @@ Compose network.
   while a new `Local web smoke` job verifies the full stack including web.
 - 2026-06-18: Verified web lint/build, Docker image build, Docker Compose
   config, full-stack startup, web root response, and web timeline proxy.
+- 2026-06-18: Investigated GitHub Actions run `27709961075`; `Local web smoke`
+  failed with `curl: (52) Empty reply from server` immediately after the web
+  container reached the Docker `Started` state.
+- 2026-06-18: Updated the web smoke verification step to wait and retry the web
+  root page and timeline proxy before failing.
