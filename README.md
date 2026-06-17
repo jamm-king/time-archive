@@ -110,6 +110,20 @@ Check the containerized API:
 curl http://localhost:8080/actuator/health
 ```
 
+Verify the local development-stage purchase flow:
+
+```text
+./scripts/verify-local-purchase-flow.sh
+```
+
+On Windows:
+
+```text
+.\scripts\verify-local-purchase-flow.ps1
+```
+
+See [Local Purchase Flow Verification](docs/manual-verification/local-purchase-flow.md) for details.
+
 The local application expects PostgreSQL at:
 
 ```text
