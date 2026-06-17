@@ -191,6 +191,7 @@ time-archive-api:main-latest
 ```
 
 The backend Docker image is built from `apps/api`.
+The web Docker image is built from `apps/web`.
 
 Production deployments should use `{git-sha}`.
 

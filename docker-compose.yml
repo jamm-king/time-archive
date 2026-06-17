@@ -25,6 +25,17 @@ services:
       minio-init:
         condition: service_completed_successfully
 
+  web:
+    build:
+      context: ./apps/web
+    container_name: time-archive-web
+    environment:
+      TIME_ARCHIVE_API_BASE_URL: http://api:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
   postgres:
     image: postgres:18-alpine
     container_name: time-archive-postgres
