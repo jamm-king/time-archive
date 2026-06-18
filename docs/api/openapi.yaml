@@ -172,6 +172,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/me/owned-ranges:
+    get:
+      tags:
+        - Auth
+      operationId: listCurrentUserOwnedRanges
+      summary: List current user's owned ranges
+      description: |
+        Lists active ownership records owned by the current authenticated user.
+        The response is scoped to the session identity and does not expose
+        `ownerId`.
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: Active owned ranges for the current user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CurrentUserOwnedRangeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/archive/availability:
     get:
       tags:
@@ -933,6 +958,47 @@ components:
         displayName:
           type: string
         createdAt:
+          type: string
+          format: date-time
+    CurrentUserOwnedRangeResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - ownershipRecordId
+        - startSecond
+        - endSecond
+        - status
+        - acquiredAt
+        - createdAt
+        - updatedAt
+      properties:
+        ownershipRecordId:
+          type: string
+          format: uuid
+        startSecond:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86399
+          description: Inclusive start second in the canonical 24-hour timeline.
+        endSecond:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+          description: Exclusive end second in the canonical 24-hour timeline.
+        status:
+          type: string
+          enum:
+            - ACTIVE
+          description: Current visible ownership status for this user-scoped list.
+        acquiredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
     CreateReservationRequest:

@@ -130,6 +130,8 @@ class ReserveTimeRangeTest {
 
         override fun findById(id: UUID): OwnershipRecord? = null
 
+        override fun findActiveByOwnerId(ownerId: UUID): List<OwnershipRecord> = emptyList()
+
         override fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord> = overlaps
     }
 

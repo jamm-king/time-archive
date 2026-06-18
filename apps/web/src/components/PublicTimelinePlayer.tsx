@@ -19,6 +19,7 @@ import {
   type AuthMode,
   type CurrentUser,
 } from "@/lib/auth";
+import { fetchOwnedRanges, type OwnedRange } from "@/lib/owned-ranges";
 
 type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
@@ -253,6 +254,7 @@ function AuthPanel({
         <p className="mt-1 truncate text-xs text-neutral-500">
           {currentUser.email}
         </p>
+        <OwnedRangesList currentUserId={currentUser.userId} />
         <button
           type="button"
           className="mt-4 w-full border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
@@ -364,6 +366,72 @@ function AuthPanel({
         </button>
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
       </form>
+    </div>
+  );
+}
+
+function OwnedRangesList({ currentUserId }: { currentUserId: string }) {
+  const [ranges, setRanges] = useState<OwnedRange[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchOwnedRanges(controller.signal)
+      .then((result) => {
+        setRanges(result);
+        setStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.error(error);
+        setRanges([]);
+        setStatus("error");
+      });
+
+    return () => controller.abort();
+  }, [currentUserId]);
+
+  return (
+    <div className="mt-4 border-t border-neutral-800 pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase text-neutral-500">Owned seconds</p>
+        {status === "ready" ? (
+          <span className="text-xs tabular-nums text-neutral-600">
+            {ranges.length}
+          </span>
+        ) : null}
+      </div>
+      {status === "loading" ? (
+        <p className="mt-3 text-xs text-neutral-500">Loading</p>
+      ) : status === "error" ? (
+        <p className="mt-3 text-xs text-red-300">Owned ranges unavailable</p>
+      ) : ranges.length === 0 ? (
+        <p className="mt-3 text-xs leading-5 text-neutral-500">
+          No owned seconds yet.
+        </p>
+      ) : (
+        <ul className="mt-3 grid max-h-44 gap-2 overflow-y-auto pr-1">
+          {ranges.map((range) => (
+            <li
+              key={range.ownershipRecordId}
+              className="border border-neutral-800 px-3 py-2"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs tabular-nums text-neutral-100">
+                  {formatArchiveSecond(range.startSecond)}-
+                  {formatArchiveSecond(range.endSecond)}
+                </span>
+                <span className="text-[10px] uppercase text-neutral-500">
+                  {range.status}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

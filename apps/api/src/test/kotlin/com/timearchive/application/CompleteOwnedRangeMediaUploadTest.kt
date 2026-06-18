@@ -165,6 +165,8 @@ class CompleteOwnedRangeMediaUploadTest {
 
         override fun findById(id: UUID): OwnershipRecord? = record.takeIf { it.id == id }
 
+        override fun findActiveByOwnerId(ownerId: UUID): List<OwnershipRecord> = emptyList()
+
         override fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord> = emptyList()
     }
 

@@ -9,5 +9,7 @@ interface OwnershipRepository {
 
     fun findById(id: UUID): OwnershipRecord?
 
+    fun findActiveByOwnerId(ownerId: UUID): List<OwnershipRecord>
+
     fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord>
 }
