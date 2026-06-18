@@ -10,6 +10,7 @@ import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
 import com.timearchive.application.GetCurrentUser
 import com.timearchive.application.HideMediaAsset
+import com.timearchive.application.ListCurrentUserOwnedRanges
 import com.timearchive.application.ListMediaModerationQueue
 import com.timearchive.application.ListOwnedRangeMediaAssets
 import com.timearchive.application.ListPublicTimelineSegments
@@ -76,6 +77,12 @@ class ApplicationUseCaseConfiguration {
     fun getCurrentUser(
         userAccountRepository: UserAccountRepository,
     ): GetCurrentUser = GetCurrentUser(userAccountRepository = userAccountRepository)
+
+    @Bean
+    fun listCurrentUserOwnedRanges(
+        ownershipRepository: OwnershipRepository,
+    ): ListCurrentUserOwnedRanges =
+        ListCurrentUserOwnedRanges(ownershipRepository = ownershipRepository)
 
     @Bean
     fun reserveTimeRange(

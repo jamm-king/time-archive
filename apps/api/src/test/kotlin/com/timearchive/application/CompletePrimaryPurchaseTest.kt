@@ -260,6 +260,10 @@ class CompletePrimaryPurchaseTest {
         override fun findById(id: UUID): OwnershipRecord? =
             saved.find { it.id == id } ?: overlaps.find { it.id == id }
 
+        override fun findActiveByOwnerId(ownerId: UUID): List<OwnershipRecord> =
+            saved.filter { it.ownerId == ownerId && it.isActive } +
+                overlaps.filter { it.ownerId == ownerId && it.isActive }
+
         override fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord> = overlaps
     }
 

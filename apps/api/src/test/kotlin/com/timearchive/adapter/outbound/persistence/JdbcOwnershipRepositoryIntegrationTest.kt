@@ -2,6 +2,7 @@ package com.timearchive.adapter.outbound.persistence
 
 import com.timearchive.domain.model.AcquisitionType
 import com.timearchive.domain.model.OwnershipRecord
+import com.timearchive.domain.model.OwnershipStatus
 import com.timearchive.domain.model.TimeRange
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -55,6 +56,21 @@ class JdbcOwnershipRepositoryIntegrationTest {
         val result = repository.findById(record.id)
 
         assertThat(result).isEqualTo(record)
+    }
+
+    @Test
+    fun `finds active ownership by owner id ordered by range`() {
+        val ownerId = UUID.randomUUID()
+        val secondRecord = activeOwnership(startSecond = 20, endSecond = 25, ownerId = ownerId)
+        val firstRecord = activeOwnership(startSecond = 10, endSecond = 12, ownerId = ownerId)
+        repository.save(secondRecord)
+        repository.save(activeOwnership(startSecond = 30, endSecond = 35, ownerId = UUID.randomUUID()))
+        repository.save(firstRecord)
+        repository.save(transferredOwnership(startSecond = 40, endSecond = 45, ownerId = ownerId))
+
+        val result = repository.findActiveByOwnerId(ownerId)
+
+        assertThat(result.map { it.id }).containsExactly(firstRecord.id, secondRecord.id)
     }
 
     @Test
@@ -112,14 +128,37 @@ class JdbcOwnershipRepositoryIntegrationTest {
     private fun activeOwnership(
         startSecond: Long,
         endSecond: Long,
+        ownerId: UUID = UUID.randomUUID(),
     ): OwnershipRecord =
         OwnershipRecord.active(
             id = UUID.randomUUID(),
             range = TimeRange(startSecond = startSecond, endSecond = endSecond),
-            ownerId = UUID.randomUUID(),
+            ownerId = ownerId,
             validFrom = Instant.parse("2026-06-16T00:00:00Z"),
             acquisitionType = AcquisitionType.PRIMARY_PURCHASE,
         )
+
+    private fun transferredOwnership(
+        startSecond: Long,
+        endSecond: Long,
+        ownerId: UUID,
+    ): OwnershipRecord {
+        val now = Instant.parse("2026-06-16T00:00:00Z")
+
+        return OwnershipRecord(
+            id = UUID.randomUUID(),
+            range = TimeRange(startSecond = startSecond, endSecond = endSecond),
+            ownerId = ownerId,
+            status = OwnershipStatus.TRANSFERRED,
+            validFrom = now,
+            validUntil = now.plusSeconds(10),
+            acquisitionType = AcquisitionType.PRIMARY_PURCHASE,
+            sourcePurchaseId = null,
+            sourceTransactionId = null,
+            createdAt = now,
+            updatedAt = now.plusSeconds(10),
+        )
+    }
 
     private fun insertInvalidRange(
         startSecond: Long,
