@@ -1,6 +1,7 @@
 package com.timearchive.application
 
 import com.timearchive.domain.model.UserAccount
+import com.timearchive.domain.model.UserRole
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.PasswordHasherPort
 import com.timearchive.domain.port.UserAccountRepository
@@ -10,6 +11,7 @@ class RegisterUser(
     private val userAccountRepository: UserAccountRepository,
     private val passwordHasherPort: PasswordHasherPort,
     private val clockPort: ClockPort,
+    private val initialAdminEmails: Set<String> = emptySet(),
 ) {
     fun register(command: Command): UserAccount {
         require(command.email.isNotBlank()) { "email must not be blank" }
@@ -28,6 +30,7 @@ class RegisterUser(
                 passwordHash = passwordHasherPort.hash(command.password),
                 displayName = command.displayName,
                 now = clockPort.now(),
+                role = if (normalizedEmail in initialAdminEmails) UserRole.ADMIN else UserRole.USER,
             ),
         )
     }

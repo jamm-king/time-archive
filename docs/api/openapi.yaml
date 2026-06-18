@@ -542,11 +542,11 @@ paths:
       description: |
         Lists media assets by moderation status for admin review.
 
-        `X-Admin-Id` is temporary development-stage behavior. Production APIs
-        must derive admin identity and permissions from authenticated server-side
-        identity and RBAC.
+        Admin identity and permissions are derived from the authenticated
+        server-side session.
+      security:
+        - SessionCookie: []
       parameters:
-        - $ref: "#/components/parameters/AdminId"
         - name: status
           in: query
           required: false
@@ -564,6 +564,14 @@ paths:
                   $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The current user does not have admin permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/approve:
@@ -575,11 +583,11 @@ paths:
       description: |
         Approves an uploaded media asset and sets the approved public media URL.
 
-        `X-Admin-Id` is temporary development-stage behavior. Production APIs
-        must derive admin identity and permissions from authenticated server-side
-        identity and RBAC.
+        Admin identity and permissions are derived from the authenticated
+        server-side session.
+      security:
+        - SessionCookie: []
       parameters:
-        - $ref: "#/components/parameters/AdminId"
         - $ref: "#/components/parameters/MediaAssetId"
       requestBody:
         required: true
@@ -596,6 +604,14 @@ paths:
                 $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The current user does not have admin permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           $ref: "#/components/responses/ResourceNotFound"
         "409":
@@ -615,11 +631,11 @@ paths:
       description: |
         Rejects an uploaded media asset before public approval.
 
-        `X-Admin-Id` is temporary development-stage behavior. Production APIs
-        must derive admin identity and permissions from authenticated server-side
-        identity and RBAC.
+        Admin identity and permissions are derived from the authenticated
+        server-side session.
+      security:
+        - SessionCookie: []
       parameters:
-        - $ref: "#/components/parameters/AdminId"
         - $ref: "#/components/parameters/MediaAssetId"
       responses:
         "200":
@@ -630,6 +646,14 @@ paths:
                 $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The current user does not have admin permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           $ref: "#/components/responses/ResourceNotFound"
         "409":
@@ -649,11 +673,11 @@ paths:
       description: |
         Hides previously approved media from public timeline eligibility.
 
-        `X-Admin-Id` is temporary development-stage behavior. Production APIs
-        must derive admin identity and permissions from authenticated server-side
-        identity and RBAC.
+        Admin identity and permissions are derived from the authenticated
+        server-side session.
+      security:
+        - SessionCookie: []
       parameters:
-        - $ref: "#/components/parameters/AdminId"
         - $ref: "#/components/parameters/MediaAssetId"
       responses:
         "200":
@@ -664,6 +688,14 @@ paths:
                 $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The current user does not have admin permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           $ref: "#/components/responses/ResourceNotFound"
         "409":
@@ -731,14 +763,6 @@ components:
         type: string
         format: uuid
       description: Ownership record identifier.
-    AdminId:
-      name: X-Admin-Id
-      in: header
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: Temporary development-stage admin identifier.
     MediaAssetId:
       name: mediaAssetId
       in: path
@@ -1350,6 +1374,7 @@ components:
       enum:
         - INVALID_REQUEST
         - AUTHENTICATION_REQUIRED
+        - ADMIN_ACCESS_DENIED
         - RESOURCE_NOT_FOUND
         - TIME_RANGE_ALREADY_OWNED
         - TIME_RANGE_ALREADY_RESERVED

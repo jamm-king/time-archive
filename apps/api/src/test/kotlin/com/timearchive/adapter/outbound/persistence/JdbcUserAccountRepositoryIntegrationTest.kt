@@ -1,6 +1,7 @@
 package com.timearchive.adapter.outbound.persistence
 
 import com.timearchive.domain.model.UserAccount
+import com.timearchive.domain.model.UserRole
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -53,6 +54,17 @@ class JdbcUserAccountRepositoryIntegrationTest {
     }
 
     @Test
+    fun `saves and finds admin user role`() {
+        val user = userAccount(email = "Admin@example.com", role = UserRole.ADMIN)
+
+        repository.save(user)
+
+        val result = repository.findById(user.id)
+
+        assertThat(result?.role).isEqualTo(UserRole.ADMIN)
+    }
+
+    @Test
     fun `rejects duplicate normalized email`() {
         repository.save(userAccount(email = "User@example.com"))
 
@@ -64,6 +76,7 @@ class JdbcUserAccountRepositoryIntegrationTest {
     private fun userAccount(
         email: String,
         now: Instant = Instant.parse("2026-06-18T00:00:00Z"),
+        role: UserRole = UserRole.USER,
     ): UserAccount =
         UserAccount.create(
             id = UUID.randomUUID(),
@@ -71,6 +84,7 @@ class JdbcUserAccountRepositoryIntegrationTest {
             passwordHash = "hashed",
             displayName = "User",
             now = now,
+            role = role,
         )
 
     companion object {

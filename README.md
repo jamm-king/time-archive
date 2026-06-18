@@ -40,7 +40,7 @@ The development-stage OpenAPI contract is available at:
 
 - [OpenAPI](docs/api/openapi.yaml)
 
-The API now includes a development-stage server-side session authentication foundation. Purchase and owned media APIs derive current-user identity from the authenticated session.
+The API now includes a development-stage server-side session authentication foundation. Purchase, owned media, and admin moderation APIs derive identity from the authenticated session. Admin moderation additionally requires an `ADMIN` user role.
 
 The fake payment webhook API is also development-stage only. Production payment confirmation must use verified provider webhooks.
 
@@ -224,6 +224,13 @@ TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY
 TIME_ARCHIVE_STORAGE_S3_SECRET_KEY
 TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS
 TIME_ARCHIVE_STORAGE_S3_UPLOAD_URL_EXPIRATION_SECONDS
+```
+
+Initial admin accounts can be bootstrapped by configuring normalized email
+addresses before registration:
+
+```text
+TIME_ARCHIVE_INITIAL_ADMIN_EMAILS
 ```
 
 ## Development Principles

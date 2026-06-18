@@ -15,7 +15,7 @@ The script verifies:
 - presigned object upload to local MinIO
 - upload completion verification
 - `UPLOADED` media stays hidden from the public timeline
-- admin approval through the development-stage moderation API
+- admin approval through an authenticated admin session
 - approved media appears in `GET /api/timeline`
 - public timeline segments do not expose owner identity, original upload URLs,
   or moderation metadata
@@ -43,12 +43,15 @@ The script defaults to:
 
 ```text
 BASE_URL=http://localhost:8080
-BUYER_ID=00000000-0000-0000-0000-000000000003
-ADMIN_ID=00000000-0000-0000-0000-000000000099
+ADMIN_EMAIL=admin@time-archive.local
+ADMIN_PASSWORD=password123
 START_SECOND=3000
 END_SECOND=3001
 UPLOAD_CONTENT_TYPE=image/png
 ```
+
+The default Docker Compose API service configures `ADMIN_EMAIL` as an initial
+admin email through `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS`.
 
 If the default range is already owned in your local database, choose another
 range:
@@ -67,9 +70,9 @@ The final output should include:
 
 ## Development-Stage Behavior
 
-The script uses `X-Admin-Id` as a temporary admin identity and approves the
-uploaded local object URL as the public media URL. Production behavior must use
-authenticated admin identity and a media processing pipeline that publishes
+The script registers or logs in an admin user through the session authentication
+API and approves the uploaded local object URL as the public media URL.
+Production behavior still needs a media processing pipeline that publishes
 approved derived media.
 
 ## Cleanup

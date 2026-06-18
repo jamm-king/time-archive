@@ -9,6 +9,7 @@ data class UserAccount(
     val normalizedEmail: String,
     val passwordHash: String,
     val displayName: String,
+    val role: UserRole,
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
@@ -26,6 +27,7 @@ data class UserAccount(
             passwordHash: String,
             displayName: String,
             now: Instant,
+            role: UserRole = UserRole.USER,
         ): UserAccount =
             UserAccount(
                 id = id,
@@ -33,10 +35,16 @@ data class UserAccount(
                 normalizedEmail = normalizeEmail(email),
                 passwordHash = passwordHash,
                 displayName = displayName.trim(),
+                role = role,
                 createdAt = now,
                 updatedAt = now,
             )
 
         fun normalizeEmail(email: String): String = email.trim().lowercase()
     }
+}
+
+enum class UserRole {
+    USER,
+    ADMIN,
 }

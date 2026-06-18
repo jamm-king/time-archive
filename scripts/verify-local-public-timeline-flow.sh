@@ -2,7 +2,8 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-ADMIN_ID="${ADMIN_ID:-00000000-0000-0000-0000-000000000099}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@time-archive.local}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-password123}"
 START_SECOND="${START_SECOND:-3000}"
 END_SECOND="${END_SECOND:-3001}"
 EVENT_ID="${EVENT_ID:-evt_timeline_local_${START_SECOND}_${END_SECOND}}"
@@ -15,7 +16,8 @@ UPLOAD_FILENAME="${UPLOAD_FILENAME:-time-archive-public-timeline.png}"
 UPLOAD_CONTENT_TYPE="${UPLOAD_CONTENT_TYPE:-image/png}"
 
 export BASE_URL
-export ADMIN_ID
+export ADMIN_EMAIL
+export ADMIN_PASSWORD
 export START_SECOND
 export END_SECOND
 export EVENT_ID
@@ -79,7 +81,6 @@ request_json() {
   local method="$1"
   local url="$2"
   local body="${3:-}"
-  local admin_id="${4:-}"
   local response_file status_file status
   local curl_args
 
@@ -94,10 +95,6 @@ request_json() {
     -o "$response_file"
     -w "%{http_code}"
   )
-
-  if [[ -n "$admin_id" ]]; then
-    curl_args+=(-H "X-Admin-Id: $admin_id")
-  fi
 
   if [[ -n "$body" ]]; then
     curl_args+=(-H "Content-Type: application/json" -d "$body")
@@ -120,6 +117,68 @@ request_json() {
 
   cat "$response_file"
   rm -f "$response_file"
+}
+
+authenticate_admin() {
+  local register_body login_body response_file status_file status
+  local curl_args
+
+  register_body="$("$PYTHON_BIN" -c '
+import json
+import os
+
+print(json.dumps({
+    "email": os.environ["ADMIN_EMAIL"],
+    "password": os.environ["ADMIN_PASSWORD"],
+    "displayName": "Admin",
+}))
+')"
+  response_file="$(mktemp)"
+  status_file="$(mktemp)"
+  curl_args=(
+    -sS
+    -X POST
+    "$BASE_URL/api/auth/register"
+    --cookie "$SESSION_COOKIE_FILE"
+    --cookie-jar "$SESSION_COOKIE_FILE"
+    -H "Content-Type: application/json"
+    -d "$register_body"
+    -o "$response_file"
+    -w "%{http_code}"
+  )
+
+  if ! curl "${curl_args[@]}" > "$status_file"; then
+    rm -f "$response_file" "$status_file"
+    fail "Admin registration request failed"
+  fi
+
+  status="$(cat "$status_file")"
+  rm -f "$status_file"
+
+  if [[ "$status" -ge 200 && "$status" -le 299 ]]; then
+    cat "$response_file"
+    rm -f "$response_file"
+    return
+  fi
+
+  if [[ "$status" != "409" ]]; then
+    printf 'HTTP %s from admin registration\n' "$status" >&2
+    cat "$response_file" >&2
+    rm -f "$response_file"
+    exit 1
+  fi
+
+  rm -f "$response_file"
+  login_body="$("$PYTHON_BIN" -c '
+import json
+import os
+
+print(json.dumps({
+    "email": os.environ["ADMIN_EMAIL"],
+    "password": os.environ["ADMIN_PASSWORD"],
+}))
+')"
+  request_json POST "$BASE_URL/api/auth/login" "$login_body"
 }
 
 wait_for_health() {
@@ -353,6 +412,11 @@ pre_approval_segment_count="$(printf '%s' "$pre_approval_timeline" | json_get "s
 [[ "$pre_approval_segment_count" == "[]" ]] || fail "Expected no public timeline segments before admin approval"
 log "Unapproved media is hidden from public timeline"
 
+admin_user="$(authenticate_admin)"
+ADMIN_USER_ID="$(printf '%s' "$admin_user" | json_get userId)"
+[[ -n "$ADMIN_USER_ID" ]] || fail "Admin user ID was empty"
+log "Admin authenticated: $ADMIN_USER_ID"
+
 export APPROVED_FILE_URL="$original_file_url"
 approval_body="$("$PYTHON_BIN" -c '
 import json
@@ -367,8 +431,7 @@ approval="$(
   request_json \
     POST \
     "$BASE_URL/api/admin/media/assets/$media_asset_id/approve" \
-    "$approval_body" \
-    "$ADMIN_ID"
+    "$approval_body"
 )"
 approved_status="$(printf '%s' "$approval" | json_get moderationStatus)"
 approved_file_url="$(printf '%s' "$approval" | json_get approvedFileUrl)"

@@ -1,16 +1,18 @@
 package com.timearchive.adapter.inbound.rest
 
 import com.timearchive.application.ApproveMediaAsset
+import com.timearchive.application.GetCurrentUser
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListMediaModerationQueue
 import com.timearchive.application.RejectMediaAsset
 import com.timearchive.domain.model.ModerationStatus
+import com.timearchive.domain.model.UserRole
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -23,23 +25,28 @@ class AdminMediaModerationController(
     private val approveMediaAsset: ApproveMediaAsset,
     private val rejectMediaAsset: RejectMediaAsset,
     private val hideMediaAsset: HideMediaAsset,
+    private val currentUserSession: CurrentUserSession,
+    private val getCurrentUser: GetCurrentUser,
 ) {
     @GetMapping
     fun list(
-        @RequestHeader("X-Admin-Id") adminId: UUID,
+        httpRequest: HttpServletRequest,
         @RequestParam(defaultValue = "UPLOADED") status: ModerationStatus,
-    ): List<MediaAssetResponse> =
-        listMediaModerationQueue.list(
+    ): List<MediaAssetResponse> {
+        requireAdminId(httpRequest)
+        return listMediaModerationQueue.list(
             ListMediaModerationQueue.Query(status = status),
         ).map(MediaAssetResponse::from)
+    }
 
     @PostMapping("/{mediaAssetId}/approve")
     fun approve(
-        @RequestHeader("X-Admin-Id") adminId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable mediaAssetId: UUID,
         @Valid @RequestBody request: ApproveMediaAssetRequest,
-    ): MediaAssetResponse =
-        MediaAssetResponse.from(
+    ): MediaAssetResponse {
+        val adminId = requireAdminId(httpRequest)
+        return MediaAssetResponse.from(
             approveMediaAsset.approve(
                 ApproveMediaAsset.Command(
                     adminId = adminId,
@@ -49,13 +56,15 @@ class AdminMediaModerationController(
                 ),
             ),
         )
+    }
 
     @PostMapping("/{mediaAssetId}/reject")
     fun reject(
-        @RequestHeader("X-Admin-Id") adminId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable mediaAssetId: UUID,
-    ): MediaAssetResponse =
-        MediaAssetResponse.from(
+    ): MediaAssetResponse {
+        val adminId = requireAdminId(httpRequest)
+        return MediaAssetResponse.from(
             rejectMediaAsset.reject(
                 RejectMediaAsset.Command(
                     adminId = adminId,
@@ -63,13 +72,15 @@ class AdminMediaModerationController(
                 ),
             ),
         )
+    }
 
     @PostMapping("/{mediaAssetId}/hide")
     fun hide(
-        @RequestHeader("X-Admin-Id") adminId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable mediaAssetId: UUID,
-    ): MediaAssetResponse =
-        MediaAssetResponse.from(
+    ): MediaAssetResponse {
+        val adminId = requireAdminId(httpRequest)
+        return MediaAssetResponse.from(
             hideMediaAsset.hide(
                 HideMediaAsset.Command(
                     adminId = adminId,
@@ -77,4 +88,12 @@ class AdminMediaModerationController(
                 ),
             ),
         )
+    }
+
+    private fun requireAdminId(request: HttpServletRequest): UUID {
+        val userId = currentUserSession.requireCurrentUserId(request)
+        val user = getCurrentUser.get(GetCurrentUser.Query(userId = userId))
+        require(user.role == UserRole.ADMIN) { "admin permission required" }
+        return user.id
+    }
 }
