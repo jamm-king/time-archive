@@ -2,7 +2,6 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-BUYER_ID="${BUYER_ID:-00000000-0000-0000-0000-000000000003}"
 ADMIN_ID="${ADMIN_ID:-00000000-0000-0000-0000-000000000099}"
 START_SECOND="${START_SECOND:-3000}"
 END_SECOND="${END_SECOND:-3001}"
@@ -16,7 +15,6 @@ UPLOAD_FILENAME="${UPLOAD_FILENAME:-time-archive-public-timeline.png}"
 UPLOAD_CONTENT_TYPE="${UPLOAD_CONTENT_TYPE:-image/png}"
 
 export BASE_URL
-export BUYER_ID
 export ADMIN_ID
 export START_SECOND
 export END_SECOND
@@ -81,8 +79,7 @@ request_json() {
   local method="$1"
   local url="$2"
   local body="${3:-}"
-  local user_id="${4:-}"
-  local admin_id="${5:-}"
+  local admin_id="${4:-}"
   local response_file status_file status
   local curl_args
 
@@ -97,10 +94,6 @@ request_json() {
     -o "$response_file"
     -w "%{http_code}"
   )
-
-  if [[ -n "$user_id" ]]; then
-    curl_args+=(-H "X-User-Id: $user_id")
-  fi
 
   if [[ -n "$admin_id" ]]; then
     curl_args+=(-H "X-Admin-Id: $admin_id")
@@ -255,10 +248,9 @@ print(json.dumps({
 }))
 ')"
 current_user="$(request_json POST "$BASE_URL/api/auth/register" "$register_body")"
-BUYER_ID="$(printf '%s' "$current_user" | json_get userId)"
-export BUYER_ID
-[[ -n "$BUYER_ID" ]] || fail "Authenticated user ID was empty"
-log "Authenticated user created: $BUYER_ID"
+CURRENT_USER_ID="$(printf '%s' "$current_user" | json_get userId)"
+[[ -n "$CURRENT_USER_ID" ]] || fail "Authenticated user ID was empty"
+log "Authenticated user created: $CURRENT_USER_ID"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"
 available="$(printf '%s' "$availability" | json_get available)"
@@ -330,8 +322,7 @@ upload_request="$(
   request_json \
     POST \
     "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests" \
-    "$upload_request_body" \
-    "$BUYER_ID"
+    "$upload_request_body"
 )"
 upload_request_id="$(printf '%s' "$upload_request" | json_get uploadRequestId)"
 upload_url="$(printf '%s' "$upload_request" | json_get uploadUrl)"
@@ -347,9 +338,7 @@ log "Object uploaded through presigned URL"
 completion="$(
   request_json \
     POST \
-    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete" \
-    "" \
-    "$BUYER_ID"
+    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete"
 )"
 media_asset_id="$(printf '%s' "$completion" | json_get mediaAsset.mediaAssetId)"
 already_completed="$(printf '%s' "$completion" | json_get alreadyCompleted)"
@@ -379,7 +368,6 @@ approval="$(
     POST \
     "$BASE_URL/api/admin/media/assets/$media_asset_id/approve" \
     "$approval_body" \
-    "" \
     "$ADMIN_ID"
 )"
 approved_status="$(printf '%s' "$approval" | json_get moderationStatus)"

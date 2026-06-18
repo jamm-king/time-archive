@@ -4,13 +4,13 @@ import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.ListOwnedRangeMediaAssets
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -22,15 +22,17 @@ class OwnedRangeMediaController(
     private val completeOwnedRangeMediaUpload: CompleteOwnedRangeMediaUpload,
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset,
     private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest,
+    private val currentUserSession: CurrentUserSession,
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets,
 ) {
     @PostMapping("/upload-requests")
     @ResponseStatus(HttpStatus.CREATED)
     fun createUploadRequest(
-        @RequestHeader("X-User-Id") currentUserId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable ownershipRecordId: UUID,
         @Valid @RequestBody request: CreateMediaUploadRequest,
     ): MediaUploadRequestResponse {
+        val currentUserId = currentUserSession.requireCurrentUserId(httpRequest)
         val result = createOwnedRangeMediaUploadRequest.create(
             CreateOwnedRangeMediaUploadRequest.Command(
                 currentUserId = currentUserId,
@@ -47,10 +49,11 @@ class OwnedRangeMediaController(
 
     @PostMapping("/upload-requests/{uploadRequestId}/complete")
     fun completeUploadRequest(
-        @RequestHeader("X-User-Id") currentUserId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable ownershipRecordId: UUID,
         @PathVariable uploadRequestId: UUID,
     ): CompleteMediaUploadResponse {
+        val currentUserId = currentUserSession.requireCurrentUserId(httpRequest)
         val result = completeOwnedRangeMediaUpload.complete(
             CompleteOwnedRangeMediaUpload.Command(
                 currentUserId = currentUserId,
@@ -65,10 +68,11 @@ class OwnedRangeMediaController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
-        @RequestHeader("X-User-Id") currentUserId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable ownershipRecordId: UUID,
         @Valid @RequestBody request: CreateOwnedRangeMediaRequest,
     ): MediaAssetResponse {
+        val currentUserId = currentUserSession.requireCurrentUserId(httpRequest)
         val asset = createOwnedRangeMediaAsset.create(
             CreateOwnedRangeMediaAsset.Command(
                 currentUserId = currentUserId,
@@ -85,13 +89,15 @@ class OwnedRangeMediaController(
 
     @GetMapping
     fun list(
-        @RequestHeader("X-User-Id") currentUserId: UUID,
+        httpRequest: HttpServletRequest,
         @PathVariable ownershipRecordId: UUID,
-    ): List<MediaAssetResponse> =
-        listOwnedRangeMediaAssets.list(
+    ): List<MediaAssetResponse> {
+        val currentUserId = currentUserSession.requireCurrentUserId(httpRequest)
+        return listOwnedRangeMediaAssets.list(
             ListOwnedRangeMediaAssets.Query(
                 currentUserId = currentUserId,
                 ownershipRecordId = ownershipRecordId,
             ),
         ).map(MediaAssetResponse::from)
+    }
 }

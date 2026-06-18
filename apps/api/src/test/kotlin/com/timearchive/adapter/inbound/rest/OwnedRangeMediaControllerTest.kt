@@ -15,6 +15,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType.APPLICATION_JSON
+import org.springframework.mock.web.MockHttpSession
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -26,6 +27,7 @@ class OwnedRangeMediaControllerTest {
     private val completeOwnedRangeMediaUpload: CompleteOwnedRangeMediaUpload = mockk()
     private val createOwnedRangeMediaAsset: CreateOwnedRangeMediaAsset = mockk()
     private val createOwnedRangeMediaUploadRequest: CreateOwnedRangeMediaUploadRequest = mockk()
+    private val currentUserSession = CurrentUserSession()
     private val listOwnedRangeMediaAssets: ListOwnedRangeMediaAssets = mockk()
     private val objectMapper: ObjectMapper = ObjectMapper()
         .registerModule(KotlinModule.Builder().build())
@@ -42,6 +44,7 @@ class OwnedRangeMediaControllerTest {
                     completeOwnedRangeMediaUpload = completeOwnedRangeMediaUpload,
                     createOwnedRangeMediaAsset = createOwnedRangeMediaAsset,
                     createOwnedRangeMediaUploadRequest = createOwnedRangeMediaUploadRequest,
+                    currentUserSession = currentUserSession,
                     listOwnedRangeMediaAssets = listOwnedRangeMediaAssets,
                 ),
             )
@@ -54,7 +57,7 @@ class OwnedRangeMediaControllerTest {
         every { completeOwnedRangeMediaUpload.complete(any()) } returns completeUploadResult()
 
         mockMvc.post("/api/owned-ranges/$ownershipRecordId/media/upload-requests/00000000-0000-0000-0000-000000000704/complete") {
-            header("X-User-Id", currentUserId.toString())
+            this.session = signedInSession(currentUserId)
         }
             .andExpect {
                 status { isOk() }
@@ -80,7 +83,7 @@ class OwnedRangeMediaControllerTest {
         every { createOwnedRangeMediaUploadRequest.create(any()) } returns uploadRequestResult()
 
         mockMvc.post("/api/owned-ranges/$ownershipRecordId/media/upload-requests") {
-            header("X-User-Id", currentUserId.toString())
+            this.session = signedInSession(currentUserId)
             contentType = APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
@@ -124,7 +127,7 @@ class OwnedRangeMediaControllerTest {
         every { createOwnedRangeMediaAsset.create(any()) } returns mediaAsset()
 
         mockMvc.post("/api/owned-ranges/$ownershipRecordId/media") {
-            header("X-User-Id", currentUserId.toString())
+            this.session = signedInSession(currentUserId)
             contentType = APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
@@ -164,7 +167,7 @@ class OwnedRangeMediaControllerTest {
         every { listOwnedRangeMediaAssets.list(any()) } returns listOf(mediaAsset())
 
         mockMvc.get("/api/owned-ranges/$ownershipRecordId/media") {
-            header("X-User-Id", currentUserId.toString())
+            this.session = signedInSession(currentUserId)
         }
             .andExpect {
                 status { isOk() }
@@ -183,7 +186,7 @@ class OwnedRangeMediaControllerTest {
     }
 
     @Test
-    fun `rejects missing current user header`() {
+    fun `rejects request without session`() {
         mockMvc.post("/api/owned-ranges/$ownershipRecordId/media") {
             contentType = APPLICATION_JSON
             content = objectMapper.writeValueAsString(
@@ -194,8 +197,8 @@ class OwnedRangeMediaControllerTest {
             )
         }
             .andExpect {
-                status { isBadRequest() }
-                jsonPath("$.code") { value("INVALID_REQUEST") }
+                status { isUnauthorized() }
+                jsonPath("$.code") { value("AUTHENTICATION_REQUIRED") }
             }
     }
 
@@ -205,7 +208,7 @@ class OwnedRangeMediaControllerTest {
             IllegalArgumentException("ownership record is not owned by current user")
 
         mockMvc.post("/api/owned-ranges/$ownershipRecordId/media") {
-            header("X-User-Id", currentUserId.toString())
+            this.session = signedInSession(currentUserId)
             contentType = APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
@@ -219,6 +222,9 @@ class OwnedRangeMediaControllerTest {
                 jsonPath("$.code") { value("OWNERSHIP_ACCESS_DENIED") }
             }
     }
+
+    private fun signedInSession(userId: UUID): MockHttpSession =
+        MockHttpSession().also { currentUserSession.signIn(it, userId) }
 
     private fun mediaAsset(): MediaAsset =
         MediaAsset.uploaded(

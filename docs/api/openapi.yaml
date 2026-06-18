@@ -10,8 +10,8 @@ info:
     surfaces. It does not implement real payment provider integration or
     payment completion through browser redirects.
 
-    Owned range media endpoints temporarily accept `X-User-Id` as a
-    development-stage stand-in for authenticated server-side identity.
+    Purchase and owned range media endpoints derive current-user identity from
+    the authenticated server-side session.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -331,11 +331,11 @@ paths:
         bytes, validate object storage state, or approve media for public
         display.
 
-        `X-User-Id` is temporary development-stage behavior. Production APIs
-        must derive the current user from authenticated server-side identity.
+        The current user is derived from the authenticated server-side session.
+      security:
+        - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
-        - $ref: "#/components/parameters/CurrentUserId"
       requestBody:
         required: true
         content:
@@ -351,6 +351,8 @@ paths:
                 $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: The current user does not own the requested range.
           content:
@@ -380,11 +382,11 @@ paths:
         Lists media assets attached to an active ownership record owned by the
         current user. Owner reads include all moderation statuses.
 
-        `X-User-Id` is temporary development-stage behavior. Production APIs
-        must derive the current user from authenticated server-side identity.
+        The current user is derived from the authenticated server-side session.
+      security:
+        - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
-        - $ref: "#/components/parameters/CurrentUserId"
       responses:
         "200":
           description: Media assets attached to the owned range.
@@ -396,6 +398,8 @@ paths:
                   $ref: "#/components/schemas/MediaAssetResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: The current user does not own the requested range.
           content:
@@ -430,11 +434,11 @@ paths:
         for a later completion step. This endpoint does not prove that the file
         was uploaded and does not create a `MediaAsset`.
 
-        `X-User-Id` is temporary development-stage behavior. Production APIs
-        must derive the current user from authenticated server-side identity.
+        The current user is derived from the authenticated server-side session.
+      security:
+        - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
-        - $ref: "#/components/parameters/CurrentUserId"
       requestBody:
         required: true
         content:
@@ -450,6 +454,8 @@ paths:
                 $ref: "#/components/schemas/MediaUploadRequestResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: The current user does not own the requested range.
           content:
@@ -484,8 +490,9 @@ paths:
         The endpoint is idempotent for already completed upload requests and
         returns the existing media asset.
 
-        `X-User-Id` is temporary development-stage behavior. Production APIs
-        must derive the current user from authenticated server-side identity.
+        The current user is derived from the authenticated server-side session.
+      security:
+        - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
         - name: uploadRequestId
@@ -495,7 +502,6 @@ paths:
             type: string
             format: uuid
           description: Upload request identifier.
-        - $ref: "#/components/parameters/CurrentUserId"
       responses:
         "200":
           description: Upload request completed or already completed.
@@ -505,6 +511,8 @@ paths:
                 $ref: "#/components/schemas/CompleteMediaUploadResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: The current user does not own the requested range.
           content:
@@ -723,14 +731,6 @@ components:
         type: string
         format: uuid
       description: Ownership record identifier.
-    CurrentUserId:
-      name: X-User-Id
-      in: header
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: Temporary development-stage current user identifier.
     AdminId:
       name: X-Admin-Id
       in: header
@@ -1349,6 +1349,7 @@ components:
       type: string
       enum:
         - INVALID_REQUEST
+        - AUTHENTICATION_REQUIRED
         - RESOURCE_NOT_FOUND
         - TIME_RANGE_ALREADY_OWNED
         - TIME_RANGE_ALREADY_RESERVED
