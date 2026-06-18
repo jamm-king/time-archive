@@ -153,11 +153,22 @@ Start the full local backend stack in Docker:
 docker compose up -d --build
 ```
 
-Check the containerized API:
+Check the containerized apps:
 
 ```text
 curl http://localhost:8080/actuator/health
+curl http://localhost:3000
+curl "http://localhost:3000/api/timeline?from=0&to=1"
 ```
+
+The Dockerized web app is available at:
+
+```text
+http://localhost:3000
+```
+
+In Docker Compose, the web container proxies timeline API reads to the API
+container through `TIME_ARCHIVE_API_BASE_URL=http://api:8080`.
 
 Verify the local development-stage purchase flow:
 

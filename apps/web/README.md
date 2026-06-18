@@ -43,6 +43,29 @@ npm run lint
 npm run build
 ```
 
+## Docker
+
+Build the image from the repository root:
+
+```bash
+docker build -t time-archive-web:local apps/web
+```
+
+Run the full local stack from the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+The Dockerized web app listens on:
+
+```text
+http://localhost:3000
+```
+
+The Compose service sets `TIME_ARCHIVE_API_BASE_URL=http://api:8080` so the
+Next.js route handler can call the backend API through the Compose network.
+
 ## Notes
 
 The fullscreen player is intentionally CSR-first. Future static or
