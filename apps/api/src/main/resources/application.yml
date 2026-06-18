@@ -7,6 +7,14 @@ spring:
     password: ${TIME_ARCHIVE_DATABASE_PASSWORD:time_archive}
   flyway:
     enabled: true
+  data:
+    redis:
+      host: ${TIME_ARCHIVE_REDIS_HOST:localhost}
+      port: ${TIME_ARCHIVE_REDIS_PORT:6379}
+  session:
+    redis:
+      namespace: time-archive:sessions
+    timeout: ${TIME_ARCHIVE_SESSION_TIMEOUT:30m}
 
 management:
   endpoints:

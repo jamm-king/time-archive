@@ -38,8 +38,8 @@ PostgreSQL is preferred over MySQL because Time Archive benefits from strong tra
 
 ### Cache and Coordination
 
-- Redis is optional for MVP.
-- Use Redis for cache, rate limiting, short-lived reservation helpers, and lightweight distributed coordination.
+- Redis is used for server-side web sessions in the MVP.
+- Redis may also be used later for cache, rate limiting, short-lived reservation helpers, and lightweight distributed coordination.
 - Do not use Redis as the final source of truth for ownership integrity.
 
 ### Storage and CDN
