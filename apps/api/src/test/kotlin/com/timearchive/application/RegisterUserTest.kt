@@ -1,6 +1,7 @@
 package com.timearchive.application
 
 import com.timearchive.domain.model.UserAccount
+import com.timearchive.domain.model.UserRole
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.PasswordHasherPort
 import com.timearchive.domain.port.UserAccountRepository
@@ -33,7 +34,28 @@ class RegisterUserTest {
         assertThat(user.normalizedEmail).isEqualTo("user@example.com")
         assertThat(user.passwordHash).isEqualTo("hashed:password123")
         assertThat(user.displayName).isEqualTo("User")
+        assertThat(user.role).isEqualTo(UserRole.USER)
         assertThat(repository.findById(user.id)).isEqualTo(user)
+    }
+
+    @Test
+    fun `registers configured initial admin email as admin`() {
+        val adminUseCase = RegisterUser(
+            userAccountRepository = repository,
+            passwordHasherPort = passwordHasher,
+            clockPort = ClockPort { Instant.parse("2026-06-18T00:00:00Z") },
+            initialAdminEmails = setOf("admin@example.com"),
+        )
+
+        val user = adminUseCase.register(
+            RegisterUser.Command(
+                email = " Admin@example.COM ",
+                password = "password123",
+                displayName = "Admin",
+            ),
+        )
+
+        assertThat(user.role).isEqualTo(UserRole.ADMIN)
     }
 
     @Test

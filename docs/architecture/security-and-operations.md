@@ -100,10 +100,12 @@ Important distinction:
 
 Only `APPROVED` media can appear in the public timeline.
 
-Admin moderation APIs currently use the `X-Admin-Id` request header as
-development-stage identity input. This is not production-safe. Production admin
-APIs must derive admin identity and permissions from authenticated server-side
-identity, enforce RBAC, and audit moderation actions.
+Admin moderation APIs derive admin identity and permissions from the
+authenticated server-side session. MVP authorization uses a persisted user role
+with `USER` and `ADMIN` values. Initial admin users can be bootstrapped through
+configured normalized email addresses, but production admin lifecycle management
+should use an explicit invitation, approval, or operator-controlled provisioning
+process.
 
 ## External Links
 

@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -23,8 +24,9 @@ class SessionAuthenticationFilter(
             ?.let(userAccountRepository::findById)
 
         if (user != null) {
+            val authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role.name}"))
             SecurityContextHolder.getContext().authentication =
-                UsernamePasswordAuthenticationToken.authenticated(user.toPrincipal(), null, emptyList())
+                UsernamePasswordAuthenticationToken.authenticated(user.toPrincipal(), null, authorities)
         }
 
         try {
@@ -39,6 +41,7 @@ class SessionAuthenticationFilter(
             userId = id.toString(),
             email = email,
             displayName = displayName,
+            role = role.name,
         )
 }
 
@@ -46,4 +49,5 @@ data class AuthenticatedUser(
     val userId: String,
     val email: String,
     val displayName: String,
+    val role: String,
 )

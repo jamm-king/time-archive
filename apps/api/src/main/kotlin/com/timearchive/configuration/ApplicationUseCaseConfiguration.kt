@@ -31,6 +31,7 @@ import com.timearchive.domain.port.PurchaseRepository
 import com.timearchive.domain.port.PurchaseReservationRepository
 import com.timearchive.domain.port.TransactionPort
 import com.timearchive.domain.port.UserAccountRepository
+import com.timearchive.domain.model.UserAccount
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.beans.factory.annotation.Value
@@ -47,11 +48,18 @@ class ApplicationUseCaseConfiguration {
         userAccountRepository: UserAccountRepository,
         passwordHasherPort: PasswordHasherPort,
         clockPort: ClockPort,
+        @Value("\${time-archive.security.initial-admin-emails:}") initialAdminEmails: String,
     ): RegisterUser =
         RegisterUser(
             userAccountRepository = userAccountRepository,
             passwordHasherPort = passwordHasherPort,
             clockPort = clockPort,
+            initialAdminEmails = initialAdminEmails
+                .split(",")
+                .map(String::trim)
+                .filter(String::isNotBlank)
+                .map(UserAccount::normalizeEmail)
+                .toSet(),
         )
 
     @Bean

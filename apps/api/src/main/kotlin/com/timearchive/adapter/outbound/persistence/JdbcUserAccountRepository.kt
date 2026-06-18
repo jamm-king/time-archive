@@ -1,6 +1,7 @@
 package com.timearchive.adapter.outbound.persistence
 
 import com.timearchive.domain.model.UserAccount
+import com.timearchive.domain.model.UserRole
 import com.timearchive.domain.port.UserAccountRepository
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
@@ -21,6 +22,7 @@ class JdbcUserAccountRepository(
             .addValue("normalizedEmail", user.normalizedEmail)
             .addValue("passwordHash", user.passwordHash)
             .addValue("displayName", user.displayName)
+            .addValue("role", user.role.name)
             .addValue("createdAt", Timestamp.from(user.createdAt), Types.TIMESTAMP)
             .addValue("updatedAt", Timestamp.from(user.updatedAt), Types.TIMESTAMP)
 
@@ -32,6 +34,7 @@ class JdbcUserAccountRepository(
                 normalized_email,
                 password_hash,
                 display_name,
+                role,
                 created_at,
                 updated_at
             ) values (
@@ -40,6 +43,7 @@ class JdbcUserAccountRepository(
                 :normalizedEmail,
                 :passwordHash,
                 :displayName,
+                :role,
                 :createdAt,
                 :updatedAt
             )
@@ -83,6 +87,7 @@ class JdbcUserAccountRepository(
             normalizedEmail = getString("normalized_email"),
             passwordHash = getString("password_hash"),
             displayName = getString("display_name"),
+            role = UserRole.valueOf(getString("role")),
             createdAt = getTimestamp("created_at").toInstant(),
             updatedAt = getTimestamp("updated_at").toInstant(),
         )
@@ -95,6 +100,7 @@ class JdbcUserAccountRepository(
             normalized_email,
             password_hash,
             display_name,
+            role,
             created_at,
             updated_at
         from users

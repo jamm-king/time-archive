@@ -27,6 +27,8 @@ management:
         enabled: true
 
 time-archive:
+  security:
+    initial-admin-emails: ${TIME_ARCHIVE_INITIAL_ADMIN_EMAILS:}
   storage:
     s3:
       endpoint: ${TIME_ARCHIVE_STORAGE_S3_ENDPOINT:http://localhost:9000}
