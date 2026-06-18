@@ -2,7 +2,6 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-BUYER_ID="${BUYER_ID:-00000000-0000-0000-0000-000000000002}"
 START_SECOND="${START_SECOND:-2000}"
 END_SECOND="${END_SECOND:-2001}"
 EVENT_ID="${EVENT_ID:-evt_media_local_${START_SECOND}_${END_SECOND}}"
@@ -15,7 +14,6 @@ UPLOAD_FILENAME="${UPLOAD_FILENAME:-time-archive-upload.png}"
 UPLOAD_CONTENT_TYPE="${UPLOAD_CONTENT_TYPE:-image/png}"
 
 export BASE_URL
-export BUYER_ID
 export START_SECOND
 export END_SECOND
 export EVENT_ID
@@ -79,7 +77,6 @@ request_json() {
   local method="$1"
   local url="$2"
   local body="${3:-}"
-  local user_id="${4:-}"
   local response_file status_file status
   local curl_args
 
@@ -94,10 +91,6 @@ request_json() {
     -o "$response_file"
     -w "%{http_code}"
   )
-
-  if [[ -n "$user_id" ]]; then
-    curl_args+=(-H "X-User-Id: $user_id")
-  fi
 
   if [[ -n "$body" ]]; then
     curl_args+=(-H "Content-Type: application/json" -d "$body")
@@ -211,10 +204,9 @@ print(json.dumps({
 }))
 ')"
 current_user="$(request_json POST "$BASE_URL/api/auth/register" "$register_body")"
-BUYER_ID="$(printf '%s' "$current_user" | json_get userId)"
-export BUYER_ID
-[[ -n "$BUYER_ID" ]] || fail "Authenticated user ID was empty"
-log "Authenticated user created: $BUYER_ID"
+CURRENT_USER_ID="$(printf '%s' "$current_user" | json_get userId)"
+[[ -n "$CURRENT_USER_ID" ]] || fail "Authenticated user ID was empty"
+log "Authenticated user created: $CURRENT_USER_ID"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"
 available="$(printf '%s' "$availability" | json_get available)"
@@ -281,8 +273,7 @@ upload_request="$(
   request_json \
     POST \
     "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests" \
-    "$upload_request_body" \
-    "$BUYER_ID"
+    "$upload_request_body"
 )"
 upload_request_id="$(printf '%s' "$upload_request" | json_get uploadRequestId)"
 upload_url="$(printf '%s' "$upload_request" | json_get uploadUrl)"
@@ -296,9 +287,7 @@ log "Object uploaded through presigned URL"
 completion="$(
   request_json \
     POST \
-    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete" \
-    "" \
-    "$BUYER_ID"
+    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete"
 )"
 media_asset_id="$(printf '%s' "$completion" | json_get mediaAsset.mediaAssetId)"
 already_completed="$(printf '%s' "$completion" | json_get alreadyCompleted)"
@@ -311,9 +300,7 @@ log "Upload completed and media asset created: $media_asset_id"
 duplicate_completion="$(
   request_json \
     POST \
-    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete" \
-    "" \
-    "$BUYER_ID"
+    "$BASE_URL/api/owned-ranges/$ownership_record_id/media/upload-requests/$upload_request_id/complete"
 )"
 duplicate_media_asset_id="$(printf '%s' "$duplicate_completion" | json_get mediaAsset.mediaAssetId)"
 duplicate_already_completed="$(printf '%s' "$duplicate_completion" | json_get alreadyCompleted)"
@@ -321,7 +308,7 @@ duplicate_already_completed="$(printf '%s' "$duplicate_completion" | json_get al
 [[ "$duplicate_already_completed" == "true" ]] || fail "Expected duplicate completion to have alreadyCompleted=true"
 log "Duplicate completion idempotency passed"
 
-media_list="$(request_json GET "$BASE_URL/api/owned-ranges/$ownership_record_id/media" "" "$BUYER_ID")"
+media_list="$(request_json GET "$BASE_URL/api/owned-ranges/$ownership_record_id/media")"
 listed_media_asset_id="$(printf '%s' "$media_list" | json_get "0.mediaAssetId")"
 [[ "$listed_media_asset_id" == "$media_asset_id" ]] || fail "Created media asset was not listed for owned range"
 log "Owned range media listing passed"
