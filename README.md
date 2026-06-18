@@ -42,6 +42,10 @@ The development-stage OpenAPI contract is available at:
 
 The API now includes a development-stage server-side session authentication foundation. Purchase, owned media, and admin moderation APIs derive identity from the authenticated session. Admin moderation additionally requires an `ADMIN` user role.
 
+Browser clients should call `GET /api/csrf` and send the returned token in
+`X-XSRF-TOKEN` for mutating API requests. The development-stage fake payment
+webhook remains CSRF-exempt because it represents a server-to-server callback.
+
 The fake payment webhook API is also development-stage only. Production payment confirmation must use verified provider webhooks.
 
 ## Planned Technology Stack

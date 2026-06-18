@@ -9,6 +9,7 @@ on Ubuntu and on Windows through Git Bash.
 The script verifies:
 
 - API health
+- CSRF token bootstrap
 - purchase reservation and fake payment completion
 - ownership record creation
 - media upload request creation

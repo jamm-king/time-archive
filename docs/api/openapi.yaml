@@ -10,8 +10,9 @@ info:
     surfaces. It does not implement real payment provider integration or
     payment completion through browser redirects.
 
-    Purchase and owned range media endpoints derive current-user identity from
-    the authenticated server-side session.
+    Purchase, owned range media, and admin moderation endpoints derive identity
+    from the authenticated server-side session. Browser mutation requests use a
+    CSRF token from `GET /api/csrf` and echo it through `X-XSRF-TOKEN`.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -29,6 +30,30 @@ tags:
   - name: Payment
     description: Development-stage payment event operations.
 paths:
+  /api/csrf:
+    get:
+      tags:
+        - Auth
+      operationId: getCsrfToken
+      summary: Get CSRF token
+      description: |
+        Returns the CSRF token metadata for browser clients. Clients should keep
+        the session cookie and send the returned token value in `X-XSRF-TOKEN`
+        for mutating API requests.
+      responses:
+        "200":
+          description: CSRF token metadata.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Cookie-backed CSRF token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfTokenResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/auth/register:
     post:
       tags:
@@ -41,6 +66,8 @@ paths:
 
         This endpoint is intentionally minimal and does not perform email
         verification or password reset flows.
+      security:
+        - CsrfHeader: []
       requestBody:
         required: true
         content:
@@ -61,6 +88,8 @@ paths:
                 $ref: "#/components/schemas/CurrentUserResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "403":
+          $ref: "#/components/responses/CsrfTokenInvalid"
         "409":
           description: Email is already registered.
           content:
@@ -78,6 +107,8 @@ paths:
       description: |
         Authenticates a local MVP user and signs the browser in through a
         server-side session cookie.
+      security:
+        - CsrfHeader: []
       requestBody:
         required: true
         content:
@@ -100,6 +131,8 @@ paths:
           $ref: "#/components/responses/InvalidRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/CsrfTokenInvalid"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/auth/logout:
@@ -111,9 +144,12 @@ paths:
       description: Invalidates the current server-side session if one exists.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       responses:
         "204":
           description: Session invalidated.
+        "403":
+          $ref: "#/components/responses/CsrfTokenInvalid"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/me:
@@ -235,6 +271,7 @@ paths:
         Buyer identity is derived from the authenticated server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       requestBody:
         required: true
         content:
@@ -252,6 +289,8 @@ paths:
           $ref: "#/components/responses/InvalidRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/CsrfTokenInvalid"
         "409":
           description: The requested time range is already owned or reserved.
           content:
@@ -278,6 +317,7 @@ paths:
         the reservation.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - name: reservationId
           in: path
@@ -334,6 +374,7 @@ paths:
         The current user is derived from the authenticated server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
       requestBody:
@@ -437,6 +478,7 @@ paths:
         The current user is derived from the authenticated server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
       requestBody:
@@ -493,6 +535,7 @@ paths:
         The current user is derived from the authenticated server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/OwnershipRecordId"
         - name: uploadRequestId
@@ -587,6 +630,7 @@ paths:
         server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/MediaAssetId"
       requestBody:
@@ -635,6 +679,7 @@ paths:
         server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/MediaAssetId"
       responses:
@@ -677,6 +722,7 @@ paths:
         server-side session.
       security:
         - SessionCookie: []
+          CsrfHeader: []
       parameters:
         - $ref: "#/components/parameters/MediaAssetId"
       responses:
@@ -754,6 +800,10 @@ components:
       type: apiKey
       in: cookie
       name: SESSION
+    CsrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
   parameters:
     OwnershipRecordId:
       name: ownershipRecordId
@@ -790,6 +840,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ApiErrorResponse"
+    CsrfTokenInvalid:
+      description: CSRF token is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
     UnexpectedError:
       description: Unexpected server error.
       content:
@@ -797,6 +853,25 @@ components:
           schema:
             $ref: "#/components/schemas/ApiErrorResponse"
   schemas:
+    CsrfTokenResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - headerName
+        - parameterName
+        - token
+      properties:
+        headerName:
+          type: string
+          examples:
+            - X-XSRF-TOKEN
+        parameterName:
+          type: string
+          examples:
+            - _csrf
+        token:
+          type: string
+          minLength: 1
     RegisterRequest:
       type: object
       additionalProperties: false
@@ -1375,6 +1450,7 @@ components:
         - INVALID_REQUEST
         - AUTHENTICATION_REQUIRED
         - ADMIN_ACCESS_DENIED
+        - CSRF_TOKEN_INVALID
         - RESOURCE_NOT_FOUND
         - TIME_RANGE_ALREADY_OWNED
         - TIME_RANGE_ALREADY_RESERVED
