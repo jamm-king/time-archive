@@ -43,7 +43,9 @@ export async function proxyBackendJson({
     body,
     cache: "no-store",
   });
-  const responseBody = await upstreamResponse.text();
+  const responseBody = allowsResponseBody(upstreamResponse.status)
+    ? await upstreamResponse.text()
+    : null;
   const response = new NextResponse(responseBody, {
     status: upstreamResponse.status,
     headers: {
@@ -57,6 +59,10 @@ export async function proxyBackendJson({
   }
 
   return response;
+}
+
+function allowsResponseBody(status: number): boolean {
+  return status !== 204 && status !== 304;
 }
 
 function getSetCookieValues(headers: Headers): string[] {
