@@ -190,6 +190,19 @@ See [Local Purchase Flow Verification](docs/manual-verification/local-purchase-f
 Verification scripts are maintained as shell scripts. On Windows, run them
 through Git Bash.
 
+Verify the local development-stage auth flow through the web origin:
+
+```text
+./scripts/verify-local-auth-flow.sh
+```
+
+Verify the local development-stage current-user owned range read flow through
+the web origin:
+
+```text
+./scripts/verify-local-auth-owned-ranges-flow.sh
+```
+
 Verify the local development-stage media upload flow:
 
 ```text
