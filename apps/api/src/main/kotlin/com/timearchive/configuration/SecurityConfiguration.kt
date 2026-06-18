@@ -27,7 +27,11 @@ class SecurityConfiguration {
         http
             .csrf { it.disable() }
             .cors(Customizer.withDefaults())
-            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
+            .sessionManagement {
+                it
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                    .sessionFixation { sessionFixation -> sessionFixation.none() }
+            }
             .exceptionHandling {
                 it.authenticationEntryPoint { _, response, _ ->
                     response.status = HttpStatus.UNAUTHORIZED.value()

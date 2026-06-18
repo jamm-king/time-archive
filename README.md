@@ -40,7 +40,7 @@ The development-stage OpenAPI contract is available at:
 
 - [OpenAPI](docs/api/openapi.yaml)
 
-The API now includes a development-stage server-side session authentication foundation. Purchase APIs still accept request-body `buyerId`, and owned media APIs still accept `X-User-Id`; both are temporary development-stage behavior that must be replaced by authenticated server-side identity before production.
+The API now includes a development-stage server-side session authentication foundation. Purchase APIs derive buyer identity from the authenticated session. Owned media APIs still accept `X-User-Id`; this is temporary development-stage behavior that must be replaced by authenticated server-side identity before production.
 
 The fake payment webhook API is also development-stage only. Production payment confirmation must use verified provider webhooks.
 

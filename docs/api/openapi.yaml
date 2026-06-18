@@ -10,9 +10,6 @@ info:
     surfaces. It does not implement real payment provider integration or
     payment completion through browser redirects.
 
-    The `buyerId` request field is temporary development-stage behavior. Before
-    production, buyer identity must come from authenticated server-side identity.
-
     Owned range media endpoints temporarily accept `X-User-Id` as a
     development-stage stand-in for authenticated server-side identity.
 servers:
@@ -235,9 +232,9 @@ paths:
         Creates a temporary hold for an available range in the canonical
         24-hour Time Archive timeline.
 
-        This endpoint is development-stage only because `buyerId` is accepted
-        from the request body. Production APIs must derive buyer identity from
-        authenticated server-side identity.
+        Buyer identity is derived from the authenticated server-side session.
+      security:
+        - SessionCookie: []
       requestBody:
         required: true
         content:
@@ -253,6 +250,8 @@ paths:
                 $ref: "#/components/schemas/ReservationResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "409":
           description: The requested time range is already owned or reserved.
           content:
@@ -274,6 +273,11 @@ paths:
         The returned checkout URL is only a payment-provider redirect target.
         It is not proof of payment and must not grant ownership. Ownership can
         only be granted by verified payment confirmation.
+
+        Checkout creation is allowed only for the authenticated user who owns
+        the reservation.
+      security:
+        - SessionCookie: []
       parameters:
         - name: reservationId
           in: path
@@ -291,6 +295,14 @@ paths:
                 $ref: "#/components/schemas/CheckoutSessionResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Reservation does not belong to the current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           description: Reservation was not found.
           content:
@@ -828,16 +840,9 @@ components:
       type: object
       additionalProperties: false
       required:
-        - buyerId
         - startSecond
         - endSecond
       properties:
-        buyerId:
-          type: string
-          format: uuid
-          description: Temporary development-stage buyer identifier.
-          examples:
-            - "00000000-0000-0000-0000-000000000001"
         startSecond:
           type: integer
           format: int64

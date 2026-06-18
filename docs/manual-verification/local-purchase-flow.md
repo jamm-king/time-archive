@@ -52,12 +52,13 @@ On Windows, run the shell script from Git Bash.
 The scripts verify:
 
 1. API health is `UP`.
-2. The selected range is initially available.
-3. Reservation creation succeeds.
-4. Checkout creation succeeds.
-5. Fake payment webhook completion succeeds.
-6. Replaying the same fake webhook returns `alreadyProcessed = true`.
-7. The selected range becomes unavailable after ownership is created.
+2. A local user is registered and authenticated through a session cookie.
+3. The selected range is initially available.
+4. Reservation creation succeeds using server-side session identity.
+5. Checkout creation succeeds.
+6. Fake payment webhook completion succeeds.
+7. Replaying the same fake webhook returns `alreadyProcessed = true`.
+8. The selected range becomes unavailable after ownership is created.
 
 ## Common Failures
 
@@ -91,7 +92,6 @@ Local data persists in the Docker named volume. This is intentional. Do not dele
 
 This flow uses development-stage APIs:
 
-- request-body `buyerId`
 - fake payment webhook endpoint
 
-Production payment confirmation must use verified provider webhooks, and buyer identity must come from authenticated server-side identity.
+Production payment confirmation must use verified provider webhooks.

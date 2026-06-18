@@ -15,6 +15,9 @@ class CurrentUserSession {
             ?.toString()
             ?.let(UUID::fromString)
 
+    fun requireCurrentUserId(request: HttpServletRequest): UUID =
+        currentUserId(request) ?: throw IllegalArgumentException("authentication required")
+
     companion object {
         const val CURRENT_USER_ID_SESSION_ATTRIBUTE = "timeArchiveCurrentUserId"
     }

@@ -20,12 +20,9 @@ The MVP authentication foundation uses server-side sessions stored in Redis.
 Clients receive an HTTP-only session cookie and should not send self-asserted
 identity claims for production behavior.
 
-Current development-stage purchase APIs may still accept `buyerId` in the
-request body only to enable local and early MVP verification while the purchase
-flow is migrated to authenticated server-side identity. This is not
-production-safe. Production APIs must derive buyer identity from authenticated
-server-side identity and must ignore any client-provided owner or buyer identity
-claims.
+Purchase APIs derive buyer identity from authenticated server-side session
+identity. Clients must not send buyer or owner identity claims for purchase
+reservation creation or checkout creation.
 
 Roles:
 
