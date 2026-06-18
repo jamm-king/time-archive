@@ -69,6 +69,67 @@ export function findActiveSegment(
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return typeof value === "string" || value === null;
+}
+
+function isTimelineSegment(value: unknown): value is PublicTimelineSegment {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.startSecond === "number" &&
+    Number.isInteger(value.startSecond) &&
+    typeof value.endSecond === "number" &&
+    Number.isInteger(value.endSecond) &&
+    typeof value.mediaAssetId === "string" &&
+    (value.mediaType === "IMAGE" || value.mediaType === "VIDEO") &&
+    typeof value.mediaUrl === "string" &&
+    isNullableString(value.thumbnailUrl) &&
+    isNullableString(value.externalLink)
+  );
+}
+
+function parsePublicTimelineResponse(value: unknown): PublicTimelineResponse {
+  if (!isRecord(value)) {
+    throw new Error("Timeline response must be an object");
+  }
+
+  const { from, to, segments } = value;
+
+  if (
+    typeof from !== "number" ||
+    !Number.isInteger(from) ||
+    typeof to !== "number" ||
+    !Number.isInteger(to)
+  ) {
+    throw new Error("Timeline response has an invalid shape");
+  }
+
+  if (!Array.isArray(segments)) {
+    throw new Error("Timeline response segments must be an array");
+  }
+
+  const parsedSegments = segments.map((segment) => {
+    if (!isTimelineSegment(segment)) {
+      throw new Error("Timeline response segment has an invalid shape");
+    }
+
+    return segment;
+  });
+
+  return {
+    from,
+    to,
+    segments: parsedSegments,
+  };
+}
+
 export async function fetchPublicTimeline(
   timelineWindow: TimelineWindow,
   signal?: AbortSignal,
@@ -88,5 +149,5 @@ export async function fetchPublicTimeline(
     throw new Error(`Timeline request failed with HTTP ${response.status}`);
   }
 
-  return response.json();
+  return parsePublicTimelineResponse(await response.json());
 }
