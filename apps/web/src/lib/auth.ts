@@ -85,7 +85,7 @@ export async function logout(): Promise<void> {
   }
 }
 
-async function fetchCsrfToken(): Promise<string> {
+export async function fetchCsrfToken(): Promise<string> {
   const response = await fetch("/api/csrf", {
     credentials: "same-origin",
     headers: {

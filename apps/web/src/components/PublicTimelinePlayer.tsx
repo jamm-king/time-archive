@@ -19,11 +19,17 @@ import {
   type AuthMode,
   type CurrentUser,
 } from "@/lib/auth";
+import {
+  fetchOwnedRangeMediaAssets,
+  uploadOwnedRangeMedia,
+  type MediaAsset,
+} from "@/lib/owned-media";
 import { fetchOwnedRanges, type OwnedRange } from "@/lib/owned-ranges";
 
 type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
 type AuthStatus = "loading" | "guest" | "authenticated" | "error";
+type UploadStatus = "idle" | "uploading" | "complete" | "error";
 
 export function PublicTimelinePlayer() {
   const [now, setNow] = useState(() => new Date());
@@ -413,26 +419,150 @@ function OwnedRangesList({ currentUserId }: { currentUserId: string }) {
           No owned seconds yet.
         </p>
       ) : (
-        <ul className="mt-3 grid max-h-44 gap-2 overflow-y-auto pr-1">
+        <ul className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
           {ranges.map((range) => (
-            <li
-              key={range.ownershipRecordId}
-              className="border border-neutral-800 px-3 py-2"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs tabular-nums text-neutral-100">
-                  {formatArchiveSecond(range.startSecond)}-
-                  {formatArchiveSecond(range.endSecond)}
-                </span>
-                <span className="text-[10px] uppercase text-neutral-500">
-                  {range.status}
-                </span>
-              </div>
-            </li>
+            <OwnedRangeItem key={range.ownershipRecordId} range={range} />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function OwnedRangeItem({ range }: { range: OwnedRange }) {
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
+  const [mediaStatus, setMediaStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchOwnedRangeMediaAssets(range.ownershipRecordId, controller.signal)
+      .then((assets) => {
+        setMediaAssets(assets);
+        setMediaStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.error(error);
+        setMediaAssets([]);
+        setMediaStatus("error");
+      });
+
+    return () => controller.abort();
+  }, [range.ownershipRecordId]);
+
+  const upload = async () => {
+    if (!selectedFile || uploadStatus === "uploading") {
+      return;
+    }
+
+    setUploadStatus("uploading");
+    setUploadError(null);
+
+    try {
+      const result = await uploadOwnedRangeMedia(
+        range.ownershipRecordId,
+        selectedFile,
+      );
+      setMediaAssets((assets) => [result.mediaAsset, ...assets]);
+      setSelectedFile(null);
+      setUploadStatus("complete");
+    } catch (error: unknown) {
+      console.error(error);
+      setUploadStatus("error");
+      setUploadError(error instanceof Error ? error.message : "Upload failed");
+    }
+  };
+
+  return (
+    <li className="border border-neutral-800 px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs tabular-nums text-neutral-100">
+          {formatArchiveSecond(range.startSecond)}-
+          {formatArchiveSecond(range.endSecond)}
+        </span>
+        <span className="text-[10px] uppercase text-neutral-500">
+          {range.status}
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-2">
+        <label className="grid gap-1 text-[10px] uppercase text-neutral-500">
+          Media file
+          <input
+            className="text-xs normal-case text-neutral-400 file:mr-2 file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-100"
+            type="file"
+            accept="image/*,video/*"
+            onChange={(event) => {
+              setSelectedFile(event.target.files?.[0] ?? null);
+              setUploadStatus("idle");
+              setUploadError(null);
+            }}
+            disabled={uploadStatus === "uploading"}
+          />
+        </label>
+        <button
+          type="button"
+          className="border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+          onClick={upload}
+          disabled={!selectedFile || uploadStatus === "uploading"}
+        >
+          {uploadStatus === "uploading" ? "Uploading" : "Upload"}
+        </button>
+      </div>
+
+      {uploadStatus === "complete" ? (
+        <p className="mt-2 text-xs text-neutral-400">Pending moderation</p>
+      ) : null}
+      {uploadError ? (
+        <p className="mt-2 break-words text-xs text-red-300">{uploadError}</p>
+      ) : null}
+
+      <OwnedRangeMediaSummary status={mediaStatus} mediaAssets={mediaAssets} />
+    </li>
+  );
+}
+
+function OwnedRangeMediaSummary({
+  status,
+  mediaAssets,
+}: {
+  status: "loading" | "ready" | "error";
+  mediaAssets: MediaAsset[];
+}) {
+  if (status === "loading") {
+    return <p className="mt-3 text-xs text-neutral-600">Checking media</p>;
+  }
+  if (status === "error") {
+    return <p className="mt-3 text-xs text-red-300">Media list unavailable</p>;
+  }
+  if (mediaAssets.length === 0) {
+    return <p className="mt-3 text-xs text-neutral-600">No media uploaded</p>;
+  }
+
+  return (
+    <ul className="mt-3 grid gap-1">
+      {mediaAssets.slice(0, 3).map((asset) => (
+        <li
+          key={asset.mediaAssetId}
+          className="flex items-center justify-between gap-3 text-xs"
+        >
+          <span className="truncate text-neutral-400">
+            {asset.mediaType}
+          </span>
+          <span className="shrink-0 uppercase text-neutral-500">
+            {asset.moderationStatus}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
