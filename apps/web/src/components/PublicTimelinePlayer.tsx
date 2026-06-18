@@ -697,7 +697,7 @@ function PlayerCenter({
           </button>
         ) : status === "empty" ? (
           <PurchaseCurrentSecondPanel
-            key={`${currentUser?.userId ?? "guest"}-${currentSecond}`}
+            key={currentUser?.userId ?? "guest"}
             currentSecond={currentSecond}
             currentUser={currentUser}
             onComplete={onPurchaseComplete}
@@ -725,7 +725,10 @@ function PurchaseCurrentSecondPanel({
   const endSecond = selectedSecond + 1;
 
   const reserve = async () => {
-    if (!currentUser || status === "checking" || status === "completing") {
+    if (status !== "idle" && status !== "error") {
+      return;
+    }
+    if (!currentUser) {
       return;
     }
 
@@ -790,9 +793,20 @@ function PurchaseCurrentSecondPanel({
         type="button"
         className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
         onClick={reserve}
-        disabled={status === "checking" || status === "completing"}
+        disabled={
+          status === "checking" ||
+          status === "reserved" ||
+          status === "completing" ||
+          status === "complete"
+        }
       >
-        {status === "checking" ? "Reserving" : "Buy this second"}
+        {status === "checking"
+          ? "Reserving"
+          : status === "reserved" || status === "completing"
+            ? "Reserved"
+            : status === "complete"
+              ? "Owned"
+              : "Buy this second"}
       </button>
       {status === "reserved" || status === "completing" ? (
         <button
