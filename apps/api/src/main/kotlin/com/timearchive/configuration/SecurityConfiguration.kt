@@ -15,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 
 @Configuration
 @EnableWebSecurity
@@ -25,7 +26,13 @@ class SecurityConfiguration {
         sessionAuthenticationFilter: SessionAuthenticationFilter,
     ): SecurityFilterChain =
         http
-            .csrf { it.disable() }
+            .csrf {
+                it
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .ignoringRequestMatchers(
+                        "/api/internal/payments/fake/webhooks/primary-purchase-completed",
+                    )
+            }
             .cors(Customizer.withDefaults())
             .sessionManagement {
                 it
@@ -38,6 +45,13 @@ class SecurityConfiguration {
                     response.contentType = MediaType.APPLICATION_JSON_VALUE
                     response.writer.write(
                         """{"code":"AUTHENTICATION_REQUIRED","message":"Authentication required","details":[]}""",
+                    )
+                }
+                it.accessDeniedHandler { _, response, _ ->
+                    response.status = HttpStatus.FORBIDDEN.value()
+                    response.contentType = MediaType.APPLICATION_JSON_VALUE
+                    response.writer.write(
+                        """{"code":"CSRF_TOKEN_INVALID","message":"CSRF token is missing or invalid","details":[]}""",
                     )
                 }
             }

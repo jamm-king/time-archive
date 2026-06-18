@@ -96,6 +96,10 @@ request_json() {
     -w "%{http_code}"
   )
 
+  if [[ "$method" != "GET" && -n "${CSRF_TOKEN:-}" ]]; then
+    curl_args+=(-H "X-XSRF-TOKEN: $CSRF_TOKEN")
+  fi
+
   if [[ -n "$body" ]]; then
     curl_args+=(-H "Content-Type: application/json" -d "$body")
   fi
@@ -117,6 +121,15 @@ request_json() {
 
   cat "$response_file"
   rm -f "$response_file"
+}
+
+refresh_csrf_token() {
+  local csrf_response
+
+  csrf_response="$(request_json GET "$BASE_URL/api/csrf")"
+  CSRF_TOKEN="$(printf '%s' "$csrf_response" | json_get token)"
+  export CSRF_TOKEN
+  [[ -n "$CSRF_TOKEN" ]] || fail "CSRF token was empty"
 }
 
 authenticate_admin() {
@@ -141,6 +154,7 @@ print(json.dumps({
     "$BASE_URL/api/auth/register"
     --cookie "$SESSION_COOKIE_FILE"
     --cookie-jar "$SESSION_COOKIE_FILE"
+    -H "X-XSRF-TOKEN: $CSRF_TOKEN"
     -H "Content-Type: application/json"
     -d "$register_body"
     -o "$response_file"
@@ -290,6 +304,8 @@ log "Using range [$START_SECOND, $END_SECOND)"
 
 wait_for_health
 log "Health check passed"
+refresh_csrf_token
+log "CSRF token fetched"
 
 register_body="$("$PYTHON_BIN" -c '
 import json
@@ -310,6 +326,8 @@ current_user="$(request_json POST "$BASE_URL/api/auth/register" "$register_body"
 CURRENT_USER_ID="$(printf '%s' "$current_user" | json_get userId)"
 [[ -n "$CURRENT_USER_ID" ]] || fail "Authenticated user ID was empty"
 log "Authenticated user created: $CURRENT_USER_ID"
+refresh_csrf_token
+log "CSRF token refreshed after authentication"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"
 available="$(printf '%s' "$availability" | json_get available)"
@@ -416,6 +434,8 @@ admin_user="$(authenticate_admin)"
 ADMIN_USER_ID="$(printf '%s' "$admin_user" | json_get userId)"
 [[ -n "$ADMIN_USER_ID" ]] || fail "Admin user ID was empty"
 log "Admin authenticated: $ADMIN_USER_ID"
+refresh_csrf_token
+log "CSRF token refreshed after admin authentication"
 
 export APPROVED_FILE_URL="$original_file_url"
 approval_body="$("$PYTHON_BIN" -c '

@@ -52,13 +52,14 @@ On Windows, run the shell script from Git Bash.
 The scripts verify:
 
 1. API health is `UP`.
-2. A local user is registered and authenticated through a session cookie.
-3. The selected range is initially available.
-4. Reservation creation succeeds using server-side session identity.
-5. Checkout creation succeeds.
-6. Fake payment webhook completion succeeds.
-7. Replaying the same fake webhook returns `alreadyProcessed = true`.
-8. The selected range becomes unavailable after ownership is created.
+2. A CSRF token is fetched through `GET /api/csrf`.
+3. A local user is registered and authenticated through a session cookie.
+4. The selected range is initially available.
+5. Reservation creation succeeds using server-side session identity and a CSRF header.
+6. Checkout creation succeeds with the same CSRF header.
+7. Fake payment webhook completion succeeds.
+8. Replaying the same fake webhook returns `alreadyProcessed = true`.
+9. The selected range becomes unavailable after ownership is created.
 
 ## Common Failures
 

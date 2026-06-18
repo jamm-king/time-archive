@@ -24,6 +24,12 @@ Purchase APIs derive buyer identity from authenticated server-side session
 identity. Clients must not send buyer or owner identity claims for purchase
 reservation creation or checkout creation.
 
+Browser mutation APIs use CSRF protection with a cookie-backed token. Clients
+must call `GET /api/csrf`, keep the returned cookies, and send the token value
+in `X-XSRF-TOKEN` for mutating API requests. The CSRF token is not an
+authentication secret; it protects the HttpOnly session cookie from cross-site
+request forgery.
+
 Roles:
 
 - `USER`
@@ -43,6 +49,9 @@ Required controls:
 - Store only payment references needed for reconciliation.
 
 The development-stage fake payment webhook endpoint is for local MVP verification only. It must not be exposed as a production payment confirmation path. Production payment webhooks must verify provider signatures before calling payment completion logic.
+
+The fake payment webhook endpoint is excluded from CSRF protection because it
+models a server-to-server provider callback, not a browser session mutation.
 
 ## Media Upload Security
 

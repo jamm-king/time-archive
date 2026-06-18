@@ -9,6 +9,7 @@ on Ubuntu and on Windows through Git Bash.
 The script verifies:
 
 - API health
+- CSRF token bootstrap
 - purchase reservation and fake payment completion
 - ownership record creation
 - media upload request creation
@@ -41,7 +42,6 @@ The script defaults to:
 
 ```text
 BASE_URL=http://localhost:8080
-BUYER_ID=00000000-0000-0000-0000-000000000002
 START_SECOND=2000
 END_SECOND=2001
 UPLOAD_CONTENT_TYPE=image/png
