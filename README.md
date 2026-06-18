@@ -144,6 +144,10 @@ backend API base URL when needed:
 TIME_ARCHIVE_API_BASE_URL=http://localhost:8080 npm run dev
 ```
 
+The frontend also proxies session authentication and CSRF calls through
+same-origin Next.js route handlers so browser cookies stay scoped to the web
+origin.
+
 Verify the frontend:
 
 ```text
