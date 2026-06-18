@@ -64,8 +64,7 @@ class AuthController(
 
     @GetMapping("/me")
     fun me(request: HttpServletRequest): CurrentUserResponse {
-        val userId = currentUserSession.currentUserId(request)
-            ?: throw IllegalArgumentException("authentication required")
+        val userId = currentUserSession.requireCurrentUserId(request)
 
         return CurrentUserResponse.from(getCurrentUser.get(GetCurrentUser.Query(userId = userId)))
     }

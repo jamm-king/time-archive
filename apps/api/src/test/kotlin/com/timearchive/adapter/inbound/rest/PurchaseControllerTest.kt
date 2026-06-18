@@ -15,6 +15,7 @@ import org.hamcrest.Matchers.hasItem
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockHttpSession
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
@@ -24,13 +25,14 @@ import java.util.UUID
 class PurchaseControllerTest {
     private val reserveTimeRange: ReserveTimeRange = mockk()
     private val createCheckout: CreateCheckout = mockk()
+    private val currentUserSession = CurrentUserSession()
     private val objectMapper: ObjectMapper = jacksonObjectMapper().findAndRegisterModules()
     private lateinit var mockMvc: MockMvc
 
     @BeforeEach
     fun setUp() {
         mockMvc = MockMvcBuilders
-            .standaloneSetup(PurchaseController(reserveTimeRange, createCheckout))
+            .standaloneSetup(PurchaseController(reserveTimeRange, createCheckout, currentUserSession))
             .setControllerAdvice(ApiExceptionHandler())
             .build()
     }
@@ -39,6 +41,7 @@ class PurchaseControllerTest {
     fun `creates reservation`() {
         val buyerId = UUID.randomUUID()
         val reservationId = UUID.randomUUID()
+        val session = signedInSession(buyerId)
         val reservation = PurchaseReservation.held(
             id = reservationId,
             buyerId = buyerId,
@@ -52,11 +55,11 @@ class PurchaseControllerTest {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
-                    "buyerId" to buyerId,
                     "startSecond" to 3_600,
                     "endSecond" to 3_660,
                 ),
             )
+            this.session = session
         }
             .andExpect {
                 status { isCreated() }
@@ -84,15 +87,17 @@ class PurchaseControllerTest {
 
     @Test
     fun `rejects invalid reservation request`() {
+        val session = signedInSession(UUID.randomUUID())
+
         mockMvc.post("/api/purchase/reservations") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
-                    "buyerId" to UUID.randomUUID(),
                     "startSecond" to -1,
                     "endSecond" to 0,
                 ),
             )
+            this.session = session
         }
             .andExpect {
                 status { isBadRequest() }
@@ -105,6 +110,8 @@ class PurchaseControllerTest {
 
     @Test
     fun `maps active reservation overlap to conflict`() {
+        val buyerId = UUID.randomUUID()
+        val session = signedInSession(buyerId)
         every { reserveTimeRange.reserve(any()) } throws
             IllegalArgumentException("time range already has active reservation")
 
@@ -112,11 +119,11 @@ class PurchaseControllerTest {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
-                    "buyerId" to UUID.randomUUID(),
                     "startSecond" to 10,
                     "endSecond" to 20,
                 ),
             )
+            this.session = session
         }
             .andExpect {
                 status { isConflict() }
@@ -127,6 +134,8 @@ class PurchaseControllerTest {
 
     @Test
     fun `creates checkout`() {
+        val buyerId = UUID.randomUUID()
+        val session = signedInSession(buyerId)
         val reservationId = UUID.randomUUID()
         every { createCheckout.create(any()) } returns CheckoutSession(
             provider = "fake",
@@ -134,7 +143,9 @@ class PurchaseControllerTest {
             checkoutUrl = "https://payments.example.test/checkout/$reservationId",
         )
 
-        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", reservationId)
+        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", reservationId) {
+            this.session = session
+        }
             .andExpect {
                 status { isOk() }
                 jsonPath("$.provider") { value("fake") }
@@ -143,13 +154,20 @@ class PurchaseControllerTest {
             }
 
         verify {
-            createCheckout.create(CreateCheckout.Command(reservationId = reservationId))
+            createCheckout.create(
+                CreateCheckout.Command(
+                    currentUserId = buyerId,
+                    reservationId = reservationId,
+                ),
+            )
         }
     }
 
     @Test
     fun `rejects malformed reservation id`() {
-        mockMvc.post("/api/purchase/reservations/not-a-uuid/checkout")
+        mockMvc.post("/api/purchase/reservations/not-a-uuid/checkout") {
+            this.session = signedInSession(UUID.randomUUID())
+        }
             .andExpect {
                 status { isBadRequest() }
                 jsonPath("$.code") { value("INVALID_REQUEST") }
@@ -160,7 +178,9 @@ class PurchaseControllerTest {
     fun `maps missing reservation to not found`() {
         every { createCheckout.create(any()) } throws IllegalStateException("purchase reservation not found")
 
-        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", UUID.randomUUID())
+        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", UUID.randomUUID()) {
+            this.session = signedInSession(UUID.randomUUID())
+        }
             .andExpect {
                 status { isNotFound() }
                 jsonPath("$.code") { value("RESOURCE_NOT_FOUND") }
@@ -172,7 +192,9 @@ class PurchaseControllerTest {
     fun `does not expose unexpected exception details`() {
         every { createCheckout.create(any()) } throws IllegalStateException("database password leaked")
 
-        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", UUID.randomUUID())
+        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", UUID.randomUUID()) {
+            this.session = signedInSession(UUID.randomUUID())
+        }
             .andExpect {
                 status { isInternalServerError() }
                 jsonPath("$.code") { value("UNEXPECTED_ERROR") }
@@ -180,4 +202,24 @@ class PurchaseControllerTest {
                 jsonPath("$.message") { value(containsString("Unexpected")) }
             }
     }
+
+    @Test
+    fun `rejects reservation without session`() {
+        mockMvc.post("/api/purchase/reservations") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(
+                mapOf(
+                    "startSecond" to 10,
+                    "endSecond" to 20,
+                ),
+            )
+        }
+            .andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.code") { value("AUTHENTICATION_REQUIRED") }
+            }
+    }
+
+    private fun signedInSession(userId: UUID): MockHttpSession =
+        MockHttpSession().also { currentUserSession.signIn(it, userId) }
 }

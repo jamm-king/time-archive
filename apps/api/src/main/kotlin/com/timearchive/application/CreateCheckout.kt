@@ -21,6 +21,9 @@ class CreateCheckout(
             val reservation = purchaseReservationRepository.findByIdForUpdate(command.reservationId)
                 ?: error("purchase reservation not found")
 
+            require(reservation.buyerId == command.currentUserId) {
+                "reservation is not owned by current user"
+            }
             require(reservation.status == PurchaseReservationStatus.HELD) {
                 "reservation is not held"
             }
@@ -45,6 +48,7 @@ class CreateCheckout(
         }
 
     data class Command(
+        val currentUserId: UUID,
         val reservationId: UUID,
     )
 }

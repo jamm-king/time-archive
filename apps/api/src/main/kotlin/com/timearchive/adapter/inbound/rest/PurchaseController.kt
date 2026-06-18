@@ -2,6 +2,7 @@ package com.timearchive.adapter.inbound.rest
 
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.ReserveTimeRange
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PathVariable
@@ -17,15 +18,18 @@ import java.util.UUID
 class PurchaseController(
     private val reserveTimeRange: ReserveTimeRange,
     private val createCheckout: CreateCheckout,
+    private val currentUserSession: CurrentUserSession,
 ) {
     @PostMapping("/reservations")
     @ResponseStatus(HttpStatus.CREATED)
     fun createReservation(
         @Valid @RequestBody request: CreateReservationRequest,
+        httpRequest: HttpServletRequest,
     ): ReservationResponse {
+        val currentUserId = currentUserSession.requireCurrentUserId(httpRequest)
         val reservation = reserveTimeRange.reserve(
             ReserveTimeRange.Command(
-                buyerId = requireNotNull(request.buyerId),
+                buyerId = currentUserId,
                 startSecond = requireNotNull(request.startSecond),
                 endSecond = requireNotNull(request.endSecond),
             ),
@@ -37,8 +41,14 @@ class PurchaseController(
     @PostMapping("/reservations/{reservationId}/checkout")
     fun createCheckout(
         @PathVariable reservationId: UUID,
+        httpRequest: HttpServletRequest,
     ): CheckoutSessionResponse {
-        val checkout = createCheckout.create(CreateCheckout.Command(reservationId = reservationId))
+        val checkout = createCheckout.create(
+            CreateCheckout.Command(
+                currentUserId = currentUserSession.requireCurrentUserId(httpRequest),
+                reservationId = reservationId,
+            ),
+        )
         return CheckoutSessionResponse.from(checkout)
     }
 }

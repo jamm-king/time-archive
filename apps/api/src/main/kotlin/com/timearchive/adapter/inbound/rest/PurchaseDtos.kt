@@ -10,8 +10,6 @@ import java.util.UUID
 
 data class CreateReservationRequest(
     @field:NotNull
-    val buyerId: UUID?,
-    @field:NotNull
     @field:Min(0)
     @field:Max(86_399)
     val startSecond: Long?,

@@ -26,7 +26,7 @@ class CreateCheckoutTest {
         val paymentPort = FakePaymentPort()
         val useCase = useCase(repository = repository, paymentPort = paymentPort)
 
-        val checkout = useCase.create(CreateCheckout.Command(reservation.id))
+        val checkout = useCase.create(commandFor(reservation))
 
         assertThat(checkout.provider).isEqualTo("fake")
         assertThat(checkout.providerReference).isEqualTo("checkout-${reservation.id}")
@@ -40,8 +40,37 @@ class CreateCheckoutTest {
         val useCase = useCase(repository = FakePurchaseReservationRepository(null))
 
         assertThatIllegalStateException()
-            .isThrownBy { useCase.create(CreateCheckout.Command(UUID.randomUUID())) }
+            .isThrownBy {
+                useCase.create(
+                    CreateCheckout.Command(
+                        currentUserId = UUID.randomUUID(),
+                        reservationId = UUID.randomUUID(),
+                    ),
+                )
+            }
             .withMessage("purchase reservation not found")
+    }
+
+    @Test
+    fun `rejects checkout by user who does not own reservation`() {
+        val reservation = heldReservation()
+        val paymentPort = FakePaymentPort()
+        val repository = FakePurchaseReservationRepository(reservation)
+        val useCase = useCase(repository = repository, paymentPort = paymentPort)
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.create(
+                    CreateCheckout.Command(
+                        currentUserId = UUID.randomUUID(),
+                        reservationId = reservation.id,
+                    ),
+                )
+            }
+            .withMessage("reservation is not owned by current user")
+
+        assertThat(paymentPort.requests).isEmpty()
+        assertThat(repository.checkoutCreatedIds).isEmpty()
     }
 
     @Test
@@ -55,7 +84,7 @@ class CreateCheckoutTest {
         val useCase = useCase(repository = repository, paymentPort = paymentPort)
 
         assertThatIllegalArgumentException()
-            .isThrownBy { useCase.create(CreateCheckout.Command(reservation.id)) }
+            .isThrownBy { useCase.create(commandFor(reservation)) }
             .withMessage("reservation is expired")
 
         assertThat(paymentPort.requests).isEmpty()
@@ -68,7 +97,7 @@ class CreateCheckoutTest {
         val useCase = useCase(repository = FakePurchaseReservationRepository(reservation))
 
         assertThatIllegalArgumentException()
-            .isThrownBy { useCase.create(CreateCheckout.Command(reservation.id)) }
+            .isThrownBy { useCase.create(commandFor(reservation)) }
             .withMessage("reservation is not held")
     }
 
@@ -82,7 +111,7 @@ class CreateCheckoutTest {
         )
 
         assertThatIllegalStateException()
-            .isThrownBy { useCase.create(CreateCheckout.Command(reservation.id)) }
+            .isThrownBy { useCase.create(commandFor(reservation)) }
             .withMessage("payment provider unavailable")
 
         assertThat(repository.checkoutCreatedIds).isEmpty()
@@ -115,6 +144,12 @@ class CreateCheckoutTest {
         val held = heldReservation()
         return held.copy(status = status)
     }
+
+    private fun commandFor(reservation: PurchaseReservation): CreateCheckout.Command =
+        CreateCheckout.Command(
+            currentUserId = reservation.buyerId,
+            reservationId = reservation.id,
+        )
 
     private object ImmediateTransactionPort : TransactionPort {
         override fun <T> execute(block: () -> T): T = block()

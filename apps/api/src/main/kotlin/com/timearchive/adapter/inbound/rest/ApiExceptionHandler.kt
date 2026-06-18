@@ -96,6 +96,8 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid credentials")
             message.contains("user email already exists") ->
                 errorResponse(HttpStatus.CONFLICT, "USER_EMAIL_ALREADY_EXISTS", "User email already exists")
+            message.contains("reservation is not owned by current user") ->
+                errorResponse(HttpStatus.FORBIDDEN, "RESERVATION_ACCESS_DENIED", "Reservation access denied")
             message.contains("time range already has active ownership") ->
                 errorResponse(HttpStatus.CONFLICT, "TIME_RANGE_ALREADY_OWNED", "Time range already has active ownership")
             message.contains("time range already has active reservation") ->

@@ -88,7 +88,15 @@ request_json() {
 
   response_file="$(mktemp)"
   status_file="$(mktemp)"
-  curl_args=(-sS -X "$method" "$url" -o "$response_file" -w "%{http_code}")
+  curl_args=(
+    -sS
+    -X "$method"
+    "$url"
+    --cookie "$SESSION_COOKIE_FILE"
+    --cookie-jar "$SESSION_COOKIE_FILE"
+    -o "$response_file"
+    -w "%{http_code}"
+  )
 
   if [[ -n "$user_id" ]]; then
     curl_args+=(-H "X-User-Id: $user_id")
@@ -223,12 +231,34 @@ if exposed:
 require_command curl
 require_command wc
 PYTHON_BIN="$(detect_python)"
+SESSION_COOKIE_FILE="$(mktemp)"
 
 log "Using BASE_URL=$BASE_URL"
 log "Using range [$START_SECOND, $END_SECOND)"
 
 wait_for_health
 log "Health check passed"
+
+register_body="$("$PYTHON_BIN" -c '
+import json
+import os
+import uuid
+
+print(json.dumps({
+    "email": "timeline-%s-%s-%s@example.com" % (
+        os.environ["START_SECOND"],
+        os.environ["END_SECOND"],
+        uuid.uuid4().hex,
+    ),
+    "password": "password123",
+    "displayName": "Timeline User",
+}))
+')"
+current_user="$(request_json POST "$BASE_URL/api/auth/register" "$register_body")"
+BUYER_ID="$(printf '%s' "$current_user" | json_get userId)"
+export BUYER_ID
+[[ -n "$BUYER_ID" ]] || fail "Authenticated user ID was empty"
+log "Authenticated user created: $BUYER_ID"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"
 available="$(printf '%s' "$availability" | json_get available)"
@@ -245,7 +275,6 @@ import json
 import os
 
 print(json.dumps({
-    "buyerId": os.environ["BUYER_ID"],
     "startSecond": int(os.environ["START_SECOND"]),
     "endSecond": int(os.environ["END_SECOND"]),
 }))
@@ -281,7 +310,7 @@ ownership_record_id="$(printf '%s' "$payment" | json_get ownershipRecordId)"
 log "Ownership created: $ownership_record_id"
 
 upload_file_path="$(mktemp)"
-trap 'rm -f "$upload_file_path"' EXIT
+trap 'rm -f "$upload_file_path" "$SESSION_COOKIE_FILE"' EXIT
 create_upload_file "$upload_file_path"
 content_length_bytes="$(wc -c < "$upload_file_path" | tr -d '[:space:]')"
 export CONTENT_LENGTH_BYTES="$content_length_bytes"

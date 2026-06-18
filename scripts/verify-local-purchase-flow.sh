@@ -2,7 +2,6 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-BUYER_ID="${BUYER_ID:-00000000-0000-0000-0000-000000000001}"
 START_SECOND="${START_SECOND:-100}"
 END_SECOND="${END_SECOND:-110}"
 EVENT_ID="${EVENT_ID:-evt_local_${START_SECOND}_${END_SECOND}}"
@@ -13,7 +12,6 @@ PAYLOAD_HASH="${PAYLOAD_HASH:-sha256-local-${START_SECOND}-${END_SECOND}}"
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-120}"
 
 export BASE_URL
-export BUYER_ID
 export START_SECOND
 export END_SECOND
 export EVENT_ID
@@ -73,26 +71,27 @@ request_json() {
   local url="$2"
   local body="${3:-}"
   local response_file status_file status
+  local curl_args
 
   response_file="$(mktemp)"
   status_file="$(mktemp)"
+  curl_args=(
+    -sS
+    -X "$method"
+    "$url"
+    --cookie "$SESSION_COOKIE_FILE"
+    --cookie-jar "$SESSION_COOKIE_FILE"
+    -o "$response_file"
+    -w "%{http_code}"
+  )
 
   if [[ -n "$body" ]]; then
-    if ! curl -sS -X "$method" "$url" \
-      -H "Content-Type: application/json" \
-      -d "$body" \
-      -o "$response_file" \
-      -w "%{http_code}" > "$status_file"; then
-      rm -f "$response_file" "$status_file"
-      fail "Request failed: $method $url"
-    fi
-  else
-    if ! curl -sS -X "$method" "$url" \
-      -o "$response_file" \
-      -w "%{http_code}" > "$status_file"; then
-      rm -f "$response_file" "$status_file"
-      fail "Request failed: $method $url"
-    fi
+    curl_args+=(-H "Content-Type: application/json" -d "$body")
+  fi
+
+  if ! curl "${curl_args[@]}" > "$status_file"; then
+    rm -f "$response_file" "$status_file"
+    fail "Request failed: $method $url"
   fi
 
   status="$(cat "$status_file")"
@@ -137,12 +136,34 @@ except Exception:
 
 require_command curl
 PYTHON_BIN="$(detect_python)"
+SESSION_COOKIE_FILE="$(mktemp)"
+trap 'rm -f "$SESSION_COOKIE_FILE"' EXIT
 
 log "Using BASE_URL=$BASE_URL"
 log "Using range [$START_SECOND, $END_SECOND)"
 
 wait_for_health
 log "Health check passed"
+
+register_body="$("$PYTHON_BIN" -c '
+import json
+import os
+import uuid
+
+print(json.dumps({
+    "email": "purchase-%s-%s-%s@example.com" % (
+        os.environ["START_SECOND"],
+        os.environ["END_SECOND"],
+        uuid.uuid4().hex,
+    ),
+    "password": "password123",
+    "displayName": "Purchase User",
+}))
+')"
+current_user="$(request_json POST "$BASE_URL/api/auth/register" "$register_body")"
+buyer_id="$(printf '%s' "$current_user" | json_get userId)"
+[[ -n "$buyer_id" ]] || fail "Authenticated user ID was empty"
+log "Authenticated user created: $buyer_id"
 
 availability="$(request_json GET "$BASE_URL/api/archive/availability?startSecond=$START_SECOND&endSecond=$END_SECOND")"
 available="$(printf '%s' "$availability" | json_get available)"
@@ -154,7 +175,6 @@ import json
 import os
 
 print(json.dumps({
-    "buyerId": os.environ["BUYER_ID"],
     "startSecond": int(os.environ["START_SECOND"]),
     "endSecond": int(os.environ["END_SECOND"]),
 }))
