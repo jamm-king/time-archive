@@ -90,6 +90,9 @@ user state.
 - 2026-06-18: Added client-side auth helpers and compact player auth UI.
 - 2026-06-18: Verified lint, production build, Docker Compose web smoke, and
   same-origin auth proxy behavior.
+- 2026-06-18: Fixed logout proxy handling for backend `204 No Content`
+  responses after local Docker verification showed the session was invalidated
+  but the web route returned HTTP 500.
 
 ## Completion Summary
 
@@ -144,6 +147,12 @@ The home page returned HTTP 200 and included the Time Archive player shell.
   payment UI.
 - Auth state is client-side only and intentionally scoped to the current
   fullscreen player shell.
+
+## Follow-up Fixes
+
+- 2026-06-18: Updated the shared backend proxy to avoid constructing response
+  bodies for HTTP 204 and 304 responses. This fixes logout UI failures while
+  preserving the backend session invalidation behavior.
 
 ## Follow-up Recommendations
 
