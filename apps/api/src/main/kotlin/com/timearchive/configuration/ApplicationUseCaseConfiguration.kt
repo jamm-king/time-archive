@@ -1,17 +1,20 @@
 package com.timearchive.configuration
 
 import com.timearchive.application.ApproveMediaAsset
+import com.timearchive.application.AuthenticateUser
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
+import com.timearchive.application.GetCurrentUser
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListMediaModerationQueue
 import com.timearchive.application.ListOwnedRangeMediaAssets
 import com.timearchive.application.ListPublicTimelineSegments
 import com.timearchive.application.RejectMediaAsset
+import com.timearchive.application.RegisterUser
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
@@ -20,12 +23,14 @@ import com.timearchive.domain.port.MediaObjectStoragePort
 import com.timearchive.domain.port.MediaUploadRequestRepository
 import com.timearchive.domain.port.OutboxPort
 import com.timearchive.domain.port.OwnershipRepository
+import com.timearchive.domain.port.PasswordHasherPort
 import com.timearchive.domain.port.PaymentEventRepository
 import com.timearchive.domain.port.PaymentPort
 import com.timearchive.domain.port.PublicTimelineSegmentRepository
 import com.timearchive.domain.port.PurchaseRepository
 import com.timearchive.domain.port.PurchaseReservationRepository
 import com.timearchive.domain.port.TransactionPort
+import com.timearchive.domain.port.UserAccountRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.beans.factory.annotation.Value
@@ -36,6 +41,33 @@ import java.time.Instant
 class ApplicationUseCaseConfiguration {
     @Bean
     fun clockPort(): ClockPort = ClockPort { Instant.now() }
+
+    @Bean
+    fun registerUser(
+        userAccountRepository: UserAccountRepository,
+        passwordHasherPort: PasswordHasherPort,
+        clockPort: ClockPort,
+    ): RegisterUser =
+        RegisterUser(
+            userAccountRepository = userAccountRepository,
+            passwordHasherPort = passwordHasherPort,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun authenticateUser(
+        userAccountRepository: UserAccountRepository,
+        passwordHasherPort: PasswordHasherPort,
+    ): AuthenticateUser =
+        AuthenticateUser(
+            userAccountRepository = userAccountRepository,
+            passwordHasherPort = passwordHasherPort,
+        )
+
+    @Bean
+    fun getCurrentUser(
+        userAccountRepository: UserAccountRepository,
+    ): GetCurrentUser = GetCurrentUser(userAccountRepository = userAccountRepository)
 
     @Bean
     fun reserveTimeRange(

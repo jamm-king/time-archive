@@ -15,9 +15,13 @@ services:
       TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY: time_archive_minio
       TIME_ARCHIVE_STORAGE_S3_SECRET_KEY: time_archive_minio_secret
       TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS: "true"
+      TIME_ARCHIVE_REDIS_HOST: redis
+      TIME_ARCHIVE_REDIS_PORT: "6379"
     ports:
       - "8080:8080"
     depends_on:
+      redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       minio:

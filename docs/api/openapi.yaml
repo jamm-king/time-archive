@@ -5,8 +5,9 @@ info:
   description: |
     Development-stage API contract for the Time Archive MVP purchase flow.
 
-    The current API exposes reservation and checkout creation only. It does not
-    implement production authentication, real payment provider integration, or
+    The current API includes development-stage session authentication,
+    reservation, checkout, media upload, moderation, and public timeline
+    surfaces. It does not implement real payment provider integration or
     payment completion through browser redirects.
 
     The `buyerId` request field is temporary development-stage behavior. Before
@@ -18,6 +19,8 @@ servers:
   - url: http://localhost:8080
     description: Local development
 tags:
+  - name: Auth
+    description: Session authentication and current-user operations.
   - name: Archive
     description: Public archive read operations.
   - name: Purchase
@@ -29,6 +32,113 @@ tags:
   - name: Payment
     description: Development-stage payment event operations.
 paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      operationId: registerUser
+      summary: Register a local MVP user
+      description: |
+        Creates a local MVP user account and signs the browser in through a
+        server-side session cookie.
+
+        This endpoint is intentionally minimal and does not perform email
+        verification or password reset flows.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered and signed in.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: HttpOnly server session cookie.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "409":
+          description: Email is already registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      operationId: loginUser
+      summary: Log in with email and password
+      description: |
+        Authenticates a local MVP user and signs the browser in through a
+        server-side session cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: User authenticated and signed in.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: HttpOnly server session cookie.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      operationId: logoutUser
+      summary: Log out current session
+      description: Invalidates the current server-side session if one exists.
+      security:
+        - SessionCookie: []
+      responses:
+        "204":
+          description: Session invalidated.
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
+  /api/me:
+    get:
+      tags:
+        - Auth
+      operationId: getCurrentUser
+      summary: Get current user
+      description: Returns the current authenticated user derived from the server-side session.
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: Current authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/archive/availability:
     get:
       tags:
@@ -587,6 +697,11 @@ paths:
         "500":
           $ref: "#/components/responses/UnexpectedError"
 components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: SESSION
   parameters:
     OwnershipRecordId:
       name: ownershipRecordId
@@ -633,6 +748,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ApiErrorResponse"
+    Unauthorized:
+      description: Authentication is required or credentials are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
     UnexpectedError:
       description: Unexpected server error.
       content:
@@ -640,6 +761,69 @@ components:
           schema:
             $ref: "#/components/schemas/ApiErrorResponse"
   schemas:
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+        - displayName
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          examples:
+            - user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          examples:
+            - User
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          examples:
+            - user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+    CurrentUserResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - email
+        - displayName
+        - createdAt
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     CreateReservationRequest:
       type: object
       additionalProperties: false

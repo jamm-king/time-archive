@@ -2,6 +2,11 @@
 .gradle
 .kotlin
 build
+!build/
+build/*
+!build/libs/
+build/libs/*
+!build/libs/*.jar
 out
 target
 logs
