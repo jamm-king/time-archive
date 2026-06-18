@@ -4,8 +4,8 @@ This is the Time Archive frontend application.
 
 It is a Next.js, React, TypeScript, and Tailwind CSS app under `apps/web`.
 The initial implementation is a minimal fullscreen player shell. Public
-timeline API integration is implemented through a same-origin Next.js route
-handler.
+timeline and authentication API integration are implemented through same-origin
+Next.js route handlers.
 
 ## Getting Started
 
@@ -29,8 +29,21 @@ The player proxies public timeline reads through:
 /api/timeline
 ```
 
-The proxy forwards requests to the backend API. Override the backend API base
-URL when needed:
+The app also proxies session auth and CSRF calls through:
+
+```text
+/api/csrf
+/api/auth/register
+/api/auth/login
+/api/auth/logout
+/api/me
+```
+
+The proxy forwards requests and backend `Set-Cookie` headers so browser cookies
+stay scoped to the frontend origin. Mutating auth requests fetch `GET /api/csrf`
+and send `X-XSRF-TOKEN`.
+
+Override the backend API base URL when needed:
 
 ```bash
 TIME_ARCHIVE_API_BASE_URL=http://localhost:8080 npm run dev

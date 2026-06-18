@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-
-function getApiBaseUrl(): string {
-  return (
-    process.env.TIME_ARCHIVE_API_BASE_URL?.replace(/\/$/, "") ??
-    "http://localhost:8080"
-  );
-}
+import { getBackendApiBaseUrl } from "@/lib/backend-proxy";
 
 export async function GET(request: NextRequest) {
   const from = request.nextUrl.searchParams.get("from");
   const to = request.nextUrl.searchParams.get("to");
-  const upstreamUrl = new URL("/api/timeline", getApiBaseUrl());
+  const upstreamUrl = new URL("/api/timeline", getBackendApiBaseUrl());
 
   if (from) {
     upstreamUrl.searchParams.set("from", from);

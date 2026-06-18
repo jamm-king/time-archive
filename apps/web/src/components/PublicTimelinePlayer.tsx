@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   ARCHIVE_TOTAL_SECONDS,
   fetchPublicTimeline,
@@ -12,9 +12,17 @@ import {
   type PublicTimelineSegment,
   type TimelineWindow,
 } from "@/lib/timeline";
+import {
+  authenticate,
+  fetchCurrentUser,
+  logout,
+  type AuthMode,
+  type CurrentUser,
+} from "@/lib/auth";
 
 type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
+type AuthStatus = "loading" | "guest" | "authenticated" | "error";
 
 export function PublicTimelinePlayer() {
   const [now, setNow] = useState(() => new Date());
@@ -27,6 +35,9 @@ export function PublicTimelinePlayer() {
   const [loadedWindow, setLoadedWindow] = useState<TimelineWindow | null>(null);
   const [errorWindow, setErrorWindow] = useState<TimelineWindow | null>(null);
   const [retryToken, setRetryToken] = useState(0);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [authPanelOpen, setAuthPanelOpen] = useState(false);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -57,6 +68,26 @@ export function PublicTimelinePlayer() {
 
     return () => controller.abort();
   }, [retryToken, timelineWindow]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchCurrentUser(controller.signal)
+      .then((user) => {
+        setCurrentUser(user);
+        setAuthStatus(user ? "authenticated" : "guest");
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.error(error);
+        setCurrentUser(null);
+        setAuthStatus("error");
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const loadedCurrentWindow =
     loadedWindow?.from === timelineWindow.from && loadedWindow.to === timelineWindow.to;
@@ -99,9 +130,28 @@ export function PublicTimelinePlayer() {
           <div className="relative flex h-full w-full max-w-6xl flex-col justify-between px-5 py-5 sm:px-8 sm:py-7">
             <header className="flex items-center justify-between text-xs uppercase text-neutral-400">
               <span>Time Archive</span>
-              <span className="tabular-nums">
-                {formatArchiveSecond(currentSecond)}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="tabular-nums">
+                  {formatArchiveSecond(currentSecond)}
+                </span>
+                <AuthControl
+                  status={authStatus}
+                  currentUser={currentUser}
+                  panelOpen={authPanelOpen}
+                  onTogglePanel={() => setAuthPanelOpen((value) => !value)}
+                  onAuthenticated={(user) => {
+                    setCurrentUser(user);
+                    setAuthStatus("authenticated");
+                    setAuthPanelOpen(false);
+                  }}
+                  onLogout={async () => {
+                    await logout();
+                    setCurrentUser(null);
+                    setAuthStatus("guest");
+                    setAuthPanelOpen(false);
+                  }}
+                />
+              </div>
             </header>
 
             <PlayerCenter
@@ -130,6 +180,191 @@ export function PublicTimelinePlayer() {
         </div>
       </section>
     </main>
+  );
+}
+
+function AuthControl({
+  status,
+  currentUser,
+  panelOpen,
+  onTogglePanel,
+  onAuthenticated,
+  onLogout,
+}: {
+  status: AuthStatus;
+  currentUser: CurrentUser | null;
+  panelOpen: boolean;
+  onTogglePanel: () => void;
+  onAuthenticated: (user: CurrentUser) => void;
+  onLogout: () => Promise<void>;
+}) {
+  const label =
+    status === "loading"
+      ? "Checking"
+      : status === "authenticated"
+        ? currentUser?.displayName ?? "Account"
+        : status === "error"
+          ? "Retry sign in"
+          : "Sign in";
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="border border-neutral-800 bg-neutral-950/80 px-3 py-1.5 text-xs uppercase text-neutral-200 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        onClick={onTogglePanel}
+      >
+        {label}
+      </button>
+      {panelOpen ? (
+        <AuthPanel
+          currentUser={currentUser}
+          onAuthenticated={onAuthenticated}
+          onLogout={onLogout}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function AuthPanel({
+  currentUser,
+  onAuthenticated,
+  onLogout,
+}: {
+  currentUser: CurrentUser | null;
+  onAuthenticated: (user: CurrentUser) => void;
+  onLogout: () => Promise<void>;
+}) {
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (currentUser) {
+    return (
+      <div className="absolute right-0 top-9 z-20 w-72 border border-neutral-800 bg-neutral-950 p-4 text-left normal-case shadow-2xl shadow-black/40">
+        <p className="text-xs uppercase text-neutral-500">Signed in</p>
+        <p className="mt-2 truncate text-sm font-medium text-neutral-100">
+          {currentUser.displayName}
+        </p>
+        <p className="mt-1 truncate text-xs text-neutral-500">
+          {currentUser.email}
+        </p>
+        <button
+          type="button"
+          className="mt-4 w-full border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+          onClick={() => {
+            setSubmitting(true);
+            setError(null);
+            onLogout()
+              .catch((logoutError: unknown) => {
+                console.error(logoutError);
+                setError("Logout failed");
+              })
+              .finally(() => setSubmitting(false));
+          }}
+          disabled={submitting}
+        >
+          {submitting ? "Signing out" : "Sign out"}
+        </button>
+        {error ? <p className="mt-3 text-xs text-red-300">{error}</p> : null}
+      </div>
+    );
+  }
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const user = await authenticate(mode, {
+        email,
+        password,
+        displayName: mode === "register" ? displayName : undefined,
+      });
+      onAuthenticated(user);
+    } catch (authError: unknown) {
+      console.error(authError);
+      setError(
+        authError instanceof Error
+          ? authError.message
+          : "Authentication failed",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="absolute right-0 top-9 z-20 w-80 border border-neutral-800 bg-neutral-950 p-4 text-left normal-case shadow-2xl shadow-black/40">
+      <div className="grid grid-cols-2 border border-neutral-800 text-xs uppercase">
+        <button
+          type="button"
+          className={`px-3 py-2 ${
+            mode === "login" ? "bg-neutral-100 text-neutral-950" : "text-neutral-400"
+          }`}
+          onClick={() => setMode("login")}
+        >
+          Login
+        </button>
+        <button
+          type="button"
+          className={`px-3 py-2 ${
+            mode === "register" ? "bg-neutral-100 text-neutral-950" : "text-neutral-400"
+          }`}
+          onClick={() => setMode("register")}
+        >
+          Register
+        </button>
+      </div>
+      <form className="mt-4 grid gap-3" onSubmit={submit}>
+        <label className="grid gap-1 text-xs uppercase text-neutral-500">
+          Email
+          <input
+            className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+        </label>
+        <label className="grid gap-1 text-xs uppercase text-neutral-500">
+          Password
+          <input
+            className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            minLength={8}
+            required
+          />
+        </label>
+        {mode === "register" ? (
+          <label className="grid gap-1 text-xs uppercase text-neutral-500">
+            Display name
+            <input
+              className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
+              type="text"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              required
+            />
+          </label>
+        ) : null}
+        <button
+          type="submit"
+          className="mt-1 border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+          disabled={submitting}
+        >
+          {submitting ? "Submitting" : mode === "register" ? "Create account" : "Sign in"}
+        </button>
+        {error ? <p className="text-xs text-red-300">{error}</p> : null}
+      </form>
+    </div>
   );
 }
 
