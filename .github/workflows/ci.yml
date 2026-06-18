@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew build --no-daemon
 
       - name: Docker build
-        run: docker build -t time-archive-api:${{ github.sha }} apps/api
+        run: docker build -f apps/api/Dockerfile.ci -t time-archive-api:${{ github.sha }} apps/api
 
   web:
     name: Web
@@ -71,8 +71,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build API jar
+        working-directory: apps/api
+        run: ./gradlew bootJar --no-daemon
+
       - name: Start local stack
-        run: docker compose up -d --build api
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local purchase flow
         env:
@@ -97,8 +110,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build API jar
+        working-directory: apps/api
+        run: ./gradlew bootJar --no-daemon
+
       - name: Start local stack
-        run: docker compose up -d --build api
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local media upload flow
         env:
@@ -123,8 +149,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build API jar
+        working-directory: apps/api
+        run: ./gradlew bootJar --no-daemon
+
       - name: Start local stack
-        run: docker compose up -d --build api
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local public timeline flow
         env:
@@ -149,8 +188,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build API jar
+        working-directory: apps/api
+        run: ./gradlew bootJar --no-daemon
+
       - name: Start local stack
-        run: docker compose up -d --build
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Verify web app
         run: |
