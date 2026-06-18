@@ -25,11 +25,19 @@ import {
   type MediaAsset,
 } from "@/lib/owned-media";
 import { fetchOwnedRanges, type OwnedRange } from "@/lib/owned-ranges";
+import {
+  checkAvailability,
+  completeFakePrimaryPurchase,
+  createCheckout,
+  reserveTimeRange,
+  type ReservationResponse,
+} from "@/lib/purchase";
 
 type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
 type AuthStatus = "loading" | "guest" | "authenticated" | "error";
 type UploadStatus = "idle" | "uploading" | "complete" | "error";
+type PurchaseStatus = "idle" | "checking" | "reserved" | "completing" | "complete" | "error";
 
 export function PublicTimelinePlayer() {
   const [now, setNow] = useState(() => new Date());
@@ -45,6 +53,7 @@ export function PublicTimelinePlayer() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [authPanelOpen, setAuthPanelOpen] = useState(false);
+  const [ownedRangesRefreshToken, setOwnedRangesRefreshToken] = useState(0);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -145,11 +154,13 @@ export function PublicTimelinePlayer() {
                   status={authStatus}
                   currentUser={currentUser}
                   panelOpen={authPanelOpen}
+                  ownedRangesRefreshToken={ownedRangesRefreshToken}
                   onTogglePanel={() => setAuthPanelOpen((value) => !value)}
                   onAuthenticated={(user) => {
                     setCurrentUser(user);
                     setAuthStatus("authenticated");
                     setAuthPanelOpen(false);
+                    setOwnedRangesRefreshToken((value) => value + 1);
                   }}
                   onLogout={async () => {
                     await logout();
@@ -165,6 +176,11 @@ export function PublicTimelinePlayer() {
               status={status}
               activeSegment={activeSegment}
               currentSecond={currentSecond}
+              currentUser={currentUser}
+              onPurchaseComplete={() => {
+                setOwnedRangesRefreshToken((value) => value + 1);
+                retryTimeline();
+              }}
               onRetry={retryTimeline}
             />
 
@@ -194,6 +210,7 @@ function AuthControl({
   status,
   currentUser,
   panelOpen,
+  ownedRangesRefreshToken,
   onTogglePanel,
   onAuthenticated,
   onLogout,
@@ -201,6 +218,7 @@ function AuthControl({
   status: AuthStatus;
   currentUser: CurrentUser | null;
   panelOpen: boolean;
+  ownedRangesRefreshToken: number;
   onTogglePanel: () => void;
   onAuthenticated: (user: CurrentUser) => void;
   onLogout: () => Promise<void>;
@@ -226,6 +244,7 @@ function AuthControl({
       {panelOpen ? (
         <AuthPanel
           currentUser={currentUser}
+          ownedRangesRefreshToken={ownedRangesRefreshToken}
           onAuthenticated={onAuthenticated}
           onLogout={onLogout}
         />
@@ -238,10 +257,12 @@ function AuthPanel({
   currentUser,
   onAuthenticated,
   onLogout,
+  ownedRangesRefreshToken,
 }: {
   currentUser: CurrentUser | null;
   onAuthenticated: (user: CurrentUser) => void;
   onLogout: () => Promise<void>;
+  ownedRangesRefreshToken: number;
 }) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -260,7 +281,10 @@ function AuthPanel({
         <p className="mt-1 truncate text-xs text-neutral-500">
           {currentUser.email}
         </p>
-        <OwnedRangesList currentUserId={currentUser.userId} />
+        <OwnedRangesList
+          currentUserId={currentUser.userId}
+          refreshToken={ownedRangesRefreshToken}
+        />
         <button
           type="button"
           className="mt-4 w-full border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
@@ -376,7 +400,13 @@ function AuthPanel({
   );
 }
 
-function OwnedRangesList({ currentUserId }: { currentUserId: string }) {
+function OwnedRangesList({
+  currentUserId,
+  refreshToken,
+}: {
+  currentUserId: string;
+  refreshToken: number;
+}) {
   const [ranges, setRanges] = useState<OwnedRange[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
@@ -398,7 +428,7 @@ function OwnedRangesList({ currentUserId }: { currentUserId: string }) {
       });
 
     return () => controller.abort();
-  }, [currentUserId]);
+  }, [currentUserId, refreshToken]);
 
   return (
     <div className="mt-4 border-t border-neutral-800 pt-4">
@@ -619,11 +649,15 @@ function PlayerCenter({
   status,
   activeSegment,
   currentSecond,
+  currentUser,
+  onPurchaseComplete,
   onRetry,
 }: {
   status: TimelineStatus;
   activeSegment: PublicTimelineSegment | null;
   currentSecond: number;
+  currentUser: CurrentUser | null;
+  onPurchaseComplete: () => void;
   onRetry: () => void;
 }) {
   if (activeSegment) {
@@ -661,8 +695,127 @@ function PlayerCenter({
           >
             Retry
           </button>
+        ) : status === "empty" ? (
+          <PurchaseCurrentSecondPanel
+            key={`${currentUser?.userId ?? "guest"}-${currentSecond}`}
+            currentSecond={currentSecond}
+            currentUser={currentUser}
+            onComplete={onPurchaseComplete}
+          />
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function PurchaseCurrentSecondPanel({
+  currentSecond,
+  currentUser,
+  onComplete,
+}: {
+  currentSecond: number;
+  currentUser: CurrentUser | null;
+  onComplete: () => void;
+}) {
+  const [status, setStatus] = useState<PurchaseStatus>("idle");
+  const [reservation, setReservation] = useState<ReservationResponse | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const selectedSecond = Math.min(currentSecond, ARCHIVE_TOTAL_SECONDS - 1);
+  const endSecond = selectedSecond + 1;
+
+  const reserve = async () => {
+    if (!currentUser || status === "checking" || status === "completing") {
+      return;
+    }
+
+    setStatus("checking");
+    setMessage(null);
+    setCheckoutUrl(null);
+
+    try {
+      const availability = await checkAvailability(selectedSecond, endSecond);
+      if (!availability.available) {
+        setStatus("error");
+        setMessage("This second is already unavailable.");
+        return;
+      }
+
+      const nextReservation = await reserveTimeRange(selectedSecond, endSecond);
+      const checkout = await createCheckout(nextReservation.reservationId);
+      setReservation(nextReservation);
+      setCheckoutUrl(checkout.checkoutUrl);
+      setStatus("reserved");
+    } catch (error: unknown) {
+      console.error(error);
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Purchase failed");
+    }
+  };
+
+  const complete = async () => {
+    if (!reservation || status === "completing") {
+      return;
+    }
+
+    setStatus("completing");
+    setMessage(null);
+
+    try {
+      const result = await completeFakePrimaryPurchase(reservation.reservationId);
+      if (!result.ownershipRecordId) {
+        throw new Error("Purchase completed without ownership record");
+      }
+      setStatus("complete");
+      setMessage("Owned range added.");
+      onComplete();
+    } catch (error: unknown) {
+      console.error(error);
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Payment completion failed");
+    }
+  };
+
+  if (!currentUser) {
+    return (
+      <p className="mx-auto mt-6 max-w-xs text-xs leading-5 text-neutral-500">
+        Sign in to buy this second.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mx-auto mt-6 grid w-full max-w-xs gap-2">
+      <button
+        type="button"
+        className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+        onClick={reserve}
+        disabled={status === "checking" || status === "completing"}
+      >
+        {status === "checking" ? "Reserving" : "Buy this second"}
+      </button>
+      {status === "reserved" || status === "completing" ? (
+        <button
+          type="button"
+          className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+          onClick={complete}
+          disabled={status === "completing"}
+        >
+          {status === "completing" ? "Completing" : "Complete local payment"}
+        </button>
+      ) : null}
+      {checkoutUrl ? (
+        <p className="truncate text-xs text-neutral-600">{checkoutUrl}</p>
+      ) : null}
+      {message ? (
+        <p
+          className={`text-xs ${
+            status === "error" ? "text-red-300" : "text-neutral-400"
+          }`}
+        >
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }
