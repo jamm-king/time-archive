@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   ARCHIVE_TOTAL_SECONDS,
   fetchPublicTimeline,
@@ -479,9 +486,7 @@ function OwnedRangeItem({ range }: { range: OwnedRange }) {
   const [mediaStatus, setMediaStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -503,6 +508,81 @@ function OwnedRangeItem({ range }: { range: OwnedRange }) {
     return () => controller.abort();
   }, [range.ownershipRecordId]);
 
+  const addMediaAsset = (asset: MediaAsset) => {
+    setMediaAssets((assets) => [asset, ...assets]);
+    setMediaStatus("ready");
+  };
+
+  return (
+    <li className="border border-neutral-800 px-3 py-2">
+      <div className="grid gap-2">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-xs tabular-nums text-neutral-100">
+            {formatArchiveSecond(range.startSecond)}-
+            {formatArchiveSecond(range.endSecond)}
+          </span>
+          <span className="shrink-0 text-[10px] uppercase text-neutral-500">
+            {range.status}
+          </span>
+        </div>
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <OwnedRangeMediaSummary
+            status={mediaStatus}
+            mediaAssets={mediaAssets}
+          />
+          <button
+            type="button"
+            className="shrink-0 border border-neutral-700 px-2.5 py-1.5 text-[10px] uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+            onClick={() => setModalOpen(true)}
+          >
+            Manage media
+          </button>
+        </div>
+      </div>
+      {modalOpen ? (
+        <OwnedRangeMediaModal
+          range={range}
+          mediaAssets={mediaAssets}
+          mediaStatus={mediaStatus}
+          onMediaUploaded={addMediaAsset}
+          onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+    </li>
+  );
+}
+
+function OwnedRangeMediaModal({
+  range,
+  mediaAssets,
+  mediaStatus,
+  onMediaUploaded,
+  onClose,
+}: {
+  range: OwnedRange;
+  mediaAssets: MediaAsset[];
+  mediaStatus: "loading" | "ready" | "error";
+  onMediaUploaded: (asset: MediaAsset) => void;
+  onClose: () => void;
+}) {
+  const fileInputId = useId();
+  const titleId = useId();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   const upload = async () => {
     if (!selectedFile || uploadStatus === "uploading") {
       return;
@@ -516,7 +596,7 @@ function OwnedRangeItem({ range }: { range: OwnedRange }) {
         range.ownershipRecordId,
         selectedFile,
       );
-      setMediaAssets((assets) => [result.mediaAsset, ...assets]);
+      onMediaUploaded(result.mediaAsset);
       setSelectedFile(null);
       setUploadStatus("complete");
     } catch (error: unknown) {
@@ -527,22 +607,38 @@ function OwnedRangeItem({ range }: { range: OwnedRange }) {
   };
 
   return (
-    <li className="border border-neutral-800 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs tabular-nums text-neutral-100">
-          {formatArchiveSecond(range.startSecond)}-
-          {formatArchiveSecond(range.endSecond)}
-        </span>
-        <span className="text-[10px] uppercase text-neutral-500">
-          {range.status}
-        </span>
-      </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <div className="max-h-full w-full max-w-md overflow-y-auto border border-neutral-800 bg-neutral-950 p-4 text-left shadow-2xl shadow-black/50">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs uppercase text-neutral-500">Owned media</p>
+            <h2
+              id={titleId}
+              className="mt-1 truncate text-sm font-medium text-neutral-100"
+            >
+              {formatArchiveSecond(range.startSecond)}-
+              {formatArchiveSecond(range.endSecond)}
+            </h2>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 border border-neutral-800 px-2.5 py-1.5 text-[10px] uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
 
-      <div className="mt-3 grid gap-2">
-        <label className="grid gap-1 text-[10px] uppercase text-neutral-500">
-          Media file
+        <div className="mt-4 grid gap-3 border-t border-neutral-800 pt-4">
+          <p className="text-xs uppercase text-neutral-500">Upload</p>
           <input
-            className="text-xs normal-case text-neutral-400 file:mr-2 file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-100"
+            id={fileInputId}
+            className="sr-only"
             type="file"
             accept="image/*,video/*"
             onChange={(event) => {
@@ -552,30 +648,76 @@ function OwnedRangeItem({ range }: { range: OwnedRange }) {
             }}
             disabled={uploadStatus === "uploading"}
           />
-        </label>
-        <button
-          type="button"
-          className="border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
-          onClick={upload}
-          disabled={!selectedFile || uploadStatus === "uploading"}
-        >
-          {uploadStatus === "uploading" ? "Uploading" : "Upload"}
-        </button>
+          <div className="grid grid-cols-[auto_1fr] items-center gap-3">
+            <label
+              htmlFor={fileInputId}
+              className="cursor-pointer border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-neutral-300"
+            >
+              Choose file
+            </label>
+            <span className="min-w-0 truncate text-xs text-neutral-500">
+              {selectedFile ? selectedFile.name : "No file selected"}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+            onClick={upload}
+            disabled={!selectedFile || uploadStatus === "uploading"}
+          >
+            {uploadStatus === "uploading" ? "Uploading" : "Upload"}
+          </button>
+          {uploadStatus === "complete" ? (
+            <p className="text-xs text-neutral-400">Pending moderation</p>
+          ) : null}
+          {uploadError ? (
+            <p className="break-words text-xs text-red-300">{uploadError}</p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 border-t border-neutral-800 pt-4">
+          <p className="text-xs uppercase text-neutral-500">Media assets</p>
+          <OwnedRangeMediaDetail
+            status={mediaStatus}
+            mediaAssets={mediaAssets}
+          />
+        </div>
       </div>
-
-      {uploadStatus === "complete" ? (
-        <p className="mt-2 text-xs text-neutral-400">Pending moderation</p>
-      ) : null}
-      {uploadError ? (
-        <p className="mt-2 break-words text-xs text-red-300">{uploadError}</p>
-      ) : null}
-
-      <OwnedRangeMediaSummary status={mediaStatus} mediaAssets={mediaAssets} />
-    </li>
+    </div>
   );
 }
 
 function OwnedRangeMediaSummary({
+  status,
+  mediaAssets,
+}: {
+  status: "loading" | "ready" | "error";
+  mediaAssets: MediaAsset[];
+}) {
+  if (status === "loading") {
+    return <p className="min-w-0 text-xs text-neutral-600">Checking media</p>;
+  }
+  if (status === "error") {
+    return (
+      <p className="min-w-0 truncate text-xs text-red-300">
+        Media unavailable
+      </p>
+    );
+  }
+  if (mediaAssets.length === 0) {
+    return <p className="min-w-0 text-xs text-neutral-600">No media</p>;
+  }
+
+  const latest = mediaAssets[0];
+
+  return (
+    <p className="min-w-0 truncate text-xs text-neutral-500">
+      {mediaAssets.length} media - {latest.moderationStatus}
+    </p>
+  );
+}
+
+function OwnedRangeMediaDetail({
   status,
   mediaAssets,
 }: {
