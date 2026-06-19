@@ -125,6 +125,10 @@ Current required checks:
 - Local web purchase and upload verification through Docker Compose
 - Local web smoke verification
 
+Release candidates should also be reviewed against the
+[Release Readiness Checklist](release-readiness-checklist.md) before any
+non-local deployment.
+
 ## CD Pipeline
 
 Recommended deployment flow:
