@@ -60,6 +60,7 @@ class SecurityConfiguration {
                 it
                     .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/api/me").authenticated()
+                    .requestMatchers("/api/me/**").authenticated()
                     .requestMatchers("/api/**").permitAll()
                     .anyRequest().denyAll()
             }
