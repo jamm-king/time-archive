@@ -15,7 +15,8 @@ MVP 1 should focus on primary sale and moderated display.
 - Default placeholder for unowned seconds
 - Approved media display for owned seconds
 - Current playback timestamp
-- URL-based jump to a specific second
+- Session authentication with local email/password accounts
+- Current-user owned range listing
 - Availability query for a selected time range
 - Primary purchase flow for unowned seconds
 - Payment checkout creation
@@ -24,7 +25,8 @@ MVP 1 should focus on primary sale and moderated display.
 - Media upload for owned time ranges
 - Admin media approval and rejection
 - Admin media hiding
-- Audit logs for ownership, purchase, payment, and moderation actions
+- Admin original-media preview through short-lived presigned URLs
+- Audit logs for payment completion and ownership creation
 
 ### Excluded
 
@@ -37,6 +39,7 @@ MVP 1 should focus on primary sale and moderated display.
 - Multiple timelines, seasons, or editions
 - Complex media editing
 - Public user pages
+- Complete admin moderation audit logging
 
 ## MVP 2
 
@@ -72,16 +75,17 @@ For a high-quality first release, ownership integrity and payment idempotency sh
 MVP 1 should be manually verifiable through the following flows:
 
 1. Open the homepage and watch the fullscreen player.
-2. Jump to a specific second through a URL.
-3. Select an available range.
+2. Sign up or sign in through a server-side session.
+3. Select an available range from the current unowned second.
 4. Complete a test checkout.
 5. Confirm that ownership is created only after a verified payment webhook.
 6. Upload media for the owned range.
 7. Confirm the media is not public before approval.
-8. Approve the media as an admin.
-9. Confirm the approved media appears on the timeline.
-10. Hide approved media as an admin.
-11. Confirm the hidden media no longer appears publicly.
+8. Preview the private original media as an admin.
+9. Approve the media as an admin.
+10. Confirm the approved media appears on the timeline.
+11. Hide approved media as an admin.
+12. Confirm the hidden media no longer appears publicly.
 
 ## Build and Test Expectations
 

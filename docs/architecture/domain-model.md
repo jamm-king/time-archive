@@ -192,7 +192,11 @@ Suggested moderation statuses:
 
 Only `APPROVED` media may be used by the public timeline player.
 
-Current persistence stores media assets against `ownershipRecordId` and redundantly stores `ownerId` for future authorization checks. The initial persistence layer supports uploaded and approved media reads, but upload, object storage, and moderation use cases are implemented separately.
+Current persistence stores media assets against `ownershipRecordId` and also
+stores `ownerId` so owner-scoped reads and authorization checks can avoid
+trusting client-provided identity. Upload request creation, upload completion,
+object storage access, and moderation are implemented through separate use
+cases and ports.
 
 `MediaUploadRequest` stores short-lived S3-compatible upload preparation state before a `MediaAsset` is created. It records the owner, ownership record, media type, expected content type, expected content length, server-generated object key, storage URL, status, and expiration. Upload request creation does not prove that the object was uploaded or safe; completion and processing must verify the object before media enters moderation.
 
@@ -201,6 +205,8 @@ Upload completion verifies object storage metadata before creating a `MediaAsset
 Admin moderation can transition uploaded media to `APPROVED` or `REJECTED`, and
 can transition approved media to `HIDDEN`. Approval requires an explicit
 `approvedFileUrl` so original upload URLs remain distinct from public media URLs.
+Admins can request short-lived preview URLs for private original uploads through
+the storage port without making the object storage bucket public.
 
 ### PublicTimelineSegment
 
@@ -341,6 +347,9 @@ MVP 1:
 - `HandlePaymentWebhook`
 - `CompletePrimaryPurchase`
 - `UploadMediaAsset`
+- `CreateOwnedRangeMediaUploadRequest`
+- `CompleteOwnedRangeMediaUpload`
+- `CreateAdminMediaPreviewUrl`
 - `ApproveMediaAsset`
 - `RejectMediaAsset`
 - `HideMediaAsset`

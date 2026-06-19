@@ -62,9 +62,10 @@ The frontend lives under `apps/web`. The initial rendering strategy is
 CSR-first for the fullscreen player, while Next.js still allows future static or
 server-rendered routes for share, legal, and informational pages.
 
-During local development, the web app can proxy public timeline reads through a
-same-origin Next.js route handler to avoid browser CORS coupling between the web
-dev server and the backend API.
+During local development, the web app proxies backend API calls through
+same-origin Next.js route handlers. This keeps browser clients on one origin for
+session cookies and CSRF handling while the Spring Boot API remains behind the
+web service.
 
 ### CI/CD and Infrastructure
 
@@ -172,28 +173,25 @@ configuration
 
 ### Core Ports
 
-- `TimeSlotRepository`
 - `OwnershipRepository`
 - `PurchaseRepository`
-- `ReservationRepository`
-- `OfferRepository`
-- `TransactionRepository`
+- `PurchaseReservationRepository`
+- `MediaAssetRepository`
+- `MediaUploadRequestRepository`
 - `PaymentPort`
-- `MediaStoragePort`
-- `MediaModerationPort`
+- `MediaObjectStoragePort`
 - `AuditLogPort`
 - `OutboxPort`
 - `ClockPort`
-- `IdempotencyPort`
+- `TransactionPort`
 
 ## Read Model Strategy
 
 The player is read-heavy and should not query transactional tables every second.
 
-Recommended player flow:
+Current player flow:
 
 ```text
-GET /api/archive
 GET /api/timeline?from=0&to=300
 ```
 

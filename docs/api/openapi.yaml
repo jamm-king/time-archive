@@ -691,6 +691,44 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/admin/media/assets/{mediaAssetId}/preview-url:
+    get:
+      tags:
+        - Admin
+      operationId: createAdminMediaPreviewUrl
+      summary: Create original media preview URL
+      description: |
+        Creates a short-lived presigned download URL for the uploaded original
+        media file so admins can review private object-storage media.
+
+        Admin identity and permissions are derived from the authenticated
+        server-side session. The returned URL is time-limited and should not be
+        persisted by clients.
+      security:
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/MediaAssetId"
+      responses:
+        "200":
+          description: Short-lived preview URL created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMediaPreviewUrlResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The current user does not have admin permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/reject:
     post:
       tags:
@@ -947,6 +985,7 @@ components:
         - userId
         - email
         - displayName
+        - role
         - createdAt
       properties:
         userId:
@@ -957,6 +996,11 @@ components:
           format: email
         displayName:
           type: string
+        role:
+          type: string
+          enum:
+            - USER
+            - ADMIN
         createdAt:
           type: string
           format: date-time
@@ -1226,6 +1270,24 @@ components:
           nullable: true
           examples:
             - https://cdn.example.test/thumb.png
+    AdminMediaPreviewUrlResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - mediaAssetId
+        - previewUrl
+        - expiresAt
+      properties:
+        mediaAssetId:
+          type: string
+          format: uuid
+        previewUrl:
+          type: string
+          format: uri
+          description: Short-lived presigned GET URL for admin review.
+        expiresAt:
+          type: string
+          format: date-time
     MediaUploadRequestResponse:
       type: object
       additionalProperties: false

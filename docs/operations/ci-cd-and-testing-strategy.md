@@ -42,9 +42,9 @@ Recommended services:
 
 - Application process from the local IDE or Gradle
 - PostgreSQL through Docker Compose
-- Redis through Docker Compose only when needed
+- Redis through Docker Compose for server-side sessions
 - Payment provider sandbox or fake adapter
-- Object storage fake, local storage, LocalStack, S3 sandbox, or R2 sandbox
+- MinIO through Docker Compose for S3-compatible local media storage
 
 Expected commands after implementation exists:
 
@@ -53,6 +53,9 @@ docker compose up -d
 cd apps/api
 ./gradlew test
 ./gradlew bootRun
+cd ../web
+npm run lint
+npm run build
 ```
 
 ### Staging
@@ -96,27 +99,29 @@ Recommended PR checks:
 checkout
 setup JDK
 validate Gradle wrapper
-run formatting check
-run static analysis
-run unit tests
-run integration tests
-build application
-build Docker image
+run backend tests
+build backend application
+build backend Docker image
+setup Node
+run web lint
+build web application
+run local Docker Compose verification scripts
+run local web smoke check
 ```
 
-Initial required checks:
+Current required checks:
 
 - Backend test
 - Backend build
-- Docker image build
+- Backend Docker image build
+- Web lint
+- Web build
 - Local purchase flow verification through Docker Compose
-
-Future frontend checks:
-
-- Frontend lint
-- Frontend unit tests
-- Frontend build
-- Browser-based smoke tests
+- Local media upload flow verification through Docker Compose
+- Local public timeline flow verification through Docker Compose
+- Local auth flow verification through Docker Compose
+- Local web purchase and upload verification through Docker Compose
+- Local web smoke verification
 
 ## CD Pipeline
 
