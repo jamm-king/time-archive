@@ -40,6 +40,7 @@ class PublicTimelineControllerTest {
         }
             .andExpect {
                 status { isOk() }
+                header { string("Cache-Control", "no-store") }
                 jsonPath("$.from") { value(0) }
                 jsonPath("$.to") { value(300) }
                 jsonPath("$.segments[0].startSecond") { value(10) }

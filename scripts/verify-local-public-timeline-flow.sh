@@ -260,7 +260,7 @@ upload_file() {
 assert_public_timeline_segment() {
   local timeline_json="$1"
   local expected_media_asset_id="$2"
-  local expected_media_url="$3"
+  local stored_media_url="$3"
 
   TIMELINE_JSON="$timeline_json" "$PYTHON_BIN" -c '
 import json
@@ -269,13 +269,12 @@ import sys
 
 data = json.loads(os.environ["TIMELINE_JSON"])
 expected_media_asset_id = sys.argv[1]
-expected_media_url = sys.argv[2]
+stored_media_url = sys.argv[2]
 
 segments = data.get("segments", [])
 matching = [
     segment for segment in segments
     if segment.get("mediaAssetId") == expected_media_asset_id
-    and segment.get("mediaUrl") == expected_media_url
 ]
 
 if not matching:
@@ -291,7 +290,44 @@ private_fields = {"ownerId", "originalFileUrl", "moderationStatus", "approvedFil
 exposed = private_fields.intersection(segment.keys())
 if exposed:
     raise SystemExit(f"public timeline segment exposed private fields: {sorted(exposed)}")
-' "$expected_media_asset_id" "$expected_media_url"
+
+media_url = segment.get("mediaUrl")
+if not isinstance(media_url, str) or not media_url:
+    raise SystemExit("public timeline mediaUrl was empty")
+if media_url == stored_media_url:
+    raise SystemExit("public timeline exposed stored approvedFileUrl instead of a presigned playback URL")
+if not media_url.startswith(("http://", "https://")):
+    raise SystemExit("public timeline mediaUrl was not an HTTP URL")
+
+print(media_url)
+' "$expected_media_asset_id" "$stored_media_url"
+}
+
+verify_downloaded_file_matches_upload() {
+  local playback_url="$1"
+  local expected_file_path="$2"
+  local downloaded_file_path
+
+  downloaded_file_path="$(mktemp)"
+  if ! curl -fsSL "$playback_url" -o "$downloaded_file_path"; then
+    rm -f "$downloaded_file_path"
+    fail "Public playback URL download failed"
+  fi
+
+  EXPECTED_FILE_PATH="$expected_file_path" \
+    DOWNLOADED_FILE_PATH="$downloaded_file_path" \
+    "$PYTHON_BIN" -c '
+import os
+
+with open(os.environ["EXPECTED_FILE_PATH"], "rb") as expected_file:
+    expected = expected_file.read()
+with open(os.environ["DOWNLOADED_FILE_PATH"], "rb") as downloaded_file:
+    downloaded = downloaded_file.read()
+
+if downloaded != expected:
+    raise SystemExit("public playback URL bytes did not match uploaded object")
+'
+  rm -f "$downloaded_file_path"
 }
 
 require_command curl
@@ -460,7 +496,8 @@ approved_file_url="$(printf '%s' "$approval" | json_get approvedFileUrl)"
 log "Media asset approved by admin"
 
 timeline="$(request_json GET "$BASE_URL/api/timeline?from=$START_SECOND&to=$END_SECOND")"
-assert_public_timeline_segment "$timeline" "$media_asset_id" "$approved_file_url"
-log "Approved media appears in public timeline"
+playback_url="$(assert_public_timeline_segment "$timeline" "$media_asset_id" "$approved_file_url")"
+verify_downloaded_file_matches_upload "$playback_url" "$upload_file_path"
+log "Approved media appears in public timeline through presigned playback URL"
 
 log "Local public timeline flow verification passed"

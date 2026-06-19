@@ -190,7 +190,8 @@ Suggested moderation statuses:
 - `HIDDEN`
 - `DELETED_BY_OWNER`
 
-Only `APPROVED` media may be used by the public timeline player.
+Only `APPROVED` media may be used by the public timeline player. `REJECTED`,
+`HIDDEN`, `UPLOADED`, and `PENDING_REVIEW` media must stay excluded.
 
 Current persistence stores media assets against `ownershipRecordId` and also
 stores `ownerId` so owner-scoped reads and authorization checks can avoid
@@ -204,7 +205,8 @@ Upload completion verifies object storage metadata before creating a `MediaAsset
 
 Admin moderation can transition uploaded media to `APPROVED` or `REJECTED`, and
 can transition approved media to `HIDDEN`. Approval requires an explicit
-`approvedFileUrl` so original upload URLs remain distinct from public media URLs.
+`approvedFileUrl` so original upload URLs remain distinct from approved media
+object references.
 Admins can request short-lived preview URLs for private original uploads through
 the storage port without making the object storage bucket public.
 
@@ -224,7 +226,9 @@ Fields:
 - `externalLink`
 
 Public timeline segments MUST NOT expose owner identifiers, original upload
-URLs, moderation status, or internal storage verification details.
+URLs, stored approved object references, moderation status, or internal storage
+verification details. `mediaUrl` and `thumbnailUrl` are short-lived presigned
+playback URLs generated for the public timeline response.
 
 The initial implementation returns approved occupied segments for a requested
 window. It does not return placeholder segments for unowned or empty seconds.

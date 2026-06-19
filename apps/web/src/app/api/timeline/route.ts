@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     headers: {
       "Content-Type":
         upstreamResponse.headers.get("Content-Type") ?? "application/json",
+      "Cache-Control": "no-store",
     },
   });
 }
