@@ -78,6 +78,8 @@ Rollback:
 - 2026-06-19: Added Redocly configuration to keep validation focused on
   schema validity instead of unrelated documentation policy rules.
 - 2026-06-19: Updated README and CI/CD documentation.
+- 2026-06-19: Fixed the OpenAPI verification script file mode so GitHub
+  Actions can execute it directly.
 
 ## Completion Summary
 
@@ -101,6 +103,8 @@ OpenAPI nullable fields were updated to OpenAPI 3.1-compatible union types.
 - `C:\Program Files\Git\bin\bash.exe -n ./scripts/verify-openapi.sh`: passed.
 - `C:\Program Files\Git\bin\bash.exe ./scripts/verify-openapi.sh`: passed.
 - `git diff --check`: passed.
+- `git ls-files --stage scripts/verify-openapi.sh`: confirmed executable
+  file mode after the follow-up fix.
 
 ## Manual Verification Results
 
