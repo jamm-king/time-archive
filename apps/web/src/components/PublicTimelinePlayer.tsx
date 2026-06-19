@@ -289,9 +289,16 @@ function AuthPanel({
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordMismatch =
+    mode === "register" &&
+    confirmPassword.length > 0 &&
+    password !== confirmPassword;
+  const submitDisabled =
+    submitting || (mode === "register" && password !== confirmPassword);
 
   if (currentUser) {
     return (
@@ -331,6 +338,11 @@ function AuthPanel({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (mode === "register" && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -361,7 +373,11 @@ function AuthPanel({
           className={`px-3 py-2 ${
             mode === "login" ? "bg-neutral-100 text-neutral-950" : "text-neutral-400"
           }`}
-          onClick={() => setMode("login")}
+          onClick={() => {
+            setMode("login");
+            setConfirmPassword("");
+            setError(null);
+          }}
         >
           Login
         </button>
@@ -370,7 +386,10 @@ function AuthPanel({
           className={`px-3 py-2 ${
             mode === "register" ? "bg-neutral-100 text-neutral-950" : "text-neutral-400"
           }`}
-          onClick={() => setMode("register")}
+          onClick={() => {
+            setMode("register");
+            setError(null);
+          }}
         >
           Register
         </button>
@@ -398,21 +417,40 @@ function AuthPanel({
           />
         </label>
         {mode === "register" ? (
-          <label className="grid gap-1 text-xs uppercase text-neutral-500">
-            Display name
-            <input
-              className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
-              type="text"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              required
-            />
-          </label>
+          <>
+            <label className="grid gap-1 text-xs uppercase text-neutral-500">
+              Confirm password
+              <input
+                className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value);
+                  setError(null);
+                }}
+                minLength={8}
+                required
+              />
+            </label>
+            {passwordMismatch ? (
+              <p className="text-xs text-red-300">Passwords do not match.</p>
+            ) : null}
+            <label className="grid gap-1 text-xs uppercase text-neutral-500">
+              Display name
+              <input
+                className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case text-neutral-100 outline-none focus:border-neutral-500"
+                type="text"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                required
+              />
+            </label>
+          </>
         ) : null}
         <button
           type="submit"
           className="mt-1 border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
-          disabled={submitting}
+          disabled={submitDisabled}
         >
           {submitting ? "Submitting" : mode === "register" ? "Create account" : "Sign in"}
         </button>
