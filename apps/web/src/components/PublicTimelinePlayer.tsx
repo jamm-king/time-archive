@@ -58,6 +58,7 @@ type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
 type AuthStatus = "loading" | "guest" | "authenticated" | "error";
 type UploadStatus = "idle" | "uploading" | "complete" | "error";
+type AdminModerationAction = "approve" | "reject" | "hide";
 type PurchaseStatus =
   | "idle"
   | "loadingMaxDuration"
@@ -502,8 +503,10 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
   const [assets, setAssets] = useState<AdminMediaAsset[]>([]);
   const [loadingStatus, setLoadingStatus] = useState<"loading" | "ready" | "error">("loading");
   const [actionAssetId, setActionAssetId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<AdminModerationAction | null>(null);
   const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
@@ -525,6 +528,7 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
       .then((result) => {
         setAssets(result);
         setLoadingStatus("ready");
+        setError(null);
       })
       .catch((loadError: unknown) => {
         if (controller.signal.aborted) {
@@ -549,18 +553,24 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
 
   const runAction = async (
     asset: AdminMediaAsset,
+    nextActionType: AdminModerationAction,
     action: () => Promise<AdminMediaAsset>,
+    successMessage: string,
   ) => {
     setActionAssetId(asset.mediaAssetId);
+    setActionType(nextActionType);
     setError(null);
+    setNotice(null);
 
     try {
       replaceAsset(await action());
+      setNotice(successMessage);
     } catch (actionError: unknown) {
       console.error(actionError);
       setError(actionError instanceof Error ? actionError.message : "Moderation action failed");
     } finally {
       setActionAssetId(null);
+      setActionType(null);
     }
   };
 
@@ -574,10 +584,12 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
     previewWindow.opener = null;
     setPreviewAssetId(asset.mediaAssetId);
     setError(null);
+    setNotice(null);
 
     try {
       const preview = await fetchAdminMediaPreviewUrl(asset.mediaAssetId);
       previewWindow.location.href = preview.previewUrl;
+      setNotice("Original preview opened.");
     } catch (previewError: unknown) {
       previewWindow.close();
       console.error(previewError);
@@ -612,10 +624,12 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
               onClick={() => {
                 setLoadingStatus("loading");
                 setError(null);
+                setNotice(null);
                 setRefreshToken((value) => value + 1);
               }}
+              disabled={loadingStatus === "loading"}
             >
-              Refresh
+              {loadingStatus === "loading" ? "Refreshing" : "Refresh"}
             </button>
             <button
               type="button"
@@ -641,12 +655,17 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
                 setStatus(nextStatus);
                 setLoadingStatus("loading");
                 setError(null);
+                setNotice(null);
               }}
             >
-              {nextStatus}
+              {formatModerationTabLabel(nextStatus)}
             </button>
           ))}
         </div>
+
+        {notice ? (
+          <p className="mt-3 break-words text-xs text-neutral-400">{notice}</p>
+        ) : null}
 
         {loadingStatus === "loading" ? (
           <p className="mt-4 text-xs text-neutral-500">Loading moderation queue</p>
@@ -655,31 +674,52 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
         ) : assets.length === 0 ? (
           <p className="mt-4 text-xs text-neutral-500">No media assets</p>
         ) : (
-          <ul className="mt-4 grid max-h-[60vh] min-w-0 gap-2 overflow-y-auto pr-1">
-            {assets.map((asset) => (
-              <AdminMediaAssetItem
-                key={asset.mediaAssetId}
-                asset={asset}
-                busy={actionAssetId === asset.mediaAssetId}
-                previewBusy={previewAssetId === asset.mediaAssetId}
-                onOpenOriginal={() => openOriginal(asset)}
-                onApprove={() =>
-                  runAction(asset, () =>
-                    approveAdminMediaAsset(asset.mediaAssetId, {
-                      approvedFileUrl: asset.originalFileUrl,
-                      thumbnailUrl: asset.thumbnailUrl,
-                    }),
-                  )
-                }
-                onReject={() =>
-                  runAction(asset, () => rejectAdminMediaAsset(asset.mediaAssetId))
-                }
-                onHide={() =>
-                  runAction(asset, () => hideAdminMediaAsset(asset.mediaAssetId))
-                }
-              />
-            ))}
-          </ul>
+          <>
+            <p className="mt-3 text-xs tabular-nums text-neutral-600">
+              {assets.length} assets
+            </p>
+            <ul className="mt-2 grid max-h-[60vh] min-w-0 gap-2 overflow-y-auto pr-1">
+              {assets.map((asset) => (
+                <AdminMediaAssetItem
+                  key={asset.mediaAssetId}
+                  asset={asset}
+                  actionType={
+                    actionAssetId === asset.mediaAssetId ? actionType : null
+                  }
+                  previewBusy={previewAssetId === asset.mediaAssetId}
+                  onOpenOriginal={() => openOriginal(asset)}
+                  onApprove={() =>
+                    runAction(
+                      asset,
+                      "approve",
+                      () =>
+                        approveAdminMediaAsset(asset.mediaAssetId, {
+                          approvedFileUrl: asset.originalFileUrl,
+                          thumbnailUrl: asset.thumbnailUrl,
+                        }),
+                      "Media approved.",
+                    )
+                  }
+                  onReject={() =>
+                    runAction(
+                      asset,
+                      "reject",
+                      () => rejectAdminMediaAsset(asset.mediaAssetId),
+                      "Media rejected.",
+                    )
+                  }
+                  onHide={() =>
+                    runAction(
+                      asset,
+                      "hide",
+                      () => hideAdminMediaAsset(asset.mediaAssetId),
+                      "Media hidden.",
+                    )
+                  }
+                />
+              ))}
+            </ul>
+          </>
         )}
         {error && loadingStatus === "ready" ? (
           <p className="mt-3 break-words text-xs text-red-300">{error}</p>
@@ -691,7 +731,7 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
 
 function AdminMediaAssetItem({
   asset,
-  busy,
+  actionType,
   previewBusy,
   onOpenOriginal,
   onApprove,
@@ -699,21 +739,23 @@ function AdminMediaAssetItem({
   onHide,
 }: {
   asset: AdminMediaAsset;
-  busy: boolean;
+  actionType: AdminModerationAction | null;
   previewBusy: boolean;
   onOpenOriginal: () => void;
   onApprove: () => void;
   onReject: () => void;
   onHide: () => void;
 }) {
+  const busy = actionType !== null;
+
   return (
     <li className="min-w-0 max-w-full overflow-hidden border border-neutral-800 px-3 py-2">
       <div className="flex min-w-0 items-center justify-between gap-3">
         <span className="min-w-0 truncate text-xs text-neutral-100">
-          {asset.mediaType}
+          {formatMediaType(asset.mediaType)}
         </span>
-        <span className="shrink-0 text-[10px] uppercase text-neutral-500">
-          {asset.moderationStatus}
+        <span className="max-w-[60%] shrink-0 truncate text-[10px] uppercase text-neutral-500">
+          {formatModerationStatus(asset.moderationStatus)}
         </span>
       </div>
       <p className="mt-2 max-w-full truncate text-xs text-neutral-600">
@@ -737,7 +779,7 @@ function AdminMediaAssetItem({
               onClick={onApprove}
               disabled={busy}
             >
-              {busy ? "Working" : "Approve"}
+              {actionType === "approve" ? "Approving" : "Approve"}
             </button>
             <button
               type="button"
@@ -745,7 +787,7 @@ function AdminMediaAssetItem({
               onClick={onReject}
               disabled={busy}
             >
-              Reject
+              {actionType === "reject" ? "Rejecting" : "Reject"}
             </button>
           </>
         ) : asset.moderationStatus === "APPROVED" ? (
@@ -755,7 +797,7 @@ function AdminMediaAssetItem({
             onClick={onHide}
             disabled={busy}
           >
-            {busy ? "Working" : "Hide"}
+            {actionType === "hide" ? "Hiding" : "Hide"}
           </button>
         ) : null}
       </div>
@@ -1009,7 +1051,9 @@ function OwnedRangeMediaModal({
             {uploadStatus === "uploading" ? "Uploading" : "Upload"}
           </button>
           {uploadStatus === "complete" ? (
-            <p className="text-xs text-neutral-400">Pending moderation</p>
+            <p className="text-xs text-neutral-400">
+              Uploaded. Awaiting admin moderation.
+            </p>
           ) : null}
           {uploadError ? (
             <p className="break-words text-xs text-red-300">{uploadError}</p>
@@ -1053,7 +1097,8 @@ function OwnedRangeMediaSummary({
 
   return (
     <p className="min-w-0 truncate text-xs text-neutral-500">
-      {mediaAssets.length} media - {latest.moderationStatus}
+      {mediaAssets.length} media -{" "}
+      {formatModerationStatus(latest.moderationStatus)}
     </p>
   );
 }
@@ -1075,23 +1120,70 @@ function OwnedRangeMediaDetail({
     return <p className="mt-3 text-xs text-neutral-600">No media uploaded</p>;
   }
 
+  const visibleAssets = mediaAssets.slice(0, 3);
+  const hiddenCount = mediaAssets.length - visibleAssets.length;
+
   return (
-    <ul className="mt-3 grid gap-1">
-      {mediaAssets.slice(0, 3).map((asset) => (
-        <li
-          key={asset.mediaAssetId}
-          className="flex items-center justify-between gap-3 text-xs"
-        >
-          <span className="truncate text-neutral-400">
-            {asset.mediaType}
-          </span>
-          <span className="shrink-0 uppercase text-neutral-500">
-            {asset.moderationStatus}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-3 grid gap-2">
+      <ul className="grid gap-1">
+        {visibleAssets.map((asset) => (
+          <li
+            key={asset.mediaAssetId}
+            className="flex items-center justify-between gap-3 text-xs"
+          >
+            <span className="truncate text-neutral-400">
+              {formatMediaType(asset.mediaType)}
+            </span>
+            <span className="shrink-0 uppercase text-neutral-500">
+              {formatModerationStatus(asset.moderationStatus)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {hiddenCount > 0 ? (
+        <p className="text-xs tabular-nums text-neutral-600">
+          + {hiddenCount} more
+        </p>
+      ) : null}
+    </div>
   );
+}
+
+function formatMediaType(mediaType: string): string {
+  switch (mediaType) {
+    case "IMAGE":
+      return "Image";
+    case "VIDEO":
+      return "Video";
+    default:
+      return mediaType;
+  }
+}
+
+function formatModerationStatus(status: string): string {
+  switch (status) {
+    case "UPLOADED":
+    case "PENDING_REVIEW":
+      return "Awaiting moderation";
+    case "APPROVED":
+      return "Approved";
+    case "REJECTED":
+      return "Rejected";
+    case "HIDDEN":
+      return "Hidden";
+    default:
+      return status;
+  }
+}
+
+function formatModerationTabLabel(status: string): string {
+  switch (status) {
+    case "UPLOADED":
+    case "PENDING_REVIEW":
+      return "Pending";
+    default:
+      return formatModerationStatus(status);
+  }
 }
 
 function ActiveMedia({ segment }: { segment: PublicTimelineSegment | null }) {
