@@ -30,11 +30,10 @@ in `X-XSRF-TOKEN` for mutating API requests. The CSRF token is not an
 authentication secret; it protects the HttpOnly session cookie from cross-site
 request forgery.
 
-Roles:
+Implemented roles:
 
 - `USER`
 - `ADMIN`
-- `SYSTEM`
 
 ## Payment Security
 
@@ -78,7 +77,11 @@ Recommended MVP media policy:
 - Use muted autoplay for public playback.
 - Reject files that cannot be safely processed.
 
-Current media persistence stores URLs and moderation state only. Actual upload handling must still validate file size, file signature, media type, and ownership before creating a media asset.
+Current media persistence stores URLs and moderation state. Upload completion
+verifies ownership, upload request expiration, object existence, expected
+content length, and expected content type before creating a media asset. File
+signature inspection, malware scanning, transcoding, and thumbnail generation
+remain required before production publication.
 
 Owned range media APIs derive current-user identity from the authenticated
 server-side session and must reject client-provided owner identity claims. The
@@ -88,6 +91,10 @@ belongs to the caller, or passed file signature and content safety checks.
 Upload request APIs issue short-lived S3-compatible presigned upload URLs and store server-generated object keys in `media_upload_requests`. Local development uses MinIO through the same S3-compatible storage port that can later target Cloudflare R2. Upload request creation still does not prove that the object was uploaded correctly; a completion step must verify the object key, expected content length, expected content type, ownership, expiration, and actual file signature before a `MediaAsset` is created or moved into moderation.
 
 The initial upload completion implementation verifies ownership, expiration, object existence, expected content length, and expected content type before creating an `UPLOADED` `MediaAsset`. It does not yet inspect file signatures, scan malware, transcode video, or generate thumbnails, so moderation and processing must still treat uploaded media as untrusted.
+
+Admin original-media preview uses short-lived presigned download URLs generated
+after server-side admin authorization. This keeps original uploads private while
+still allowing moderation review.
 
 Cloudflare R2 should be connected after the MinIO local flow and upload completion verification are implemented. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and public delivery base URL should come from environment or secret management.
 
