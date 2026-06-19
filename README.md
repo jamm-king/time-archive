@@ -59,6 +59,7 @@ for the release gate.
 - [Security and Operations](docs/architecture/security-and-operations.md)
 - [CI/CD and Testing Strategy](docs/operations/ci-cd-and-testing-strategy.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
+- [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)
 
 ## API Contract
 
@@ -316,6 +317,9 @@ TIME_ARCHIVE_STORAGE_S3_PLAYBACK_URL_EXPIRATION_SECONDS
 Cloudflare R2 should be connected after local MinIO upload, preview,
 moderation, and public playback flows remain stable. See the R2 checklist in
 [Release Readiness Checklist](docs/operations/release-readiness-checklist.md).
+Local R2 verification and deployed environments must use separate buckets and
+separate access keys. The local R2 verification path is documented in
+[Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md).
 
 ## Database
 

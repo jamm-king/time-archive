@@ -77,6 +77,7 @@ MVP-ready areas after target-environment verification:
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
 | Approved storage references | Ready | Approval rejects URLs that do not belong to the configured storage base URL. |
 | Public playback URLs | Ready | Public timeline returns short-lived presigned GET URLs and `Cache-Control: no-store`. |
+| Storage backend changes | Blocked for production | Do not change bucket, storage backend, or storage base URL without an object migration, database update, verification, and rollback plan. |
 
 ## Database And Data Integrity
 
@@ -153,19 +154,32 @@ Release candidate verification:
 
 Before connecting Cloudflare R2:
 
-- Create a private bucket for media objects.
-- Create least-privilege access keys for the application.
+- Create separate private buckets for local verification and production media
+  objects.
+- Create least-privilege access keys per environment and per bucket.
 - Configure S3-compatible endpoint and region-compatible settings.
 - Set `TIME_ARCHIVE_STORAGE_S3_ENDPOINT`.
+  Example endpoint:
+  `https://replace-with-account-id.r2.cloudflarestorage.com`.
 - Set `TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT`.
+  Example endpoint:
+  `https://replace-with-account-id.r2.cloudflarestorage.com`.
 - Set `TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL` to the configured storage base
-  URL used for managed object references.
+  URL used for managed object references in that environment.
 - Set `TIME_ARCHIVE_STORAGE_S3_BUCKET`.
+- Confirm local, staging, and production deployments do not share the same
+  bucket unless explicitly approved as a high-impact operational decision.
+- Treat `TIME_ARCHIVE_STORAGE_S3_BUCKET` and
+  `TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL` as data compatibility boundaries.
+  Changing either value against an existing database requires a storage
+  migration plan.
 - Set access key and secret through secret management.
 - Verify presigned PUT from the deployed browser origin.
 - Verify presigned GET for admin preview.
 - Verify presigned GET for public playback.
 - Confirm API responses carrying presigned URLs are not cached by shared caches.
+
+See [Cloudflare R2 Storage Setup](r2-storage-setup.md) for local verification.
 
 ## Go Or No-Go Rule
 
