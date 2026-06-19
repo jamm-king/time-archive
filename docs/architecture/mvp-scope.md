@@ -26,7 +26,7 @@ MVP 1 should focus on primary sale and moderated display.
 - Admin media approval and rejection
 - Admin media hiding
 - Admin original-media preview through short-lived presigned URLs
-- Audit logs for payment completion and ownership creation
+- Audit logs for payment completion, ownership creation, and admin moderation
 
 ### Excluded
 
@@ -39,7 +39,6 @@ MVP 1 should focus on primary sale and moderated display.
 - Multiple timelines, seasons, or editions
 - Complex media editing
 - Public user pages
-- Complete admin moderation audit logging
 
 ## MVP 2
 

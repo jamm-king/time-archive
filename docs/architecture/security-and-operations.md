@@ -123,6 +123,10 @@ configured normalized email addresses, but production admin lifecycle management
 should use an explicit invitation, approval, or operator-controlled provisioning
 process.
 
+Admin approval, rejection, and hiding append audit logs in the same transaction
+as the moderation state change. If audit append fails, the moderation action
+should roll back rather than silently changing media state without traceability.
+
 ## External Links
 
 External links attached to media should be treated as user-generated content.

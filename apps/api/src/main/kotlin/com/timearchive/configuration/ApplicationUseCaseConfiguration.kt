@@ -213,11 +213,13 @@ class ApplicationUseCaseConfiguration {
     fun approveMediaAsset(
         transactionPort: TransactionPort,
         mediaAssetRepository: MediaAssetRepository,
+        auditLogPort: AuditLogPort,
         clockPort: ClockPort,
     ): ApproveMediaAsset =
         ApproveMediaAsset(
             transactionPort = transactionPort,
             mediaAssetRepository = mediaAssetRepository,
+            auditLogPort = auditLogPort,
             clockPort = clockPort,
         )
 
@@ -225,11 +227,13 @@ class ApplicationUseCaseConfiguration {
     fun rejectMediaAsset(
         transactionPort: TransactionPort,
         mediaAssetRepository: MediaAssetRepository,
+        auditLogPort: AuditLogPort,
         clockPort: ClockPort,
     ): RejectMediaAsset =
         RejectMediaAsset(
             transactionPort = transactionPort,
             mediaAssetRepository = mediaAssetRepository,
+            auditLogPort = auditLogPort,
             clockPort = clockPort,
         )
 
@@ -237,11 +241,13 @@ class ApplicationUseCaseConfiguration {
     fun hideMediaAsset(
         transactionPort: TransactionPort,
         mediaAssetRepository: MediaAssetRepository,
+        auditLogPort: AuditLogPort,
         clockPort: ClockPort,
     ): HideMediaAsset =
         HideMediaAsset(
             transactionPort = transactionPort,
             mediaAssetRepository = mediaAssetRepository,
+            auditLogPort = auditLogPort,
             clockPort = clockPort,
         )
 
