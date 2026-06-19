@@ -7,6 +7,17 @@ on:
       - main
 
 jobs:
+  openapi:
+    name: OpenAPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate OpenAPI
+        run: ./scripts/verify-openapi.sh
+
   backend:
     name: Backend
     runs-on: ubuntu-latest

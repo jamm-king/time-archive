@@ -99,6 +99,7 @@ Recommended PR checks:
 checkout
 setup JDK
 validate Gradle wrapper
+validate OpenAPI document
 run backend tests
 build backend application
 build backend Docker image
@@ -111,6 +112,7 @@ run local web smoke check
 
 Current required checks:
 
+- OpenAPI validation
 - Backend test
 - Backend build
 - Backend Docker image build
