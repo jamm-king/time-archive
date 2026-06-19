@@ -127,6 +127,9 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_MISMATCH", "Uploaded media object does not match upload request")
             message.contains("media asset is not approvable") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_APPROVABLE", "Media asset is not approvable")
+            message.contains("approved media file url is not managed by storage") ||
+                message.contains("approved media thumbnail url is not managed by storage") ->
+                errorResponse(HttpStatus.BAD_REQUEST, "INVALID_MEDIA_STORAGE_REFERENCE", "Invalid media storage reference")
             message.contains("media asset is not rejectable") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_REJECTABLE", "Media asset is not rejectable")
             message.contains("media asset is not hideable") ->

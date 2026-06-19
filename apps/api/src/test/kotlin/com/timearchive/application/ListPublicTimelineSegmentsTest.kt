@@ -115,6 +115,8 @@ class ListPublicTimelineSegmentsTest {
             )
         }
 
+        override fun isManagedFileUrl(fileUrl: String): Boolean = true
+
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
     }
 }

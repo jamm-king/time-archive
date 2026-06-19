@@ -101,6 +101,9 @@ Public timeline media delivery also uses short-lived presigned download URLs.
 public playback URLs. The public timeline API converts approved media references
 to presigned playback URLs at read time and uses `Cache-Control: no-store`
 because responses embed expiring URLs.
+Admin approval must reject approved media or thumbnail references that do not
+belong to the configured object storage base URL. This prevents arbitrary
+external URLs from entering the public playback presigning path.
 
 Cloudflare R2 should be connected after the MinIO local flow, upload completion verification, admin moderation, and public playback presigning are stable. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and storage base URL should come from environment or secret management. CDN/public-domain optimization should be revisited after MVP correctness and access control are verified.
 

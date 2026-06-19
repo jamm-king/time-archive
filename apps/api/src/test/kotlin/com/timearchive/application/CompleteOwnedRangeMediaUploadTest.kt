@@ -234,6 +234,8 @@ class CompleteOwnedRangeMediaUploadTest {
         ): MediaObjectStoragePort.PresignedDownload =
             error("not used")
 
+        override fun isManagedFileUrl(fileUrl: String): Boolean = true
+
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = metadata
     }
 }

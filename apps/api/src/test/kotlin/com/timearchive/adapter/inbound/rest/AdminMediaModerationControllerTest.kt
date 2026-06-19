@@ -147,6 +147,28 @@ class AdminMediaModerationControllerTest {
     }
 
     @Test
+    fun `maps invalid approved storage reference to bad request`() {
+        every { getCurrentUser.get(GetCurrentUser.Query(userId = adminId)) } returns adminUser()
+        every { approveMediaAsset.approve(any()) } throws
+            IllegalArgumentException("approved media file url is not managed by storage")
+
+        mockMvc.post("/api/admin/media/assets/$mediaAssetId/approve") {
+            this.session = signedInSession(adminId)
+            contentType = APPLICATION_JSON
+            content = objectMapper.writeValueAsString(
+                mapOf(
+                    "approvedFileUrl" to "https://external.example.test/approved.png",
+                    "thumbnailUrl" to null,
+                ),
+            )
+        }
+            .andExpect {
+                status { isBadRequest() }
+                jsonPath("$.code") { value("INVALID_MEDIA_STORAGE_REFERENCE") }
+            }
+    }
+
+    @Test
     fun `rejects media asset`() {
         every { getCurrentUser.get(GetCurrentUser.Query(userId = adminId)) } returns adminUser()
         every { rejectMediaAsset.reject(any()) } returns uploadedMediaAsset()
