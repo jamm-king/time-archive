@@ -3,6 +3,8 @@ package com.timearchive.adapter.inbound.rest
 import com.timearchive.application.ListPublicTimelineSegments
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import org.springframework.http.CacheControl
+import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -25,13 +27,18 @@ class PublicTimelineController(
         @Min(1)
         @Max(86_400)
         to: Long,
-    ): PublicTimelineResponse =
-        PublicTimelineResponse.from(
-            listPublicTimelineSegments.list(
-                ListPublicTimelineSegments.Query(
-                    from = from,
-                    to = to,
+    ): ResponseEntity<PublicTimelineResponse> =
+        ResponseEntity
+            .ok()
+            .cacheControl(CacheControl.noStore())
+            .body(
+                PublicTimelineResponse.from(
+                    listPublicTimelineSegments.list(
+                        ListPublicTimelineSegments.Query(
+                            from = from,
+                            to = to,
+                        ),
+                    ),
                 ),
-            ),
-        )
+            )
 }

@@ -206,8 +206,16 @@ class ApplicationUseCaseConfiguration {
     @Bean
     fun listPublicTimelineSegments(
         publicTimelineSegmentRepository: PublicTimelineSegmentRepository,
+        mediaObjectStoragePort: MediaObjectStoragePort,
+        clockPort: ClockPort,
+        @Value("\${time-archive.storage.s3.playback-url-expiration-seconds}") playbackUrlExpirationSeconds: Long,
     ): ListPublicTimelineSegments =
-        ListPublicTimelineSegments(publicTimelineSegmentRepository = publicTimelineSegmentRepository)
+        ListPublicTimelineSegments(
+            publicTimelineSegmentRepository = publicTimelineSegmentRepository,
+            mediaObjectStoragePort = mediaObjectStoragePort,
+            clockPort = clockPort,
+            playbackUrlTtl = Duration.ofSeconds(playbackUrlExpirationSeconds),
+        )
 
     @Bean
     fun approveMediaAsset(

@@ -96,7 +96,13 @@ Admin original-media preview uses short-lived presigned download URLs generated
 after server-side admin authorization. This keeps original uploads private while
 still allowing moderation review.
 
-Cloudflare R2 should be connected after the MinIO local flow and upload completion verification are implemented. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and public delivery base URL should come from environment or secret management.
+Public timeline media delivery also uses short-lived presigned download URLs.
+`approvedFileUrl` and `thumbnailUrl` are stored object references, not permanent
+public playback URLs. The public timeline API converts approved media references
+to presigned playback URLs at read time and uses `Cache-Control: no-store`
+because responses embed expiring URLs.
+
+Cloudflare R2 should be connected after the MinIO local flow, upload completion verification, admin moderation, and public playback presigning are stable. R2 integration should be configuration-only from the domain perspective: endpoint, bucket, region, credentials, and storage base URL should come from environment or secret management. CDN/public-domain optimization should be revisited after MVP correctness and access control are verified.
 
 ## Moderation
 
@@ -114,7 +120,8 @@ Important distinction:
 - `REJECTED` means the media was never approved for public display.
 - `HIDDEN` means previously visible media was removed from public display.
 
-Only `APPROVED` media can appear in the public timeline.
+Only `APPROVED` media can appear in the public timeline. `REJECTED`,
+`HIDDEN`, `UPLOADED`, and `PENDING_REVIEW` media must stay excluded.
 
 Admin moderation APIs derive admin identity and permissions from the
 authenticated server-side session. MVP authorization uses a persisted user role

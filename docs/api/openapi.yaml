@@ -251,8 +251,10 @@ paths:
         24-hour Time Archive timeline.
 
         The response is public-player safe. It only includes approved media
-        URLs and does not expose owner identifiers, original upload URLs, or
-        moderation metadata.
+        as short-lived presigned playback URLs and does not expose owner
+        identifiers, original upload URLs, stored approved object references,
+        or moderation metadata. Responses are not intended for shared caching
+        while they embed presigned URLs.
       parameters:
         - name: from
           in: query
@@ -275,6 +277,11 @@ paths:
       responses:
         "200":
           description: Public timeline segments for the requested window.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Uses `no-store` because the response embeds short-lived presigned URLs.
           content:
             application/json:
               schema:
@@ -1412,10 +1419,12 @@ components:
         mediaUrl:
           type: string
           format: uri
+          description: Short-lived presigned GET URL for approved public playback.
         thumbnailUrl:
           type: string
           format: uri
           nullable: true
+          description: Short-lived presigned GET URL for the approved thumbnail, when present.
         externalLink:
           type: string
           format: uri

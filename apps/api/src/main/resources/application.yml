@@ -41,3 +41,4 @@ time-archive:
       path-style-access: ${TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS:true}
       upload-url-expiration-seconds: ${TIME_ARCHIVE_STORAGE_S3_UPLOAD_URL_EXPIRATION_SECONDS:600}
       preview-url-expiration-seconds: ${TIME_ARCHIVE_STORAGE_S3_PREVIEW_URL_EXPIRATION_SECONDS:300}
+      playback-url-expiration-seconds: ${TIME_ARCHIVE_STORAGE_S3_PLAYBACK_URL_EXPIRATION_SECONDS:600}

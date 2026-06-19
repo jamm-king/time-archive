@@ -17,9 +17,12 @@ The script verifies:
 - upload completion verification
 - `UPLOADED` media stays hidden from the public timeline
 - admin approval through an authenticated admin session
-- approved media appears in `GET /api/timeline`
+- approved media appears in `GET /api/timeline` through a short-lived
+  presigned playback URL
+- the presigned playback URL downloads the uploaded object bytes from local
+  MinIO
 - public timeline segments do not expose owner identity, original upload URLs,
-  or moderation metadata
+  stored approved object references, or moderation metadata
 
 ## Prerequisites
 
@@ -72,9 +75,11 @@ The final output should include:
 ## Development-Stage Behavior
 
 The script registers or logs in an admin user through the session authentication
-API and approves the uploaded local object URL as the public media URL.
-Production behavior still needs a media processing pipeline that publishes
-approved derived media.
+API and approves the uploaded local object URL as the stored approved media
+reference. The public timeline response must not return that stored reference
+directly; it returns a short-lived presigned playback URL instead. Production
+behavior still needs a media processing pipeline that publishes approved
+derived media.
 
 ## Cleanup
 
