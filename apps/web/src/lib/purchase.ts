@@ -1,4 +1,5 @@
 import { fetchCsrfToken } from "@/lib/auth";
+import { ARCHIVE_TOTAL_SECONDS } from "@/lib/timeline";
 
 export type AvailabilityResponse = {
   startSecond: number;
@@ -54,6 +55,34 @@ export async function checkAvailability(
   }
 
   return parseAvailabilityResponse(await response.json());
+}
+
+export async function findMaxAvailableDuration(
+  startSecond: number,
+): Promise<number> {
+  const maxCandidate = ARCHIVE_TOTAL_SECONDS - startSecond;
+  if (maxCandidate < 1) {
+    return 0;
+  }
+
+  let low = 0;
+  let high = maxCandidate;
+
+  while (low < high) {
+    const candidate = Math.ceil((low + high) / 2);
+    const availability = await checkAvailability(
+      startSecond,
+      startSecond + candidate,
+    );
+
+    if (availability.available) {
+      low = candidate;
+    } else {
+      high = candidate - 1;
+    }
+  }
+
+  return low;
 }
 
 export async function reserveTimeRange(

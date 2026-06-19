@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   ARCHIVE_TOTAL_SECONDS,
   fetchPublicTimeline,
@@ -29,15 +29,30 @@ import {
   checkAvailability,
   completeFakePrimaryPurchase,
   createCheckout,
+  findMaxAvailableDuration,
   reserveTimeRange,
   type ReservationResponse,
 } from "@/lib/purchase";
+import {
+  buildDurationPresets,
+  clampDuration,
+} from "@/lib/purchase-duration";
 
 type TimelineStatus = "loading" | "ready" | "empty" | "error";
 type MediaStatus = "loading" | "ready" | "error";
 type AuthStatus = "loading" | "guest" | "authenticated" | "error";
 type UploadStatus = "idle" | "uploading" | "complete" | "error";
-type PurchaseStatus = "idle" | "checking" | "reserved" | "completing" | "complete" | "error";
+type PurchaseStatus =
+  | "idle"
+  | "loadingMaxDuration"
+  | "checkingAvailability"
+  | "available"
+  | "unavailable"
+  | "reserving"
+  | "reserved"
+  | "completing"
+  | "complete"
+  | "error";
 
 export function PublicTimelinePlayer() {
   const [now, setNow] = useState(() => new Date());
@@ -695,7 +710,7 @@ function PlayerCenter({
           >
             Retry
           </button>
-        ) : status === "empty" ? (
+        ) : status === "empty" || status === "ready" ? (
           <PurchaseCurrentSecondPanel
             key={currentUser?.userId ?? "guest"}
             currentSecond={currentSecond}
@@ -718,13 +733,58 @@ function PurchaseCurrentSecondPanel({
   onComplete: () => void;
 }) {
   const [status, setStatus] = useState<PurchaseStatus>("idle");
+  const [draftStartSecond, setDraftStartSecond] = useState<number | null>(null);
+  const [maxDuration, setMaxDuration] = useState<number | null>(null);
+  const [duration, setDuration] = useState(1);
   const [reservation, setReservation] = useState<ReservationResponse | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [durationNotice, setDurationNotice] = useState<string | null>(null);
+  const availabilityRequestId = useRef(0);
   const selectedSecond = Math.min(currentSecond, ARCHIVE_TOTAL_SECONDS - 1);
-  const endSecond = selectedSecond + 1;
+  const selectedStartSecond = draftStartSecond ?? selectedSecond;
+  const selectedEndSecond = selectedStartSecond + duration;
+  const durationPresets = maxDuration === null
+    ? []
+    : buildDurationPresets(maxDuration);
 
-  const reserve = async () => {
+  const checkSelectedAvailability = async (
+    startSecond: number,
+    nextDuration: number,
+  ) => {
+    const requestId = availabilityRequestId.current + 1;
+    availabilityRequestId.current = requestId;
+    setStatus("checkingAvailability");
+    setMessage(null);
+
+    try {
+      const availability = await checkAvailability(
+        startSecond,
+        startSecond + nextDuration,
+      );
+      if (availabilityRequestId.current !== requestId) {
+        return;
+      }
+      if (availability.available) {
+        setStatus("available");
+        setMessage(null);
+      } else {
+        setStatus("unavailable");
+        setMessage("Some seconds in this range are already claimed.");
+      }
+    } catch (error: unknown) {
+      if (availabilityRequestId.current !== requestId) {
+        return;
+      }
+      console.error(error);
+      setStatus("error");
+      setMessage(
+        error instanceof Error ? error.message : "Availability check failed",
+      );
+    }
+  };
+
+  const beginDraft = async () => {
     if (status !== "idle" && status !== "error") {
       return;
     }
@@ -732,19 +792,70 @@ function PurchaseCurrentSecondPanel({
       return;
     }
 
-    setStatus("checking");
+    const nextStartSecond = selectedSecond;
+    setStatus("loadingMaxDuration");
     setMessage(null);
+    setDurationNotice(null);
     setCheckoutUrl(null);
+    setReservation(null);
+    setDraftStartSecond(nextStartSecond);
+    setMaxDuration(null);
+    setDuration(1);
 
     try {
-      const availability = await checkAvailability(selectedSecond, endSecond);
-      if (!availability.available) {
+      const nextMaxDuration = await findMaxAvailableDuration(nextStartSecond);
+      if (nextMaxDuration < 1) {
         setStatus("error");
         setMessage("This second is already unavailable.");
         return;
       }
 
-      const nextReservation = await reserveTimeRange(selectedSecond, endSecond);
+      setMaxDuration(nextMaxDuration);
+      await checkSelectedAvailability(nextStartSecond, 1);
+    } catch (error: unknown) {
+      console.error(error);
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Availability check failed");
+    }
+  };
+
+  const updateDuration = (nextDuration: number) => {
+    if (maxDuration === null) {
+      return;
+    }
+
+    const result = clampDuration(nextDuration, maxDuration);
+    setDuration(result.duration);
+    setDurationNotice(
+      result.wasClamped && nextDuration > maxDuration
+        ? `Maximum available duration from this second is ${maxDuration}s.`
+        : null,
+    );
+    if (draftStartSecond !== null && !reservation) {
+      void checkSelectedAvailability(draftStartSecond, result.duration);
+    }
+  };
+
+  const reserve = async () => {
+    if (
+      status !== "available" ||
+      !currentUser ||
+      draftStartSecond === null ||
+      maxDuration === null
+    ) {
+      return;
+    }
+
+    setStatus("reserving");
+    setMessage(null);
+    setDurationNotice(null);
+    setCheckoutUrl(null);
+
+    try {
+      const nextReservation = await reserveTimeRange(
+        draftStartSecond,
+        draftStartSecond + duration,
+      );
       const checkout = await createCheckout(nextReservation.reservationId);
       setReservation(nextReservation);
       setCheckoutUrl(checkout.checkoutUrl);
@@ -754,6 +865,17 @@ function PurchaseCurrentSecondPanel({
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Purchase failed");
     }
+  };
+
+  const resetDraft = () => {
+    setStatus("idle");
+    setDraftStartSecond(null);
+    setMaxDuration(null);
+    setDuration(1);
+    setReservation(null);
+    setCheckoutUrl(null);
+    setMessage(null);
+    setDurationNotice(null);
   };
 
   const complete = async () => {
@@ -788,26 +910,113 @@ function PurchaseCurrentSecondPanel({
   }
 
   return (
-    <div className="mx-auto mt-6 grid w-full max-w-xs gap-2">
-      <button
-        type="button"
-        className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
-        onClick={reserve}
-        disabled={
-          status === "checking" ||
-          status === "reserved" ||
-          status === "completing" ||
-          status === "complete"
-        }
-      >
-        {status === "checking"
-          ? "Reserving"
-          : status === "reserved" || status === "completing"
-            ? "Reserved"
+    <div className="mx-auto mt-6 grid w-full max-w-sm gap-3">
+      {draftStartSecond === null ? (
+        <button
+          type="button"
+          className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+          onClick={beginDraft}
+          disabled={status === "loadingMaxDuration" || status === "complete"}
+        >
+          {status === "loadingMaxDuration"
+            ? "Checking range"
             : status === "complete"
               ? "Owned"
               : "Buy this second"}
-      </button>
+        </button>
+      ) : null}
+      {draftStartSecond !== null && maxDuration !== null && !reservation ? (
+        <div className="border border-neutral-800 bg-neutral-950/80 p-3 text-left">
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="uppercase text-neutral-500">Start</span>
+            <span className="tabular-nums text-neutral-100">
+              {formatArchiveSecond(draftStartSecond)}
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-5 gap-1">
+            {durationPresets.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className={`border px-2 py-1.5 text-xs tabular-nums transition focus:outline-none focus:ring-2 focus:ring-neutral-300 ${
+                  duration === preset
+                    ? "border-neutral-100 bg-neutral-100 text-neutral-950"
+                    : "border-neutral-800 text-neutral-300 hover:border-neutral-600"
+                }`}
+                onClick={() => {
+                  setDuration(preset);
+                  setDurationNotice(null);
+                  if (draftStartSecond !== null) {
+                    void checkSelectedAvailability(draftStartSecond, preset);
+                  }
+                }}
+              >
+                {preset}s
+              </button>
+            ))}
+          </div>
+          <label className="mt-3 grid gap-1 text-xs uppercase text-neutral-500">
+            Duration
+            <input
+              className="border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm normal-case tabular-nums text-neutral-100 outline-none focus:border-neutral-500"
+              type="number"
+              min={1}
+              max={maxDuration}
+              step={1}
+              value={duration}
+              onChange={(event) => updateDuration(Number(event.target.value))}
+            />
+          </label>
+          <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+            <span className="uppercase text-neutral-500">Range</span>
+            <span className="tabular-nums text-neutral-100">
+              {formatArchiveSecond(selectedStartSecond)}-
+              {formatArchiveSecond(selectedEndSecond)}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-neutral-600">
+            Maximum available duration from this second is {maxDuration}s.
+          </p>
+          {durationNotice ? (
+            <p className="mt-2 text-xs text-neutral-400">{durationNotice}</p>
+          ) : null}
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <button
+              type="button"
+              className="border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+              onClick={reserve}
+              disabled={status !== "available"}
+            >
+              {status === "checkingAvailability"
+                ? "Checking"
+                : status === "reserving"
+                  ? "Reserving"
+                  : "Reserve"}
+            </button>
+            <button
+              type="button"
+              className="border border-neutral-800 px-3 py-2 text-xs uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              onClick={resetDraft}
+            >
+              Change
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {draftStartSecond !== null && maxDuration === null ? (
+        <div className="grid gap-2">
+          <p className="text-xs text-neutral-500">Checking available duration</p>
+          {status === "error" ? (
+            <button
+              type="button"
+              className="border border-neutral-800 px-3 py-2 text-xs uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              onClick={resetDraft}
+            >
+              Change
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {status === "reserved" || status === "completing" ? (
         <button
           type="button"
@@ -824,7 +1033,9 @@ function PurchaseCurrentSecondPanel({
       {message ? (
         <p
           className={`text-xs ${
-            status === "error" ? "text-red-300" : "text-neutral-400"
+            status === "error" || status === "unavailable"
+              ? "text-red-300"
+              : "text-neutral-400"
           }`}
         >
           {message}
