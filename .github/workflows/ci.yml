@@ -179,6 +179,45 @@ jobs:
         if: always()
         run: docker compose down
 
+  local-admin-preview-flow:
+    name: Local admin preview flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build API jar
+        working-directory: apps/api
+        run: ./gradlew bootJar --no-daemon
+
+      - name: Start local stack
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
+
+      - name: Verify local admin preview flow
+        env:
+          START_SECOND: "6000"
+          END_SECOND: "6001"
+        run: ./scripts/verify-local-admin-preview-flow.sh
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop local stack
+        if: always()
+        run: docker compose down
+
   local-auth-flows:
     name: Local auth flows
     runs-on: ubuntu-latest
