@@ -656,7 +656,10 @@ paths:
       operationId: approveMediaAsset
       summary: Approve media asset
       description: |
-        Approves an uploaded media asset and sets the approved public media URL.
+        Approves an uploaded media asset and sets the approved media storage
+        reference. The approved file URL and thumbnail URL, when present, must
+        belong to the configured object storage base URL so public timeline
+        reads can generate short-lived presigned playback URLs.
 
         Admin identity and permissions are derived from the authenticated
         server-side session.
@@ -1269,17 +1272,18 @@ components:
           type: string
           minLength: 1
           format: uri
-          description: Public media URL approved for timeline use.
+          description: Approved media storage reference used for timeline playback presigning.
           examples:
-            - https://cdn.example.test/approved.png
+            - http://localhost:9000/time-archive-media/media/originals/example.png
         thumbnailUrl:
           type:
             - string
             - "null"
           minLength: 1
           format: uri
+          description: Approved thumbnail storage reference used for timeline playback presigning.
           examples:
-            - https://cdn.example.test/thumb.png
+            - http://localhost:9000/time-archive-media/media/thumbnails/example.png
     AdminMediaPreviewUrlResponse:
       type: object
       additionalProperties: false
@@ -1610,6 +1614,7 @@ components:
         - MEDIA_UPLOAD_REQUEST_NOT_COMPLETABLE
         - MEDIA_UPLOAD_OBJECT_NOT_FOUND
         - MEDIA_UPLOAD_OBJECT_MISMATCH
+        - INVALID_MEDIA_STORAGE_REFERENCE
         - MEDIA_ASSET_NOT_APPROVABLE
         - MEDIA_ASSET_NOT_REJECTABLE
         - MEDIA_ASSET_NOT_HIDEABLE

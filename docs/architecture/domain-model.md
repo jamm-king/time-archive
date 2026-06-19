@@ -206,7 +206,8 @@ Upload completion verifies object storage metadata before creating a `MediaAsset
 Admin moderation can transition uploaded media to `APPROVED` or `REJECTED`, and
 can transition approved media to `HIDDEN`. Approval requires an explicit
 `approvedFileUrl` so original upload URLs remain distinct from approved media
-object references.
+object references. Approval must reject approved media or thumbnail references
+that do not belong to the configured object storage base URL.
 Admins can request short-lived preview URLs for private original uploads through
 the storage port without making the object storage bucket public.
 

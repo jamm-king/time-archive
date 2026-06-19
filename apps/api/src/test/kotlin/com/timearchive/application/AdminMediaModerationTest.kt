@@ -7,6 +7,7 @@ import com.timearchive.domain.model.AuditLog
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
+import com.timearchive.domain.port.MediaObjectStoragePort
 import com.timearchive.domain.port.TransactionPort
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
@@ -37,6 +38,7 @@ class AdminMediaModerationTest {
         val useCase = ApproveMediaAsset(
             transactionPort = ImmediateTransactionPort,
             mediaAssetRepository = repository,
+            mediaObjectStoragePort = FakeMediaObjectStoragePort(),
             auditLogPort = auditLogPort,
             clockPort = ClockPort { now.plusSeconds(10) },
             idGenerator = { UUID.fromString("00000000-0000-0000-0000-000000003101") },
@@ -46,14 +48,14 @@ class AdminMediaModerationTest {
             ApproveMediaAsset.Command(
                 adminId = adminId,
                 mediaAssetId = mediaAssetId,
-                approvedFileUrl = "https://cdn.example.test/approved.png",
-                thumbnailUrl = "https://cdn.example.test/thumb.png",
+                approvedFileUrl = "https://storage.example.test/media/approved.png",
+                thumbnailUrl = "https://storage.example.test/media/thumb.png",
             ),
         )
 
         assertThat(result.moderationStatus).isEqualTo(ModerationStatus.APPROVED)
-        assertThat(result.approvedFileUrl).isEqualTo("https://cdn.example.test/approved.png")
-        assertThat(result.thumbnailUrl).isEqualTo("https://cdn.example.test/thumb.png")
+        assertThat(result.approvedFileUrl).isEqualTo("https://storage.example.test/media/approved.png")
+        assertThat(result.thumbnailUrl).isEqualTo("https://storage.example.test/media/thumb.png")
         assertThat(result.isPubliclyVisible).isTrue()
         assertThat(repository.updated).containsExactly(result)
         val auditLog = auditLogPort.appended.single()
@@ -67,9 +69,51 @@ class AdminMediaModerationTest {
             """{"moderationStatus":"UPLOADED","approvedFileUrl":null,"thumbnailUrl":null}""",
         )
         assertThat(auditLog.afterState).isEqualTo(
-            """{"moderationStatus":"APPROVED","approvedFileUrl":"https://cdn.example.test/approved.png","thumbnailUrl":"https://cdn.example.test/thumb.png"}""",
+            """{"moderationStatus":"APPROVED","approvedFileUrl":"https://storage.example.test/media/approved.png","thumbnailUrl":"https://storage.example.test/media/thumb.png"}""",
         )
         assertThat(auditLog.createdAt).isEqualTo(now.plusSeconds(10))
+    }
+
+    @Test
+    fun `rejects approval when approved file url is not managed by storage`() {
+        val repository = FakeMediaAssetRepository(assets = mutableListOf(uploadedMediaAsset()))
+        val useCase = approveUseCase(repository = repository)
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.approve(
+                    ApproveMediaAsset.Command(
+                        adminId = adminId,
+                        mediaAssetId = mediaAssetId,
+                        approvedFileUrl = "https://external.example.test/approved.png",
+                        thumbnailUrl = null,
+                    ),
+                )
+            }
+            .withMessage("approved media file url is not managed by storage")
+
+        assertThat(repository.updated).isEmpty()
+    }
+
+    @Test
+    fun `rejects approval when thumbnail url is not managed by storage`() {
+        val repository = FakeMediaAssetRepository(assets = mutableListOf(uploadedMediaAsset()))
+        val useCase = approveUseCase(repository = repository)
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.approve(
+                    ApproveMediaAsset.Command(
+                        adminId = adminId,
+                        mediaAssetId = mediaAssetId,
+                        approvedFileUrl = "https://storage.example.test/media/approved.png",
+                        thumbnailUrl = "https://external.example.test/thumb.png",
+                    ),
+                )
+            }
+            .withMessage("approved media thumbnail url is not managed by storage")
+
+        assertThat(repository.updated).isEmpty()
     }
 
     @Test
@@ -175,6 +219,19 @@ class AdminMediaModerationTest {
             now = now,
         )
 
+    private fun approveUseCase(
+        repository: MediaAssetRepository,
+        storage: MediaObjectStoragePort = FakeMediaObjectStoragePort(),
+        auditLogPort: AuditLogPort = FakeAuditLogPort(),
+    ): ApproveMediaAsset =
+        ApproveMediaAsset(
+            transactionPort = ImmediateTransactionPort,
+            mediaAssetRepository = repository,
+            mediaObjectStoragePort = storage,
+            auditLogPort = auditLogPort,
+            clockPort = ClockPort { now.plusSeconds(10) },
+        )
+
     private object ImmediateTransactionPort : TransactionPort {
         override fun <T> execute(block: () -> T): T = block()
     }
@@ -219,5 +276,19 @@ class AdminMediaModerationTest {
 
         override fun findByOwnerId(ownerId: UUID): List<MediaAsset> =
             assets.filter { it.ownerId == ownerId }
+    }
+
+    private class FakeMediaObjectStoragePort : MediaObjectStoragePort {
+        override fun createPresignedUpload(command: MediaObjectStoragePort.Command): MediaObjectStoragePort.PresignedUpload =
+            error("not used")
+
+        override fun createPresignedDownload(
+            command: MediaObjectStoragePort.DownloadCommand,
+        ): MediaObjectStoragePort.PresignedDownload = error("not used")
+
+        override fun isManagedFileUrl(fileUrl: String): Boolean =
+            fileUrl.startsWith("https://storage.example.test/media/")
+
+        override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
     }
 }

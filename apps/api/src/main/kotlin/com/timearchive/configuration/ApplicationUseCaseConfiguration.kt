@@ -221,12 +221,14 @@ class ApplicationUseCaseConfiguration {
     fun approveMediaAsset(
         transactionPort: TransactionPort,
         mediaAssetRepository: MediaAssetRepository,
+        mediaObjectStoragePort: MediaObjectStoragePort,
         auditLogPort: AuditLogPort,
         clockPort: ClockPort,
     ): ApproveMediaAsset =
         ApproveMediaAsset(
             transactionPort = transactionPort,
             mediaAssetRepository = mediaAssetRepository,
+            mediaObjectStoragePort = mediaObjectStoragePort,
             auditLogPort = auditLogPort,
             clockPort = clockPort,
         )

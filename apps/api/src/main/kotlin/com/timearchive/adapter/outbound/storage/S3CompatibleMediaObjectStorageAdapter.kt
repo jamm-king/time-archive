@@ -74,6 +74,9 @@ class S3CompatibleMediaObjectStorageAdapter(
         )
     }
 
+    override fun isManagedFileUrl(fileUrl: String): Boolean =
+        runCatching { objectKeyFromFileUrl(fileUrl) }.isSuccess
+
     override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? {
         val request = HeadObjectRequest.builder()
             .bucket(bucket)

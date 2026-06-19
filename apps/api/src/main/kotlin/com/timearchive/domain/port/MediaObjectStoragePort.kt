@@ -7,6 +7,8 @@ interface MediaObjectStoragePort {
 
     fun createPresignedDownload(command: DownloadCommand): PresignedDownload
 
+    fun isManagedFileUrl(fileUrl: String): Boolean
+
     fun findObjectMetadata(objectKey: String): ObjectMetadata?
 
     data class Command(
