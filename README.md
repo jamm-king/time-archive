@@ -203,6 +203,12 @@ the web origin:
 ./scripts/verify-local-auth-owned-ranges-flow.sh
 ```
 
+Verify the local development-stage purchase flow through the web origin:
+
+```text
+./scripts/verify-local-web-purchase-flow.sh
+```
+
 Verify the local development-stage media upload flow:
 
 ```text
@@ -210,6 +216,13 @@ Verify the local development-stage media upload flow:
 ```
 
 See [Local Media Upload Flow Verification](docs/manual-verification/local-media-upload-flow.md) for details.
+
+Verify the local development-stage purchase-to-upload flow through the web
+origin:
+
+```text
+./scripts/verify-local-web-purchase-upload-flow.sh
+```
 
 Verify the local development-stage public timeline flow:
 
