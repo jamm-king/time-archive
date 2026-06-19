@@ -232,6 +232,12 @@ Verify the local development-stage public timeline flow:
 
 See [Local Public Timeline Flow Verification](docs/manual-verification/local-public-timeline-flow.md) for details.
 
+Validate the OpenAPI document:
+
+```text
+./scripts/verify-openapi.sh
+```
+
 The local application expects PostgreSQL at:
 
 ```text

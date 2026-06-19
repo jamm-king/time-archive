@@ -1211,17 +1211,19 @@ components:
           examples:
             - https://cdn.example.test/uploads/original.png
         thumbnailUrl:
-          type: string
+          type:
+            - string
+            - "null"
           minLength: 1
           format: uri
-          nullable: true
           examples:
             - https://cdn.example.test/uploads/thumb.png
         externalLink:
-          type: string
+          type:
+            - string
+            - "null"
           minLength: 1
           format: uri
-          nullable: true
           examples:
             - https://example.com/archive-note
     CreateMediaUploadRequest:
@@ -1271,10 +1273,11 @@ components:
           examples:
             - https://cdn.example.test/approved.png
         thumbnailUrl:
-          type: string
+          type:
+            - string
+            - "null"
           minLength: 1
           format: uri
-          nullable: true
           examples:
             - https://cdn.example.test/thumb.png
     AdminMediaPreviewUrlResponse:
@@ -1421,14 +1424,16 @@ components:
           format: uri
           description: Short-lived presigned GET URL for approved public playback.
         thumbnailUrl:
-          type: string
+          type:
+            - string
+            - "null"
           format: uri
-          nullable: true
           description: Short-lived presigned GET URL for the approved thumbnail, when present.
         externalLink:
-          type: string
+          type:
+            - string
+            - "null"
           format: uri
-          nullable: true
     MediaAssetResponse:
       type: object
       additionalProperties: false
@@ -1461,17 +1466,20 @@ components:
           type: string
           format: uri
         approvedFileUrl:
-          type: string
+          type:
+            - string
+            - "null"
           format: uri
-          nullable: true
         thumbnailUrl:
-          type: string
+          type:
+            - string
+            - "null"
           format: uri
-          nullable: true
         externalLink:
-          type: string
+          type:
+            - string
+            - "null"
           format: uri
-          nullable: true
         moderationStatus:
           $ref: "#/components/schemas/ModerationStatus"
         publiclyVisible:
@@ -1541,10 +1549,11 @@ components:
           examples:
             - pi_local_1
         requestId:
-          type: string
+          type:
+            - string
+            - "null"
           minLength: 1
           maxLength: 200
-          nullable: true
           examples:
             - local-request-1
     PrimaryPurchasePaymentWebhookResponse:
@@ -1559,9 +1568,10 @@ components:
           type: string
           format: uuid
         ownershipRecordId:
-          type: string
+          type:
+            - string
+            - "null"
           format: uuid
-          nullable: true
         alreadyProcessed:
           type: boolean
     ApiErrorResponse:
@@ -1612,9 +1622,10 @@ components:
         - message
       properties:
         field:
-          type: string
+          type:
+            - string
+            - "null"
           description: Field path related to the error. Use `null` for non-field errors.
-          nullable: true
           examples:
             - startSecond
         message:
