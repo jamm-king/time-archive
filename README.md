@@ -33,6 +33,7 @@ Architecture documents are available in:
 - [Domain Model](docs/architecture/domain-model.md)
 - [Transaction Boundaries](docs/architecture/transaction-boundaries.md)
 - [Security and Operations](docs/architecture/security-and-operations.md)
+- [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 
 ## API Contract
 
