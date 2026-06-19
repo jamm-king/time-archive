@@ -2,6 +2,7 @@ export type CurrentUser = {
   userId: string;
   email: string;
   displayName: string;
+  role: "USER" | "ADMIN" | string;
   createdAt: string;
 };
 
@@ -123,11 +124,12 @@ function parseCurrentUser(value: unknown): CurrentUser {
     throw new Error("Current user response must be an object");
   }
 
-  const { userId, email, displayName, createdAt } = value;
+  const { userId, email, displayName, role, createdAt } = value;
   if (
     typeof userId !== "string" ||
     typeof email !== "string" ||
     typeof displayName !== "string" ||
+    typeof role !== "string" ||
     typeof createdAt !== "string"
   ) {
     throw new Error("Current user response has an invalid shape");
@@ -137,6 +139,7 @@ function parseCurrentUser(value: unknown): CurrentUser {
     userId,
     email,
     displayName,
+    role,
     createdAt,
   };
 }

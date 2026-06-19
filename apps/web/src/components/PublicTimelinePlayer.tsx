@@ -27,6 +27,14 @@ import {
   type CurrentUser,
 } from "@/lib/auth";
 import {
+  approveAdminMediaAsset,
+  fetchAdminMediaAssets,
+  hideAdminMediaAsset,
+  rejectAdminMediaAsset,
+  type AdminMediaAsset,
+  type ModerationStatus,
+} from "@/lib/admin-moderation";
+import {
   fetchOwnedRangeMediaAssets,
   uploadOwnedRangeMedia,
   type MediaAsset,
@@ -314,6 +322,7 @@ function AuthPanel({
           currentUserId={currentUser.userId}
           refreshToken={ownedRangesRefreshToken}
         />
+        {currentUser.role === "ADMIN" ? <AdminModerationPanel /> : null}
         <button
           type="button"
           className="mt-4 w-full border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
@@ -457,6 +466,269 @@ function AuthPanel({
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
       </form>
     </div>
+  );
+}
+
+function AdminModerationPanel() {
+  const [modalOpen, setModalOpen] = useState(false);
+
+  return (
+    <div className="mt-4 border-t border-neutral-800 pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase text-neutral-500">Admin</p>
+        <span className="text-[10px] uppercase text-neutral-600">
+          Moderation
+        </span>
+      </div>
+      <button
+        type="button"
+        className="mt-3 w-full border border-neutral-700 px-3 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        onClick={() => setModalOpen(true)}
+      >
+        Open moderation
+      </button>
+      {modalOpen ? (
+        <AdminModerationModal onClose={() => setModalOpen(false)} />
+      ) : null}
+    </div>
+  );
+}
+
+function AdminModerationModal({ onClose }: { onClose: () => void }) {
+  const titleId = useId();
+  const statuses: ModerationStatus[] = ["UPLOADED", "APPROVED", "REJECTED", "HIDDEN"];
+  const [status, setStatus] = useState<ModerationStatus>("UPLOADED");
+  const [assets, setAssets] = useState<AdminMediaAsset[]>([]);
+  const [loadingStatus, setLoadingStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [actionAssetId, setActionAssetId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchAdminMediaAssets(status, controller.signal)
+      .then((result) => {
+        setAssets(result);
+        setLoadingStatus("ready");
+      })
+      .catch((loadError: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.error(loadError);
+        setAssets([]);
+        setLoadingStatus("error");
+        setError(loadError instanceof Error ? loadError.message : "Moderation queue unavailable");
+      });
+
+    return () => controller.abort();
+  }, [status, refreshToken]);
+
+  const replaceAsset = (asset: AdminMediaAsset) => {
+    setAssets((currentAssets) =>
+      currentAssets
+        .map((item) => (item.mediaAssetId === asset.mediaAssetId ? asset : item))
+        .filter((item) => item.moderationStatus === status),
+    );
+  };
+
+  const runAction = async (
+    asset: AdminMediaAsset,
+    action: () => Promise<AdminMediaAsset>,
+  ) => {
+    setActionAssetId(asset.mediaAssetId);
+    setError(null);
+
+    try {
+      replaceAsset(await action());
+    } catch (actionError: unknown) {
+      console.error(actionError);
+      setError(actionError instanceof Error ? actionError.message : "Moderation action failed");
+    } finally {
+      setActionAssetId(null);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <div className="max-h-full w-full max-w-xl overflow-y-auto border border-neutral-800 bg-neutral-950 p-4 text-left shadow-2xl shadow-black/50">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs uppercase text-neutral-500">Admin</p>
+            <h2
+              id={titleId}
+              className="mt-1 text-sm font-medium text-neutral-100"
+            >
+              Media moderation
+            </h2>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              className="border border-neutral-800 px-2.5 py-1.5 text-[10px] uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              onClick={() => {
+                setLoadingStatus("loading");
+                setError(null);
+                setRefreshToken((value) => value + 1);
+              }}
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              className="border border-neutral-800 px-2.5 py-1.5 text-[10px] uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-4 border border-neutral-800 text-[10px] uppercase">
+          {statuses.map((nextStatus) => (
+            <button
+              key={nextStatus}
+              type="button"
+              className={`px-2 py-1.5 ${
+                status === nextStatus
+                  ? "bg-neutral-100 text-neutral-950"
+                  : "text-neutral-500"
+              }`}
+              onClick={() => {
+                setStatus(nextStatus);
+                setLoadingStatus("loading");
+                setError(null);
+              }}
+            >
+              {nextStatus}
+            </button>
+          ))}
+        </div>
+
+        {loadingStatus === "loading" ? (
+          <p className="mt-4 text-xs text-neutral-500">Loading moderation queue</p>
+        ) : loadingStatus === "error" ? (
+          <p className="mt-4 break-words text-xs text-red-300">{error}</p>
+        ) : assets.length === 0 ? (
+          <p className="mt-4 text-xs text-neutral-500">No media assets</p>
+        ) : (
+          <ul className="mt-4 grid max-h-[60vh] min-w-0 gap-2 overflow-y-auto pr-1">
+            {assets.map((asset) => (
+              <AdminMediaAssetItem
+                key={asset.mediaAssetId}
+                asset={asset}
+                busy={actionAssetId === asset.mediaAssetId}
+                onApprove={() =>
+                  runAction(asset, () =>
+                    approveAdminMediaAsset(asset.mediaAssetId, {
+                      approvedFileUrl: asset.originalFileUrl,
+                      thumbnailUrl: asset.thumbnailUrl,
+                    }),
+                  )
+                }
+                onReject={() =>
+                  runAction(asset, () => rejectAdminMediaAsset(asset.mediaAssetId))
+                }
+                onHide={() =>
+                  runAction(asset, () => hideAdminMediaAsset(asset.mediaAssetId))
+                }
+              />
+            ))}
+          </ul>
+        )}
+        {error && loadingStatus === "ready" ? (
+          <p className="mt-3 break-words text-xs text-red-300">{error}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function AdminMediaAssetItem({
+  asset,
+  busy,
+  onApprove,
+  onReject,
+  onHide,
+}: {
+  asset: AdminMediaAsset;
+  busy: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+  onHide: () => void;
+}) {
+  return (
+    <li className="min-w-0 max-w-full overflow-hidden border border-neutral-800 px-3 py-2">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <span className="min-w-0 truncate text-xs text-neutral-100">
+          {asset.mediaType}
+        </span>
+        <span className="shrink-0 text-[10px] uppercase text-neutral-500">
+          {asset.moderationStatus}
+        </span>
+      </div>
+      <p className="mt-2 max-w-full truncate text-xs text-neutral-600">
+        {asset.originalFileUrl}
+      </p>
+      <a
+        className="mt-2 inline-block max-w-full truncate text-[10px] uppercase text-neutral-400 underline-offset-2 hover:text-neutral-200 hover:underline"
+        href={asset.originalFileUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open original
+      </a>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {asset.moderationStatus === "UPLOADED" ||
+        asset.moderationStatus === "PENDING_REVIEW" ? (
+          <>
+            <button
+              type="button"
+              className="border border-neutral-700 px-2 py-1.5 text-[10px] uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+              onClick={onApprove}
+              disabled={busy}
+            >
+              {busy ? "Working" : "Approve"}
+            </button>
+            <button
+              type="button"
+              className="border border-neutral-800 px-2 py-1.5 text-[10px] uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+              onClick={onReject}
+              disabled={busy}
+            >
+              Reject
+            </button>
+          </>
+        ) : asset.moderationStatus === "APPROVED" ? (
+          <button
+            type="button"
+            className="col-span-2 border border-neutral-800 px-2 py-1.5 text-[10px] uppercase text-neutral-400 transition hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+            onClick={onHide}
+            disabled={busy}
+          >
+            {busy ? "Working" : "Hide"}
+          </button>
+        ) : null}
+      </div>
+    </li>
   );
 }
 
