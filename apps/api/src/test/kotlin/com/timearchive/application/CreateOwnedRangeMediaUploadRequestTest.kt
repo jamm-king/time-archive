@@ -177,6 +177,11 @@ class CreateOwnedRangeMediaUploadRequestTest {
             )
         }
 
+        override fun createPresignedDownload(
+            command: MediaObjectStoragePort.DownloadCommand,
+        ): MediaObjectStoragePort.PresignedDownload =
+            error("not used")
+
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
     }
 }

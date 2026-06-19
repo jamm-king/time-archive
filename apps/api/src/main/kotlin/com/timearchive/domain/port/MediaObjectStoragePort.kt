@@ -5,6 +5,8 @@ import java.time.Instant
 interface MediaObjectStoragePort {
     fun createPresignedUpload(command: Command): PresignedUpload
 
+    fun createPresignedDownload(command: DownloadCommand): PresignedDownload
+
     fun findObjectMetadata(objectKey: String): ObjectMetadata?
 
     data class Command(
@@ -18,6 +20,16 @@ interface MediaObjectStoragePort {
         val uploadUrl: String,
         val originalFileUrl: String,
         val requiredHeaders: Map<String, String>,
+    )
+
+    data class DownloadCommand(
+        val fileUrl: String,
+        val expiresAt: Instant,
+    )
+
+    data class PresignedDownload(
+        val downloadUrl: String,
+        val expiresAt: Instant,
     )
 
     data class ObjectMetadata(

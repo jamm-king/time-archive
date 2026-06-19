@@ -229,6 +229,11 @@ class CompleteOwnedRangeMediaUploadTest {
         override fun createPresignedUpload(command: MediaObjectStoragePort.Command): MediaObjectStoragePort.PresignedUpload =
             throw UnsupportedOperationException()
 
+        override fun createPresignedDownload(
+            command: MediaObjectStoragePort.DownloadCommand,
+        ): MediaObjectStoragePort.PresignedDownload =
+            error("not used")
+
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = metadata
     }
 }

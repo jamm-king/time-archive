@@ -40,3 +40,4 @@ time-archive:
       secret-key: ${TIME_ARCHIVE_STORAGE_S3_SECRET_KEY:time_archive_minio_secret}
       path-style-access: ${TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS:true}
       upload-url-expiration-seconds: ${TIME_ARCHIVE_STORAGE_S3_UPLOAD_URL_EXPIRATION_SECONDS:600}
+      preview-url-expiration-seconds: ${TIME_ARCHIVE_STORAGE_S3_PREVIEW_URL_EXPIRATION_SECONDS:300}
