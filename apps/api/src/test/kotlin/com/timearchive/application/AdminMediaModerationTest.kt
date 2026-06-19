@@ -3,6 +3,8 @@ package com.timearchive.application
 import com.timearchive.domain.model.MediaAsset
 import com.timearchive.domain.model.MediaType
 import com.timearchive.domain.model.ModerationStatus
+import com.timearchive.domain.model.AuditLog
+import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
 import com.timearchive.domain.port.TransactionPort
@@ -31,10 +33,13 @@ class AdminMediaModerationTest {
     @Test
     fun `approves uploaded media asset`() {
         val repository = FakeMediaAssetRepository(assets = mutableListOf(uploadedMediaAsset()))
+        val auditLogPort = FakeAuditLogPort()
         val useCase = ApproveMediaAsset(
             transactionPort = ImmediateTransactionPort,
             mediaAssetRepository = repository,
+            auditLogPort = auditLogPort,
             clockPort = ClockPort { now.plusSeconds(10) },
+            idGenerator = { UUID.fromString("00000000-0000-0000-0000-000000003101") },
         )
 
         val result = useCase.approve(
@@ -51,15 +56,32 @@ class AdminMediaModerationTest {
         assertThat(result.thumbnailUrl).isEqualTo("https://cdn.example.test/thumb.png")
         assertThat(result.isPubliclyVisible).isTrue()
         assertThat(repository.updated).containsExactly(result)
+        val auditLog = auditLogPort.appended.single()
+        assertThat(auditLog.id).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000003101"))
+        assertThat(auditLog.actorUserId).isEqualTo(adminId)
+        assertThat(auditLog.actorType).isEqualTo("USER")
+        assertThat(auditLog.action).isEqualTo("MEDIA_ASSET_APPROVED")
+        assertThat(auditLog.resourceType).isEqualTo("MEDIA_ASSET")
+        assertThat(auditLog.resourceId).isEqualTo(mediaAssetId)
+        assertThat(auditLog.beforeState).isEqualTo(
+            """{"moderationStatus":"UPLOADED","approvedFileUrl":null,"thumbnailUrl":null}""",
+        )
+        assertThat(auditLog.afterState).isEqualTo(
+            """{"moderationStatus":"APPROVED","approvedFileUrl":"https://cdn.example.test/approved.png","thumbnailUrl":"https://cdn.example.test/thumb.png"}""",
+        )
+        assertThat(auditLog.createdAt).isEqualTo(now.plusSeconds(10))
     }
 
     @Test
     fun `rejects uploaded media asset`() {
         val repository = FakeMediaAssetRepository(assets = mutableListOf(uploadedMediaAsset()))
+        val auditLogPort = FakeAuditLogPort()
         val useCase = RejectMediaAsset(
             transactionPort = ImmediateTransactionPort,
             mediaAssetRepository = repository,
+            auditLogPort = auditLogPort,
             clockPort = ClockPort { now.plusSeconds(10) },
+            idGenerator = { UUID.fromString("00000000-0000-0000-0000-000000003102") },
         )
 
         val result = useCase.reject(
@@ -71,6 +93,16 @@ class AdminMediaModerationTest {
 
         assertThat(result.moderationStatus).isEqualTo(ModerationStatus.REJECTED)
         assertThat(result.isPubliclyVisible).isFalse()
+        val auditLog = auditLogPort.appended.single()
+        assertThat(auditLog.id).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000003102"))
+        assertThat(auditLog.actorUserId).isEqualTo(adminId)
+        assertThat(auditLog.action).isEqualTo("MEDIA_ASSET_REJECTED")
+        assertThat(auditLog.beforeState).isEqualTo(
+            """{"moderationStatus":"UPLOADED","approvedFileUrl":null,"thumbnailUrl":null}""",
+        )
+        assertThat(auditLog.afterState).isEqualTo(
+            """{"moderationStatus":"REJECTED","approvedFileUrl":null,"thumbnailUrl":null}""",
+        )
     }
 
     @Test
@@ -81,10 +113,13 @@ class AdminMediaModerationTest {
             now = now.plusSeconds(1),
         )
         val repository = FakeMediaAssetRepository(assets = mutableListOf(approved))
+        val auditLogPort = FakeAuditLogPort()
         val useCase = HideMediaAsset(
             transactionPort = ImmediateTransactionPort,
             mediaAssetRepository = repository,
+            auditLogPort = auditLogPort,
             clockPort = ClockPort { now.plusSeconds(10) },
+            idGenerator = { UUID.fromString("00000000-0000-0000-0000-000000003103") },
         )
 
         val result = useCase.hide(
@@ -96,6 +131,16 @@ class AdminMediaModerationTest {
 
         assertThat(result.moderationStatus).isEqualTo(ModerationStatus.HIDDEN)
         assertThat(result.isPubliclyVisible).isFalse()
+        val auditLog = auditLogPort.appended.single()
+        assertThat(auditLog.id).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000003103"))
+        assertThat(auditLog.actorUserId).isEqualTo(adminId)
+        assertThat(auditLog.action).isEqualTo("MEDIA_ASSET_HIDDEN")
+        assertThat(auditLog.beforeState).isEqualTo(
+            """{"moderationStatus":"APPROVED","approvedFileUrl":"https://cdn.example.test/approved.png","thumbnailUrl":null}""",
+        )
+        assertThat(auditLog.afterState).isEqualTo(
+            """{"moderationStatus":"HIDDEN","approvedFileUrl":"https://cdn.example.test/approved.png","thumbnailUrl":null}""",
+        )
     }
 
     @Test
@@ -104,6 +149,7 @@ class AdminMediaModerationTest {
         val useCase = HideMediaAsset(
             transactionPort = ImmediateTransactionPort,
             mediaAssetRepository = repository,
+            auditLogPort = FakeAuditLogPort(),
             clockPort = ClockPort { now.plusSeconds(10) },
         )
 
@@ -131,6 +177,15 @@ class AdminMediaModerationTest {
 
     private object ImmediateTransactionPort : TransactionPort {
         override fun <T> execute(block: () -> T): T = block()
+    }
+
+    private class FakeAuditLogPort : AuditLogPort {
+        val appended = mutableListOf<AuditLog>()
+
+        override fun append(log: AuditLog): AuditLog {
+            appended.add(log)
+            return log
+        }
     }
 
     private class FakeMediaAssetRepository(
