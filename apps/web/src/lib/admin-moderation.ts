@@ -23,6 +23,12 @@ export type AdminMediaAsset = {
   updatedAt: string;
 };
 
+export type AdminMediaPreviewUrl = {
+  mediaAssetId: string;
+  previewUrl: string;
+  expiresAt: string;
+};
+
 export async function fetchAdminMediaAssets(
   status: ModerationStatus,
   signal?: AbortSignal,
@@ -75,6 +81,26 @@ export async function approveAdminMediaAsset(
   }
 
   return parseAdminMediaAsset(await response.json());
+}
+
+export async function fetchAdminMediaPreviewUrl(
+  mediaAssetId: string,
+): Promise<AdminMediaPreviewUrl> {
+  const response = await fetch(
+    `/api/admin/media/assets/${mediaAssetId}/preview-url`,
+    {
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return parseAdminMediaPreviewUrl(await response.json());
 }
 
 export async function rejectAdminMediaAsset(
@@ -134,6 +160,28 @@ async function getErrorMessage(response: Response): Promise<string> {
   }
 
   return `Request failed with HTTP ${response.status}`;
+}
+
+function parseAdminMediaPreviewUrl(value: unknown): AdminMediaPreviewUrl {
+  if (!isRecord(value)) {
+    throw new Error("Admin media preview URL response must be an object");
+  }
+
+  const { mediaAssetId, previewUrl, expiresAt } = value;
+
+  if (
+    typeof mediaAssetId !== "string" ||
+    typeof previewUrl !== "string" ||
+    typeof expiresAt !== "string"
+  ) {
+    throw new Error("Admin media preview URL response has an invalid shape");
+  }
+
+  return {
+    mediaAssetId,
+    previewUrl,
+    expiresAt,
+  };
 }
 
 function parseAdminMediaAssets(value: unknown): AdminMediaAsset[] {

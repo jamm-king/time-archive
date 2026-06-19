@@ -1,6 +1,7 @@
 package com.timearchive.adapter.inbound.rest
 
 import com.timearchive.application.ApproveMediaAsset
+import com.timearchive.application.CreateAdminMediaPreviewUrl
 import com.timearchive.application.GetCurrentUser
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListMediaModerationQueue
@@ -22,6 +23,7 @@ import java.util.UUID
 @RequestMapping("/api/admin/media/assets")
 class AdminMediaModerationController(
     private val listMediaModerationQueue: ListMediaModerationQueue,
+    private val createAdminMediaPreviewUrl: CreateAdminMediaPreviewUrl,
     private val approveMediaAsset: ApproveMediaAsset,
     private val rejectMediaAsset: RejectMediaAsset,
     private val hideMediaAsset: HideMediaAsset,
@@ -37,6 +39,26 @@ class AdminMediaModerationController(
         return listMediaModerationQueue.list(
             ListMediaModerationQueue.Query(status = status),
         ).map(MediaAssetResponse::from)
+    }
+
+    @GetMapping("/{mediaAssetId}/preview-url")
+    fun previewUrl(
+        httpRequest: HttpServletRequest,
+        @PathVariable mediaAssetId: UUID,
+    ): AdminMediaPreviewUrlResponse {
+        val adminId = requireAdminId(httpRequest)
+        val result = createAdminMediaPreviewUrl.create(
+            CreateAdminMediaPreviewUrl.Command(
+                adminId = adminId,
+                mediaAssetId = mediaAssetId,
+            ),
+        )
+
+        return AdminMediaPreviewUrlResponse(
+            mediaAssetId = result.mediaAssetId,
+            previewUrl = result.previewUrl,
+            expiresAt = result.expiresAt,
+        )
     }
 
     @PostMapping("/{mediaAssetId}/approve")

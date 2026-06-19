@@ -5,6 +5,7 @@ import com.timearchive.application.AuthenticateUser
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateCheckout
+import com.timearchive.application.CreateAdminMediaPreviewUrl
 import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
@@ -187,6 +188,20 @@ class ApplicationUseCaseConfiguration {
         mediaAssetRepository: MediaAssetRepository,
     ): ListMediaModerationQueue =
         ListMediaModerationQueue(mediaAssetRepository = mediaAssetRepository)
+
+    @Bean
+    fun createAdminMediaPreviewUrl(
+        mediaAssetRepository: MediaAssetRepository,
+        mediaObjectStoragePort: MediaObjectStoragePort,
+        clockPort: ClockPort,
+        @Value("\${time-archive.storage.s3.preview-url-expiration-seconds}") previewUrlExpirationSeconds: Long,
+    ): CreateAdminMediaPreviewUrl =
+        CreateAdminMediaPreviewUrl(
+            mediaAssetRepository = mediaAssetRepository,
+            mediaObjectStoragePort = mediaObjectStoragePort,
+            clockPort = clockPort,
+            previewUrlTtl = Duration.ofSeconds(previewUrlExpirationSeconds),
+        )
 
     @Bean
     fun listPublicTimelineSegments(

@@ -3,6 +3,7 @@ package com.timearchive.adapter.inbound.rest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.timearchive.application.ApproveMediaAsset
+import com.timearchive.application.CreateAdminMediaPreviewUrl
 import com.timearchive.application.GetCurrentUser
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListMediaModerationQueue
@@ -27,6 +28,7 @@ import java.util.UUID
 
 class AdminMediaModerationControllerTest {
     private val listMediaModerationQueue: ListMediaModerationQueue = mockk()
+    private val createAdminMediaPreviewUrl: CreateAdminMediaPreviewUrl = mockk()
     private val approveMediaAsset: ApproveMediaAsset = mockk()
     private val rejectMediaAsset: RejectMediaAsset = mockk()
     private val hideMediaAsset: HideMediaAsset = mockk()
@@ -45,6 +47,7 @@ class AdminMediaModerationControllerTest {
             .standaloneSetup(
                 AdminMediaModerationController(
                     listMediaModerationQueue = listMediaModerationQueue,
+                    createAdminMediaPreviewUrl = createAdminMediaPreviewUrl,
                     approveMediaAsset = approveMediaAsset,
                     rejectMediaAsset = rejectMediaAsset,
                     hideMediaAsset = hideMediaAsset,
@@ -75,6 +78,36 @@ class AdminMediaModerationControllerTest {
         verify {
             listMediaModerationQueue.list(
                 ListMediaModerationQueue.Query(status = com.timearchive.domain.model.ModerationStatus.UPLOADED),
+            )
+        }
+    }
+
+    @Test
+    fun `creates media preview url`() {
+        val expiresAt = Instant.parse("2026-06-17T00:05:00Z")
+        every { getCurrentUser.get(GetCurrentUser.Query(userId = adminId)) } returns adminUser()
+        every { createAdminMediaPreviewUrl.create(any()) } returns CreateAdminMediaPreviewUrl.Result(
+            mediaAssetId = mediaAssetId,
+            previewUrl = "https://storage.example.test/presigned-original.png",
+            expiresAt = expiresAt,
+        )
+
+        mockMvc.get("/api/admin/media/assets/$mediaAssetId/preview-url") {
+            this.session = signedInSession(adminId)
+        }
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.mediaAssetId") { value(mediaAssetId.toString()) }
+                jsonPath("$.previewUrl") { value("https://storage.example.test/presigned-original.png") }
+                jsonPath("$.expiresAt") { value("2026-06-17T00:05:00Z") }
+            }
+
+        verify {
+            createAdminMediaPreviewUrl.create(
+                CreateAdminMediaPreviewUrl.Command(
+                    adminId = adminId,
+                    mediaAssetId = mediaAssetId,
+                ),
             )
         }
     }

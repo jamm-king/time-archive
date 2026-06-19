@@ -28,6 +28,7 @@ import {
 } from "@/lib/auth";
 import {
   approveAdminMediaAsset,
+  fetchAdminMediaPreviewUrl,
   fetchAdminMediaAssets,
   hideAdminMediaAsset,
   rejectAdminMediaAsset,
@@ -501,6 +502,7 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
   const [assets, setAssets] = useState<AdminMediaAsset[]>([]);
   const [loadingStatus, setLoadingStatus] = useState<"loading" | "ready" | "error">("loading");
   const [actionAssetId, setActionAssetId] = useState<string | null>(null);
+  const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
@@ -559,6 +561,29 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
       setError(actionError instanceof Error ? actionError.message : "Moderation action failed");
     } finally {
       setActionAssetId(null);
+    }
+  };
+
+  const openOriginal = async (asset: AdminMediaAsset) => {
+    const previewWindow = window.open("about:blank", "_blank");
+    if (!previewWindow) {
+      setError("Preview window was blocked.");
+      return;
+    }
+
+    previewWindow.opener = null;
+    setPreviewAssetId(asset.mediaAssetId);
+    setError(null);
+
+    try {
+      const preview = await fetchAdminMediaPreviewUrl(asset.mediaAssetId);
+      previewWindow.location.href = preview.previewUrl;
+    } catch (previewError: unknown) {
+      previewWindow.close();
+      console.error(previewError);
+      setError(previewError instanceof Error ? previewError.message : "Preview URL request failed");
+    } finally {
+      setPreviewAssetId(null);
     }
   };
 
@@ -636,6 +661,8 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
                 key={asset.mediaAssetId}
                 asset={asset}
                 busy={actionAssetId === asset.mediaAssetId}
+                previewBusy={previewAssetId === asset.mediaAssetId}
+                onOpenOriginal={() => openOriginal(asset)}
                 onApprove={() =>
                   runAction(asset, () =>
                     approveAdminMediaAsset(asset.mediaAssetId, {
@@ -665,12 +692,16 @@ function AdminModerationModal({ onClose }: { onClose: () => void }) {
 function AdminMediaAssetItem({
   asset,
   busy,
+  previewBusy,
+  onOpenOriginal,
   onApprove,
   onReject,
   onHide,
 }: {
   asset: AdminMediaAsset;
   busy: boolean;
+  previewBusy: boolean;
+  onOpenOriginal: () => void;
   onApprove: () => void;
   onReject: () => void;
   onHide: () => void;
@@ -688,14 +719,14 @@ function AdminMediaAssetItem({
       <p className="mt-2 max-w-full truncate text-xs text-neutral-600">
         {asset.originalFileUrl}
       </p>
-      <a
-        className="mt-2 inline-block max-w-full truncate text-[10px] uppercase text-neutral-400 underline-offset-2 hover:text-neutral-200 hover:underline"
-        href={asset.originalFileUrl}
-        target="_blank"
-        rel="noreferrer"
+      <button
+        type="button"
+        className="mt-2 inline-block max-w-full truncate text-left text-[10px] uppercase text-neutral-400 underline-offset-2 hover:text-neutral-200 hover:underline focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"
+        onClick={onOpenOriginal}
+        disabled={previewBusy}
       >
-        Open original
-      </a>
+        {previewBusy ? "Opening original" : "Open original"}
+      </button>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {asset.moderationStatus === "UPLOADED" ||
         asset.moderationStatus === "PENDING_REVIEW" ? (
