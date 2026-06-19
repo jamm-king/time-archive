@@ -65,6 +65,7 @@ class AuthControllerTest {
                 jsonPath("$.userId") { value(user.id.toString()) }
                 jsonPath("$.email") { value("user@example.com") }
                 jsonPath("$.displayName") { value("User") }
+                jsonPath("$.role") { value("USER") }
             }
 
         verify {
@@ -97,6 +98,7 @@ class AuthControllerTest {
             .andExpect {
                 status { isOk() }
                 jsonPath("$.userId") { value(user.id.toString()) }
+                jsonPath("$.role") { value("USER") }
             }
 
         verify {
@@ -142,6 +144,7 @@ class AuthControllerTest {
                 status { isOk() }
                 jsonPath("$.userId") { value(user.id.toString()) }
                 jsonPath("$.email") { value("user@example.com") }
+                jsonPath("$.role") { value("USER") }
             }
 
         verify { getCurrentUser.get(GetCurrentUser.Query(userId = user.id)) }

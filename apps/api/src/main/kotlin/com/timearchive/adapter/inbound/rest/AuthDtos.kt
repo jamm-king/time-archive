@@ -32,6 +32,7 @@ data class CurrentUserResponse(
     val userId: UUID,
     val email: String,
     val displayName: String,
+    val role: String,
     val createdAt: Instant,
 ) {
     companion object {
@@ -40,6 +41,7 @@ data class CurrentUserResponse(
                 userId = user.id,
                 email = user.email,
                 displayName = user.displayName,
+                role = user.role.name,
                 createdAt = user.createdAt,
             )
     }
