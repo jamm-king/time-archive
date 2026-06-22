@@ -109,10 +109,16 @@ Prerequisites:
 - `python3` or `python`
 - Git Bash on Windows for shell verification scripts
 
+Create the ignored local environment file and replace every placeholder:
+
+```text
+cp .env.local.example .env.local
+```
+
 Start the full local stack:
 
 ```text
-docker compose up -d --build
+docker compose --env-file .env.local up -d --build
 ```
 
 Local services:
@@ -136,21 +142,44 @@ curl "http://localhost:3000/api/timeline?from=0&to=1"
 Stop the stack:
 
 ```text
-docker compose down
+docker compose --env-file .env.local down
 ```
 
 Delete local volumes only when intentionally resetting local data:
 
 ```text
-docker compose down -v
+docker compose --env-file .env.local down -v
 ```
+
+## Environment And Secret Files
+
+Committed files:
+
+- `.env.local.example`: local PostgreSQL, MinIO, fake payment, and
+  rate-limit placeholders.
+- `.env.r2.local.example`: local R2 override placeholders.
+
+Ignored files:
+
+- `.env.local`: real local base values.
+- `.env.r2.local`: real local R2 values.
+
+Docker Compose receives variables through explicit `--env-file`
+arguments and maps only named variables into containers. Sensitive Spring
+configuration has no committed runtime fallback and fails fast when missing.
+
+Do not create or commit a repository `.env.prod`. Production secrets
+must come from AWS Secrets Manager, SSM Parameter Store, or the deployment
+platform's secret facility. If production Compose is eventually used on a
+host, keep its env file outside the checkout and restrict its filesystem
+permissions.
 
 ## Local JVM And Web Development
 
 Start only local infrastructure for JVM/web development:
 
 ```text
-docker compose up -d postgres redis minio minio-init
+docker compose --env-file .env.local up -d postgres redis minio minio-init
 ```
 
 Run backend tests:
@@ -163,12 +192,16 @@ cd apps/api
 Run the backend:
 
 ```text
+set -a
+source .env.local
+set +a
 cd apps/api
-TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true ./gradlew bootRun
+./gradlew bootRun
 ```
 
 Fake payment is disabled by default. Enable it only for local development or
-CI. The default Docker Compose stack enables it explicitly.
+CI through `.env.local`. Docker Compose and Spring Boot fail fast when
+required database, storage, or rate-limit secrets are missing.
 
 Install frontend dependencies:
 
@@ -280,6 +313,52 @@ ADMIN_PASSWORD=password123
 
 Production admin provisioning must be operator-controlled; local bootstrap is
 not a production admin lifecycle strategy.
+
+## Rate Limiting
+
+The API uses Redis-backed fixed-window rate limits for authentication, public
+timeline and availability reads, purchase operations, owned media mutations,
+and admin moderation routes.
+
+Rate limiting is enabled by default. Protected requests fail closed with
+`RATE_LIMIT_UNAVAILABLE` when Redis cannot evaluate the counter.
+Exceeded requests return `429 RATE_LIMIT_EXCEEDED`,
+`Retry-After`, and rate-limit metadata headers.
+
+Client identity uses the authenticated user ID for protected user operations
+and an HMAC-SHA256 digest of the network address for unauthenticated requests.
+All API instances in an environment must share a strong
+`TIME_ARCHIVE_RATE_LIMIT_KEY_SALT` value supplied through secret
+management. A
+forwarded client IP header is trusted only when explicitly configured:
+
+```text
+TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP
+```
+
+Configure this header only when direct origin access is blocked and the named
+reverse proxy controls the header. The local Docker Compose stack raises the
+registration limit so all verification scripts can run sequentially.
+
+Rate-limit environment variables:
+
+```text
+TIME_ARCHIVE_RATE_LIMIT_ENABLED
+TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER
+TIME_ARCHIVE_RATE_LIMIT_KEY_SALT
+TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_LOGIN_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_LOGIN_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_PURCHASE_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_PURCHASE_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_ADMIN_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_ADMIN_WINDOW
+```
 
 ## Object Storage
 

@@ -50,7 +50,7 @@ MVP-ready areas after target-environment verification:
 | Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
 | Admin bootstrap | Blocked for production | Replace local `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS` bootstrap with an operator-controlled provisioning process or tightly controlled one-time bootstrap. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
-| Rate limiting | Blocked for production | Add at least basic rate limits for auth, public timeline, availability, purchase reservation, upload request, and admin routes. |
+| Rate limiting | Needs verification | Redis-backed application limits cover auth, public reads, purchase, media mutation, and admin routes; verify deployed client identity and add Cloudflare edge limits. |
 | Sensitive logging | Needs verification | Confirm logs never include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
 | Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
 
@@ -121,8 +121,8 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Docker images | Needs verification | Build immutable images for API and web. |
-| Environment variables | Needs verification | Provide environment-specific values through secret management, not committed files. |
-| Local default credentials | Blocked for production | Replace PostgreSQL, Redis, and object storage defaults. |
+| Environment variables | Needs verification | Local secrets are externalized into ignored env files; verify production injection through deployment secret management. |
+| Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
 | Cloudflare | Needs verification | Configure DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
 | Application health checks | Needs verification | Confirm `/actuator/health` and web smoke checks are wired to deployment health probes. |

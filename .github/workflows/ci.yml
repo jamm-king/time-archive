@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+env:
+  COMPOSE_ENV_FILES: .env.local.example
+
 jobs:
   openapi:
     name: OpenAPI
@@ -96,7 +99,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local purchase flow
         env:
@@ -135,7 +138,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local media upload flow
         env:
@@ -174,7 +177,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local public timeline flow
         env:
@@ -213,7 +216,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build api
 
       - name: Verify local admin preview flow
         env:
@@ -252,7 +255,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Verify local auth flow
         run: ./scripts/verify-local-auth-flow.sh
@@ -291,7 +294,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Verify local web purchase flow
         env:
@@ -336,7 +339,7 @@ jobs:
         run: ./gradlew bootJar --no-daemon
 
       - name: Start local stack
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+        run: ./scripts/start-local-stack.sh -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Verify web app
         run: |

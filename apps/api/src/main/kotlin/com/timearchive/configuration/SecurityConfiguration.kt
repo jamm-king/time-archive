@@ -1,6 +1,7 @@
 package com.timearchive.configuration
 
 import com.timearchive.adapter.inbound.rest.CurrentUserSession
+import com.timearchive.adapter.inbound.security.ApiRateLimitingFilter
 import com.timearchive.adapter.inbound.security.SessionAuthenticationFilter
 import com.timearchive.domain.port.UserAccountRepository
 import org.springframework.context.annotation.Bean
@@ -24,6 +25,7 @@ class SecurityConfiguration {
     fun securityFilterChain(
         http: HttpSecurity,
         sessionAuthenticationFilter: SessionAuthenticationFilter,
+        apiRateLimitingFilter: ApiRateLimitingFilter,
     ): SecurityFilterChain =
         http
             .csrf {
@@ -56,6 +58,7 @@ class SecurityConfiguration {
                 }
             }
             .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter::class.java)
+            .addFilterAfter(apiRateLimitingFilter, SessionAuthenticationFilter::class.java)
             .authorizeHttpRequests {
                 it
                     .requestMatchers("/actuator/health", "/actuator/info").permitAll()
