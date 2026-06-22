@@ -2,6 +2,7 @@ package com.timearchive.adapter.inbound.rest
 
 import com.timearchive.application.CompletePrimaryPurchase
 import jakarta.validation.Valid
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/internal/payments/fake/webhooks")
+@ConditionalOnProperty(prefix = "time-archive.payment.fake", name = ["enabled"], havingValue = "true")
 class PaymentWebhookController(
     private val completePrimaryPurchase: CompletePrimaryPurchase,
 ) {

@@ -7,12 +7,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
 @Component
-@ConditionalOnProperty(prefix = "time-archive.payment.fake", name = ["enabled"], havingValue = "true")
-class FakePaymentAdapter : PaymentPort {
+@ConditionalOnProperty(
+    prefix = "time-archive.payment.fake",
+    name = ["enabled"],
+    havingValue = "false",
+    matchIfMissing = true,
+)
+class DisabledPaymentAdapter : PaymentPort {
     override fun createCheckout(request: CheckoutRequest): CheckoutSession =
-        CheckoutSession(
-            provider = "fake",
-            providerReference = "fake_checkout_${request.reservationId}",
-            checkoutUrl = "https://payments.example.test/checkout/${request.reservationId}",
-        )
+        error("payment provider is unavailable")
 }

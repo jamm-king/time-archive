@@ -143,6 +143,12 @@ class ApiExceptionHandler {
     fun handleIllegalState(exception: IllegalStateException): ResponseEntity<ApiErrorResponse> {
         val message = exception.message.orEmpty()
         return when {
+            message.contains("payment provider is unavailable") ->
+                errorResponse(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "PAYMENT_PROVIDER_UNAVAILABLE",
+                    "Payment provider is unavailable",
+                )
             message.contains("purchase reservation not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Reservation was not found")
             message.contains("ownership record not found") ->

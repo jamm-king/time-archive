@@ -189,6 +189,20 @@ class PurchaseControllerTest {
     }
 
     @Test
+    fun `maps unavailable payment provider to service unavailable`() {
+        every { createCheckout.create(any()) } throws IllegalStateException("payment provider is unavailable")
+
+        mockMvc.post("/api/purchase/reservations/{reservationId}/checkout", UUID.randomUUID()) {
+            this.session = signedInSession(UUID.randomUUID())
+        }
+            .andExpect {
+                status { isServiceUnavailable() }
+                jsonPath("$.code") { value("PAYMENT_PROVIDER_UNAVAILABLE") }
+                jsonPath("$.message") { value("Payment provider is unavailable") }
+            }
+    }
+
+    @Test
     fun `does not expose unexpected exception details`() {
         every { createCheckout.create(any()) } throws IllegalStateException("database password leaked")
 

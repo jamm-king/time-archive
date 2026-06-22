@@ -47,7 +47,12 @@ Required controls:
 - Use environment variables or a secret manager.
 - Store only payment references needed for reconciliation.
 
-The development-stage fake payment webhook endpoint is for local MVP verification only. It must not be exposed as a production payment confirmation path. Production payment webhooks must verify provider signatures before calling payment completion logic.
+The development-stage fake payment adapter and webhook endpoint are disabled by
+default and are registered only when
+`TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`. This flag is for local and CI
+verification only and must not be enabled in production. Production payment
+webhooks must verify provider signatures before calling payment completion
+logic.
 
 The fake payment webhook endpoint is excluded from CSRF protection because it
 models a server-to-server provider callback, not a browser session mutation.
