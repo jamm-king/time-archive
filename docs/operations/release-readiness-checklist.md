@@ -59,7 +59,7 @@ MVP-ready areas after target-environment verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Local fake payment flow | Ready | Keep only for local and CI verification. |
-| Fake webhook endpoint | Blocked for production | Must not be exposed as a production payment confirmation path. |
+| Fake webhook endpoint | Ready | Disabled by default and registered only when `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`; never enable it in production. |
 | Provider webhook verification | Blocked for production | Add a real provider webhook with signature verification, replay protection, idempotency, and auditability. |
 | Checkout redirect flow | Blocked for production | Replace fake checkout with real provider checkout before collecting money. |
 | Payment idempotency | Needs verification | Re-run duplicate webhook and retry scenarios against the real provider integration. |

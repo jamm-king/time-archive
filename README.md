@@ -164,8 +164,11 @@ Run the backend:
 
 ```text
 cd apps/api
-./gradlew bootRun
+TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true ./gradlew bootRun
 ```
+
+Fake payment is disabled by default. Enable it only for local development or
+CI. The default Docker Compose stack enables it explicitly.
 
 Install frontend dependencies:
 
@@ -257,8 +260,9 @@ X-XSRF-TOKEN
 ```
 
 The local fake payment webhook is CSRF-exempt because it models a
-server-to-server provider callback. It is development-only and must not be used
-as a production payment confirmation path.
+server-to-server provider callback. It is registered only when
+`TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`. Fake payment is disabled by default
+and must not be enabled in production.
 
 Initial admin accounts can be bootstrapped by setting normalized email
 addresses before registration:

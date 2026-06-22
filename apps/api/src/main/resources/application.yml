@@ -27,6 +27,9 @@ management:
         enabled: true
 
 time-archive:
+  payment:
+    fake:
+      enabled: ${TIME_ARCHIVE_PAYMENT_FAKE_ENABLED:false}
   security:
     initial-admin-emails: ${TIME_ARCHIVE_INITIAL_ADMIN_EMAILS:}
   storage:

@@ -387,6 +387,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: No payment provider is configured for checkout.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/owned-ranges/{ownershipRecordId}/media:
@@ -835,7 +841,8 @@ paths:
         Development-stage endpoint for local primary purchase verification.
 
         This endpoint simulates a payment provider webhook and calls the
-        primary purchase completion workflow. It is not production-safe.
+        primary purchase completion workflow. It is registered only when
+        `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`. It is not production-safe.
         Production payment providers must use verified webhook signatures and
         must not trust browser redirects as payment confirmation.
       requestBody:
@@ -1608,6 +1615,7 @@ components:
         - RESERVATION_EXPIRED
         - RESERVATION_NOT_PAYABLE
         - PAYMENT_EVENT_ALREADY_PROCESSING
+        - PAYMENT_PROVIDER_UNAVAILABLE
         - OWNERSHIP_ACCESS_DENIED
         - OWNERSHIP_NOT_ACTIVE
         - MEDIA_UPLOAD_REQUEST_EXPIRED
