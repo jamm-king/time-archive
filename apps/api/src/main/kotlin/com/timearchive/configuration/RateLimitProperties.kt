@@ -5,9 +5,9 @@ import java.time.Duration
 
 @ConfigurationProperties("time-archive.rate-limit")
 data class RateLimitProperties(
+    val keySalt: String,
     val enabled: Boolean = true,
     val clientIpHeader: String = "",
-    val keySalt: String = "time-archive-local-rate-limit",
     val registration: Policy = Policy(limit = 5, window = Duration.ofMinutes(10)),
     val login: Policy = Policy(limit = 10, window = Duration.ofMinutes(1)),
     val publicRead: Policy = Policy(limit = 120, window = Duration.ofMinutes(1)),

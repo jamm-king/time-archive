@@ -4,7 +4,7 @@ This document describes how to run Time Archive locally against Cloudflare R2
 instead of MinIO.
 
 Do not commit R2 credentials. Keep access keys in local environment variables,
-`.env.r2`, or deployment secret management.
+`.env.r2.local`, or deployment secret management.
 
 ## R2 Resource Inputs
 
@@ -14,7 +14,7 @@ Do not commit R2 credentials. Keep access keys in local environment variables,
   `https://replace-with-account-id.r2.cloudflarestorage.com`
 
 Bucket and custom-domain values are environment-specific and must be supplied
-through `.env.r2` for local verification. Do not share the same bucket between
+through `.env.r2.local` for local verification. Do not share the same bucket between
 local development and deployed environments.
 
 Recommended separation:
@@ -76,15 +76,18 @@ operational changes. Do not change them without an explicit migration plan that
 includes object copy, database updates, verification, rollback, and ownership
 of any partially migrated data.
 
-## Local Secret File
+## Local Environment Files
 
-Create a local `.env.r2` file in the repository root:
+Create the ignored base and R2 local environment files:
 
 ```text
-cp docs/operations/r2.env.example .env.r2
+cp .env.local.example .env.local
+cp .env.r2.local.example .env.r2.local
 ```
 
-Edit `.env.r2`:
+Replace every placeholder in both files. The base file contains database,
+MinIO, fake payment, and rate-limit local values. The R2 file overrides only
+the API storage settings:
 
 ```text
 TIME_ARCHIVE_STORAGE_S3_ENDPOINT=https://replace-with-account-id.r2.cloudflarestorage.com
@@ -97,7 +100,12 @@ TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY=replace-with-r2-access-key-id
 TIME_ARCHIVE_STORAGE_S3_SECRET_KEY=replace-with-r2-secret-access-key
 ```
 
-`.env.r2` is ignored by Git through the repository `.gitignore`.
+`.env.local` and `.env.r2.local` are ignored by Git. Their
+`*.example` templates are committed without real credentials.
+
+Existing local `.env.r2` values can be copied into
+`.env.r2.local`. Do not delete the old file until the new layered
+Compose command has been verified.
 
 Use access keys scoped to the local verification bucket. Production access keys
 must be managed separately through deployment secret management.
@@ -154,7 +162,12 @@ risk has been reviewed.
 Run:
 
 ```text
-docker compose --env-file .env.r2 -f docker-compose.yml -f docker-compose.r2.yml up -d --build
+docker compose \
+  --env-file .env.local \
+  --env-file .env.r2.local \
+  -f docker-compose.yml \
+  -f docker-compose.r2.yml \
+  up -d --build
 ```
 
 The default Compose file still starts MinIO, but the API service uses R2 because
@@ -163,7 +176,12 @@ the override replaces the storage environment variables.
 Check the effective Compose configuration:
 
 ```text
-docker compose --env-file .env.r2 -f docker-compose.yml -f docker-compose.r2.yml config
+docker compose \
+  --env-file .env.local \
+  --env-file .env.r2.local \
+  -f docker-compose.yml \
+  -f docker-compose.r2.yml \
+  config
 ```
 
 ## Verification

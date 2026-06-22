@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    password: time_archive_test
+
+time-archive:
+  rate-limit:
+    key-salt: test-rate-limit-key
+  storage:
+    s3:
+      access-key: test-storage-access-key
+      secret-key: test-storage-secret-key

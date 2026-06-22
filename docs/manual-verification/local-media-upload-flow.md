@@ -28,8 +28,11 @@ The script verifies:
 
 ## Start Local Stack
 
+Create `.env.local` from `.env.local.example` and replace
+its placeholders.
+
 ```text
-docker compose up -d --build
+docker compose --env-file .env.local up -d --build
 ```
 
 ## Run Verification
@@ -65,12 +68,12 @@ The final output should include:
 ## Cleanup
 
 ```text
-docker compose down
+docker compose --env-file .env.local down
 ```
 
 Use `-v` only when you intentionally want to delete local PostgreSQL and MinIO
 volumes:
 
 ```text
-docker compose down -v
+docker compose --env-file .env.local down -v
 ```

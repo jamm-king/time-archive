@@ -109,10 +109,16 @@ Prerequisites:
 - `python3` or `python`
 - Git Bash on Windows for shell verification scripts
 
+Create the ignored local environment file and replace every placeholder:
+
+```text
+cp .env.local.example .env.local
+```
+
 Start the full local stack:
 
 ```text
-docker compose up -d --build
+docker compose --env-file .env.local up -d --build
 ```
 
 Local services:
@@ -136,21 +142,44 @@ curl "http://localhost:3000/api/timeline?from=0&to=1"
 Stop the stack:
 
 ```text
-docker compose down
+docker compose --env-file .env.local down
 ```
 
 Delete local volumes only when intentionally resetting local data:
 
 ```text
-docker compose down -v
+docker compose --env-file .env.local down -v
 ```
+
+## Environment And Secret Files
+
+Committed files:
+
+- `.env.local.example`: local PostgreSQL, MinIO, fake payment, and
+  rate-limit placeholders.
+- `.env.r2.local.example`: local R2 override placeholders.
+
+Ignored files:
+
+- `.env.local`: real local base values.
+- `.env.r2.local`: real local R2 values.
+
+Docker Compose receives variables through explicit `--env-file`
+arguments and maps only named variables into containers. Sensitive Spring
+configuration has no committed runtime fallback and fails fast when missing.
+
+Do not create or commit a repository `.env.prod`. Production secrets
+must come from AWS Secrets Manager, SSM Parameter Store, or the deployment
+platform's secret facility. If production Compose is eventually used on a
+host, keep its env file outside the checkout and restrict its filesystem
+permissions.
 
 ## Local JVM And Web Development
 
 Start only local infrastructure for JVM/web development:
 
 ```text
-docker compose up -d postgres redis minio minio-init
+docker compose --env-file .env.local up -d postgres redis minio minio-init
 ```
 
 Run backend tests:
@@ -163,12 +192,16 @@ cd apps/api
 Run the backend:
 
 ```text
+set -a
+source .env.local
+set +a
 cd apps/api
-TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true ./gradlew bootRun
+./gradlew bootRun
 ```
 
 Fake payment is disabled by default. Enable it only for local development or
-CI. The default Docker Compose stack enables it explicitly.
+CI through `.env.local`. Docker Compose and Spring Boot fail fast when
+required database, storage, or rate-limit secrets are missing.
 
 Install frontend dependencies:
 

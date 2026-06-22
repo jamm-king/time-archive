@@ -21,7 +21,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun appliesConfiguredPoliciesToProtectedEndpointGroups() {
         val port = RecordingRateLimitPort()
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties())
+        val filter = ApiRateLimitingFilter(port, properties())
 
         execute(filter, "POST", "/api/auth/register")
         execute(filter, "POST", "/api/auth/login")
@@ -45,7 +45,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun doesNotLimitUnmatchedEndpoints() {
         val port = RecordingRateLimitPort()
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties())
+        val filter = ApiRateLimitingFilter(port, properties())
 
         val result = execute(filter, "GET", "/api/me")
         val preflight = execute(filter, "OPTIONS", "/api/admin/media/assets")
@@ -58,7 +58,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun hashesConfiguredClientIpHeaderInsteadOfStoringRawAddress() {
         val port = RecordingRateLimitPort()
-        val properties = RateLimitProperties(clientIpHeader = "CF-Connecting-IP")
+        val properties = properties(clientIpHeader = "CF-Connecting-IP")
         val filter = ApiRateLimitingFilter(port, properties)
 
         execute(
@@ -78,7 +78,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun usesAuthenticatedUserIdentityForPurchaseRequests() {
         val port = RecordingRateLimitPort()
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties())
+        val filter = ApiRateLimitingFilter(port, properties())
         val principal = AuthenticatedUser(
             userId = "user-123",
             email = "buyer@example.com",
@@ -108,7 +108,7 @@ class ApiRateLimitingFilterTest {
                 retryAfterSeconds = 17,
             ),
         )
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties())
+        val filter = ApiRateLimitingFilter(port, properties())
 
         val result = execute(filter, "POST", "/api/auth/login")
 
@@ -123,7 +123,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun failsClosedWhenRateLimitStorageIsUnavailable() {
         val port = RecordingRateLimitPort(failure = IllegalStateException("redis unavailable"))
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties())
+        val filter = ApiRateLimitingFilter(port, properties())
 
         val result = execute(filter, "GET", "/api/timeline")
 
@@ -135,7 +135,7 @@ class ApiRateLimitingFilterTest {
     @Test
     fun bypassesRateLimitingWhenDisabled() {
         val port = RecordingRateLimitPort()
-        val filter = ApiRateLimitingFilter(port, RateLimitProperties(enabled = false))
+        val filter = ApiRateLimitingFilter(port, properties(enabled = false))
 
         val result = execute(filter, "POST", "/api/auth/login")
 
@@ -162,6 +162,16 @@ class ApiRateLimitingFilterTest {
 
         return FilterResult(response, chainInvoked)
     }
+
+    private fun properties(
+        enabled: Boolean = true,
+        clientIpHeader: String = "",
+    ): RateLimitProperties =
+        RateLimitProperties(
+            keySalt = "test-rate-limit-key",
+            enabled = enabled,
+            clientIpHeader = clientIpHeader,
+        )
 
     private data class FilterResult(
         val response: MockHttpServletResponse,

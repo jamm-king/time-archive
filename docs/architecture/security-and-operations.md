@@ -282,6 +282,12 @@ Required controls:
 - Do not commit secrets.
 - Use `.gitignore` for local-only files.
 - Provide `*.example` configuration files.
+- Require sensitive runtime values instead of providing committed application
+  or Compose fallbacks.
+- Use explicit local `--env-file` paths so environment selection is
+  visible in commands.
+- Keep production env files outside the repository if host-level Compose is
+  used.
 - Use AWS Secrets Manager, SSM Parameter Store, or equivalent for deployed environments.
 - Rotate secrets when exposure is suspected.
 

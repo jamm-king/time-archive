@@ -49,7 +49,10 @@ Recommended services:
 Expected commands after implementation exists:
 
 ```text
-docker compose up -d
+docker compose --env-file .env.local up -d
+set -a
+source .env.local
+set +a
 cd apps/api
 ./gradlew test
 ./gradlew bootRun
@@ -57,6 +60,11 @@ cd ../web
 npm run lint
 npm run build
 ```
+
+GitHub Actions sets `COMPOSE_ENV_FILES=.env.local.example` so Compose-based
+verification uses committed non-production placeholder values. Local and
+deployed environments must supply their own ignored or deployment-managed
+values instead.
 
 ### Staging
 

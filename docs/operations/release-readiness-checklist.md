@@ -121,8 +121,8 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Docker images | Needs verification | Build immutable images for API and web. |
-| Environment variables | Needs verification | Provide environment-specific values through secret management, not committed files. |
-| Local default credentials | Blocked for production | Replace PostgreSQL, Redis, and object storage defaults. |
+| Environment variables | Needs verification | Local secrets are externalized into ignored env files; verify production injection through deployment secret management. |
+| Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
 | Cloudflare | Needs verification | Configure DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
 | Application health checks | Needs verification | Confirm `/actuator/health` and web smoke checks are wired to deployment health probes. |

@@ -4,23 +4,23 @@ services:
       context: ./apps/api
     container_name: time-archive-api
     environment:
-      TIME_ARCHIVE_DATABASE_URL: jdbc:postgresql://postgres:5432/time_archive
-      TIME_ARCHIVE_DATABASE_USERNAME: time_archive
-      TIME_ARCHIVE_DATABASE_PASSWORD: time_archive
+      TIME_ARCHIVE_DATABASE_URL: jdbc:postgresql://postgres:5432/${TIME_ARCHIVE_DATABASE_NAME:?Set TIME_ARCHIVE_DATABASE_NAME in .env.local}
+      TIME_ARCHIVE_DATABASE_USERNAME: ${TIME_ARCHIVE_DATABASE_USERNAME:?Set TIME_ARCHIVE_DATABASE_USERNAME in .env.local}
+      TIME_ARCHIVE_DATABASE_PASSWORD: ${TIME_ARCHIVE_DATABASE_PASSWORD:?Set TIME_ARCHIVE_DATABASE_PASSWORD in .env.local}
       TIME_ARCHIVE_STORAGE_S3_ENDPOINT: http://minio:9000
       TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT: http://localhost:9000
       TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL: http://localhost:9000/time-archive-media
       TIME_ARCHIVE_STORAGE_S3_BUCKET: time-archive-media
       TIME_ARCHIVE_STORAGE_S3_REGION: us-east-1
-      TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY: time_archive_minio
-      TIME_ARCHIVE_STORAGE_S3_SECRET_KEY: time_archive_minio_secret
+      TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY: ${TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY:?Set TIME_ARCHIVE_STORAGE_S3_ACCESS_KEY in .env.local}
+      TIME_ARCHIVE_STORAGE_S3_SECRET_KEY: ${TIME_ARCHIVE_STORAGE_S3_SECRET_KEY:?Set TIME_ARCHIVE_STORAGE_S3_SECRET_KEY in .env.local}
       TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS: "true"
       TIME_ARCHIVE_REDIS_HOST: redis
       TIME_ARCHIVE_REDIS_PORT: "6379"
-      TIME_ARCHIVE_PAYMENT_FAKE_ENABLED: "true"
-      TIME_ARCHIVE_RATE_LIMIT_KEY_SALT: "time-archive-local-rate-limit"
-      TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT: "100"
-      TIME_ARCHIVE_INITIAL_ADMIN_EMAILS: admin@time-archive.local
+      TIME_ARCHIVE_PAYMENT_FAKE_ENABLED: ${TIME_ARCHIVE_PAYMENT_FAKE_ENABLED:?Set TIME_ARCHIVE_PAYMENT_FAKE_ENABLED in .env.local}
+      TIME_ARCHIVE_RATE_LIMIT_KEY_SALT: ${TIME_ARCHIVE_RATE_LIMIT_KEY_SALT:?Set TIME_ARCHIVE_RATE_LIMIT_KEY_SALT in .env.local}
+      TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT: ${TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT:-100}
+      TIME_ARCHIVE_INITIAL_ADMIN_EMAILS: ${TIME_ARCHIVE_INITIAL_ADMIN_EMAILS:-admin@time-archive.local}
     ports:
       - "8080:8080"
     depends_on:
@@ -55,15 +55,15 @@ services:
     image: postgres:18-alpine
     container_name: time-archive-postgres
     environment:
-      POSTGRES_DB: time_archive
-      POSTGRES_USER: time_archive
-      POSTGRES_PASSWORD: time_archive
+      POSTGRES_DB: ${TIME_ARCHIVE_DATABASE_NAME:?Set TIME_ARCHIVE_DATABASE_NAME in .env.local}
+      POSTGRES_USER: ${TIME_ARCHIVE_DATABASE_USERNAME:?Set TIME_ARCHIVE_DATABASE_USERNAME in .env.local}
+      POSTGRES_PASSWORD: ${TIME_ARCHIVE_DATABASE_PASSWORD:?Set TIME_ARCHIVE_DATABASE_PASSWORD in .env.local}
     ports:
       - "5432:5432"
     volumes:
       - postgres-18-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U time_archive -d time_archive"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,8 +84,8 @@ services:
     container_name: time-archive-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: time_archive_minio
-      MINIO_ROOT_PASSWORD: time_archive_minio_secret
+      MINIO_ROOT_USER: ${TIME_ARCHIVE_MINIO_ROOT_USER:?Set TIME_ARCHIVE_MINIO_ROOT_USER in .env.local}
+      MINIO_ROOT_PASSWORD: ${TIME_ARCHIVE_MINIO_ROOT_PASSWORD:?Set TIME_ARCHIVE_MINIO_ROOT_PASSWORD in .env.local}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -103,12 +103,16 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${TIME_ARCHIVE_MINIO_ROOT_USER:?Set TIME_ARCHIVE_MINIO_ROOT_USER in .env.local}
+      MINIO_ROOT_PASSWORD: ${TIME_ARCHIVE_MINIO_ROOT_PASSWORD:?Set TIME_ARCHIVE_MINIO_ROOT_PASSWORD in .env.local}
+      MINIO_BUCKET: time-archive-media
     entrypoint:
       - /bin/sh
       - -c
       - |
-        mc alias set local http://minio:9000 time_archive_minio time_archive_minio_secret
-        mc mb --ignore-existing local/time-archive-media
+        mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\"
+        mc mb --ignore-existing \"local/$${MINIO_BUCKET}\"
 
 volumes:
   postgres-18-data:

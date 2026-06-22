@@ -17,8 +17,11 @@ on Ubuntu and on Windows through Git Bash.
 
 ## Start the Local Stack
 
+Create `.env.local` from `.env.local.example` and replace
+its placeholders.
+
 ```bash
-docker compose up -d --build
+docker compose --env-file .env.local up -d --build
 ```
 
 Verify the API is healthy:
@@ -76,13 +79,13 @@ START_SECOND=300 END_SECOND=310 ./scripts/verify-local-purchase-flow.sh
 Start the full stack:
 
 ```bash
-docker compose up -d --build
+docker compose --env-file .env.local up -d --build
 ```
 
 Then check:
 
 ```bash
-docker compose ps
+docker compose --env-file .env.local ps
 ```
 
 ### Database Was Reused
