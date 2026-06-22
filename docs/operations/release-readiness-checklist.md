@@ -3,6 +3,8 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
+Current baseline: `main` after PR #58 on 2026-06-22.
+
 Status legend:
 
 - `Ready`: acceptable for the current MVP release gate.
@@ -22,11 +24,14 @@ Production blockers:
 - Production object storage configuration, preferably Cloudflare R2, using
   managed secrets and private buckets.
 - Production database backups, restore testing, and migration procedure.
-- Production secret management and removal of local default credentials.
-- Basic abuse controls for public reads, authentication, purchase, and upload
-  surfaces.
+- Production secret injection, access control, and rotation through the chosen
+  deployment platform.
+- Cloudflare edge abuse controls and deployed trusted-client attribution;
+  application-level Redis rate limiting is implemented.
 - Production observability for application logs, errors, health, and security
   events.
+- File signature validation and a documented malware-scanning path for uploaded
+  media.
 
 MVP-ready areas after target-environment verification:
 
@@ -40,6 +45,12 @@ MVP-ready areas after target-environment verification:
 - Admin original preview through short-lived presigned GET URLs.
 - Public timeline delivery through approved-media presigned playback URLs.
 - OpenAPI validation in CI.
+- Redis-backed rate limiting for authentication, public reads, purchase, media,
+  and admin surfaces.
+- Explicit ignored local environment files with required secret values and no
+  committed runtime secret fallbacks.
+- Local Cloudflare R2 configuration and R2-backed media upload verification
+  using resources isolated from production.
 
 ## Security
 
@@ -50,7 +61,8 @@ MVP-ready areas after target-environment verification:
 | Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
 | Admin bootstrap | Blocked for production | Replace local `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS` bootstrap with an operator-controlled provisioning process or tightly controlled one-time bootstrap. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
-| Rate limiting | Needs verification | Redis-backed application limits cover auth, public reads, purchase, media mutation, and admin routes; verify deployed client identity and add Cloudflare edge limits. |
+| Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
+| Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
 | Sensitive logging | Needs verification | Confirm logs never include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
 | Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
 
@@ -69,7 +81,8 @@ MVP-ready areas after target-environment verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Local MinIO flow | Ready | Verified by local upload, public timeline, and admin preview scripts. |
-| Cloudflare R2 | Blocked for production | Configure endpoint, bucket, access keys, region compatibility, CORS, and private bucket policy. |
+| Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
+| Production Cloudflare R2 | Blocked for production | Provision a separate production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback from staging. |
 | Presigned upload URLs | Needs verification | Confirm TTL, content type, content length, and CORS behavior from the deployed web origin. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
 | File signature validation | Blocked for production | Add signature sniffing before trusting content type. |
@@ -108,6 +121,10 @@ Required checks before merging a release candidate:
 - Local web purchase and upload flows.
 - Local web smoke check.
 
+The PR #58 CI baseline passed all required checks after Compose startup and
+MinIO initialization were stabilized. Future release candidates must pass the
+same checks from their own commit and must not rely on this historical result.
+
 Release candidate verification:
 
 - Start from a clean Docker Compose state.
@@ -121,7 +138,8 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Docker images | Needs verification | Build immutable images for API and web. |
-| Environment variables | Needs verification | Local secrets are externalized into ignored env files; verify production injection through deployment secret management. |
+| Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
+| Production secret injection | Blocked for production | Select a deployment secret manager, inject every required runtime value, restrict access, and define rotation. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
 | Cloudflare | Needs verification | Configure DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
@@ -148,14 +166,22 @@ Release candidate verification:
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.
 - No production R2 environment is configured yet.
-- No explicit rate limiting is implemented yet.
+- No Cloudflare edge rate limits or deployed trusted-client attribution are
+  configured yet.
+- Application rate-limit thresholds have not been tuned from production
+  traffic.
 
-## R2 Readiness Checklist
+## Production R2 Readiness Checklist
 
-Before connecting Cloudflare R2:
+The local R2 integration path is ready: configuration is externalized, a local
+verification bucket is isolated from production, and an R2-backed media upload
+has passed. The following gates apply before connecting staging or production
+R2 resources:
 
-- Create separate private buckets for local verification and production media
-  objects.
+- Keep the existing local verification bucket isolated from every deployed
+  environment.
+- Provision a dedicated production media bucket with the approved access
+  policy.
 - Create least-privilege access keys per environment and per bucket.
 - Configure S3-compatible endpoint and region-compatible settings.
 - Set `TIME_ARCHIVE_STORAGE_S3_ENDPOINT`.
@@ -185,6 +211,10 @@ See [Cloudflare R2 Storage Setup](r2-storage-setup.md) for local verification.
 
 For a private demo, the system can be released when all CI checks are green and
 all local verification scripts pass in a clean environment.
+
+The current `main` baseline meets the automated private-demo gate as of PR #58.
+A demo release should still repeat the manual verification steps above from the
+exact release candidate.
 
 For any public or paid launch, every `Blocked` item in this checklist must be
 resolved or explicitly accepted by the project owner with a documented rollback
