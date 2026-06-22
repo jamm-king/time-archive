@@ -30,6 +30,28 @@ time-archive:
   payment:
     fake:
       enabled: ${TIME_ARCHIVE_PAYMENT_FAKE_ENABLED:false}
+  rate-limit:
+    enabled: ${TIME_ARCHIVE_RATE_LIMIT_ENABLED:true}
+    client-ip-header: ${TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER:}
+    key-salt: ${TIME_ARCHIVE_RATE_LIMIT_KEY_SALT:time-archive-local-rate-limit}
+    registration:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT:5}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_WINDOW:10m}
+    login:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_LOGIN_LIMIT:10}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_LOGIN_WINDOW:1m}
+    public-read:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_LIMIT:120}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_WINDOW:1m}
+    purchase:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_PURCHASE_LIMIT:30}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_PURCHASE_WINDOW:1m}
+    media-mutation:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_LIMIT:30}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_WINDOW:1m}
+    admin:
+      limit: ${TIME_ARCHIVE_RATE_LIMIT_ADMIN_LIMIT:60}
+      window: ${TIME_ARCHIVE_RATE_LIMIT_ADMIN_WINDOW:1m}
   security:
     initial-admin-emails: ${TIME_ARCHIVE_INITIAL_ADMIN_EMAILS:}
   storage:

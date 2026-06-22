@@ -35,6 +35,30 @@ Implemented roles:
 - `USER`
 - `ADMIN`
 
+## Rate Limiting
+
+The API applies Redis-backed fixed-window limits to authentication, public
+timeline and availability reads, purchase operations, owned media mutations,
+and admin moderation routes. Redis provides shared counters across API
+instances and increments counters atomically through a Lua script.
+
+Authenticated purchase, media, and admin requests use the server-derived user
+ID as the subject. Authentication and public read requests use an HMAC-SHA256
+digest of the client network address so raw IP addresses are not stored in
+rate-limit keys. All API instances in one environment must use the same strong
+`TIME_ARCHIVE_RATE_LIMIT_KEY_SALT` value from secret management.
+
+The application uses the direct remote address unless
+`TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER` is explicitly configured.
+A forwarded header such as `CF-Connecting-IP` must be trusted only
+when the origin rejects direct public traffic and the trusted reverse proxy
+overwrites that header.
+
+Exceeded requests return `429 RATE_LIMIT_EXCEEDED` and
+`Retry-After`. Protected requests fail closed with
+`503 RATE_LIMIT_UNAVAILABLE` when Redis cannot evaluate the counter.
+Cloudflare edge limits should complement, not replace, application limits.
+
 ## Payment Security
 
 Required controls:

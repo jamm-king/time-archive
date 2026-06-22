@@ -96,6 +96,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/auth/login:
@@ -133,6 +137,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/CsrfTokenInvalid"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/auth/logout:
@@ -238,6 +246,10 @@ paths:
                 $ref: "#/components/schemas/AvailabilityResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/timeline:
@@ -288,6 +300,10 @@ paths:
                 $ref: "#/components/schemas/PublicTimelineResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/purchase/reservations:
@@ -329,6 +345,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/purchase/reservations/{reservationId}/checkout:
@@ -387,8 +407,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
         "503":
-          description: No payment provider is configured for checkout.
+          description: No payment provider is configured or the rate-limit service is unavailable.
           content:
             application/json:
               schema:
@@ -450,6 +472,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
     get:
@@ -554,6 +580,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/owned-ranges/{ownershipRecordId}/media/upload-requests/{uploadRequestId}/complete:
@@ -612,6 +642,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets:
@@ -653,6 +687,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/approve:
@@ -705,6 +743,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/preview-url:
@@ -743,6 +785,10 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           $ref: "#/components/responses/ResourceNotFound"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/reject:
@@ -786,6 +832,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/admin/media/assets/{mediaAssetId}/hide:
@@ -829,6 +879,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          $ref: "#/components/responses/RateLimitUnavailable"
         "500":
           $ref: "#/components/responses/UnexpectedError"
   /api/internal/payments/fake/webhooks/primary-purchase-completed:
@@ -922,6 +976,43 @@ components:
             $ref: "#/components/schemas/ApiErrorResponse"
     CsrfTokenInvalid:
       description: CSRF token is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+    RateLimitExceeded:
+      description: The rate limit for this endpoint and subject was exceeded.
+      headers:
+        Retry-After:
+          description: Seconds until the current rate-limit window resets.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        X-RateLimit-Limit:
+          description: Maximum requests allowed in the current window.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        X-RateLimit-Remaining:
+          description: Requests remaining in the current window.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        X-RateLimit-Reset:
+          description: Seconds until the current window resets.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+    RateLimitUnavailable:
+      description: The rate-limit service could not evaluate the request.
       content:
         application/json:
           schema:
@@ -1616,6 +1707,8 @@ components:
         - RESERVATION_NOT_PAYABLE
         - PAYMENT_EVENT_ALREADY_PROCESSING
         - PAYMENT_PROVIDER_UNAVAILABLE
+        - RATE_LIMIT_EXCEEDED
+        - RATE_LIMIT_UNAVAILABLE
         - OWNERSHIP_ACCESS_DENIED
         - OWNERSHIP_NOT_ACTIVE
         - MEDIA_UPLOAD_REQUEST_EXPIRED

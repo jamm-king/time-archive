@@ -50,7 +50,7 @@ MVP-ready areas after target-environment verification:
 | Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
 | Admin bootstrap | Blocked for production | Replace local `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS` bootstrap with an operator-controlled provisioning process or tightly controlled one-time bootstrap. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
-| Rate limiting | Blocked for production | Add at least basic rate limits for auth, public timeline, availability, purchase reservation, upload request, and admin routes. |
+| Rate limiting | Needs verification | Redis-backed application limits cover auth, public reads, purchase, media mutation, and admin routes; verify deployed client identity and add Cloudflare edge limits. |
 | Sensitive logging | Needs verification | Confirm logs never include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
 | Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
 

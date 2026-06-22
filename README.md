@@ -281,6 +281,52 @@ ADMIN_PASSWORD=password123
 Production admin provisioning must be operator-controlled; local bootstrap is
 not a production admin lifecycle strategy.
 
+## Rate Limiting
+
+The API uses Redis-backed fixed-window rate limits for authentication, public
+timeline and availability reads, purchase operations, owned media mutations,
+and admin moderation routes.
+
+Rate limiting is enabled by default. Protected requests fail closed with
+`RATE_LIMIT_UNAVAILABLE` when Redis cannot evaluate the counter.
+Exceeded requests return `429 RATE_LIMIT_EXCEEDED`,
+`Retry-After`, and rate-limit metadata headers.
+
+Client identity uses the authenticated user ID for protected user operations
+and an HMAC-SHA256 digest of the network address for unauthenticated requests.
+All API instances in an environment must share a strong
+`TIME_ARCHIVE_RATE_LIMIT_KEY_SALT` value supplied through secret
+management. A
+forwarded client IP header is trusted only when explicitly configured:
+
+```text
+TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP
+```
+
+Configure this header only when direct origin access is blocked and the named
+reverse proxy controls the header. The local Docker Compose stack raises the
+registration limit so all verification scripts can run sequentially.
+
+Rate-limit environment variables:
+
+```text
+TIME_ARCHIVE_RATE_LIMIT_ENABLED
+TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER
+TIME_ARCHIVE_RATE_LIMIT_KEY_SALT
+TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_LOGIN_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_LOGIN_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_PUBLIC_READ_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_PURCHASE_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_PURCHASE_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_MEDIA_MUTATION_WINDOW
+TIME_ARCHIVE_RATE_LIMIT_ADMIN_LIMIT
+TIME_ARCHIVE_RATE_LIMIT_ADMIN_WINDOW
+```
+
 ## Object Storage
 
 Local development uses MinIO as S3-compatible object storage:

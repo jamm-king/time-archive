@@ -18,6 +18,8 @@ services:
       TIME_ARCHIVE_REDIS_HOST: redis
       TIME_ARCHIVE_REDIS_PORT: "6379"
       TIME_ARCHIVE_PAYMENT_FAKE_ENABLED: "true"
+      TIME_ARCHIVE_RATE_LIMIT_KEY_SALT: "time-archive-local-rate-limit"
+      TIME_ARCHIVE_RATE_LIMIT_REGISTRATION_LIMIT: "100"
       TIME_ARCHIVE_INITIAL_ADMIN_EMAILS: admin@time-archive.local
     ports:
       - "8080:8080"
