@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #59 on 2026-06-23.
+Current baseline: `main` after PR #60 on 2026-06-23.
 
 Status legend:
 
@@ -120,6 +120,7 @@ Required checks before merging a release candidate:
 - Local auth flows.
 - Local web purchase and upload flows.
 - Local web smoke check.
+- Production deployment policy and Linux ARM64 image builds.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
@@ -138,14 +139,14 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
-| Docker images | Needs verification | Build immutable images for API and web. |
+| Docker images | Needs verification | ARM64 builds run in CI; push immutable Git SHA images to tag-immutable ECR repositories and verify their digests in staging. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
-| Production secret injection | Blocked for production | Implement the selected SSM Parameter Store hierarchy, EC2 IAM access, runtime injection, and rotation procedure. |
+| Production secret injection | Blocked for production | The SSM runtime renderer and parameter contract are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
 | Cloudflare | Needs verification | Implement the selected Tunnel ingress, DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
-| Application health checks | Needs verification | Confirm `/actuator/health` and web smoke checks are wired to deployment health probes. |
-| Rollback | Needs verification | Define image rollback and database migration rollback policy. |
+| Application health checks | Needs verification | Compose and deployment scripts check API, Web, Redis, and optional public endpoints; verify them on staging. |
+| Rollback | Needs verification | Previous image references are recorded; verify image rollback and the forward-fix or point-in-time database recovery policy in staging. |
 
 ## Observability And Operations
 
