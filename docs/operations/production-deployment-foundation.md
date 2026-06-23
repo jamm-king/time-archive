@@ -27,6 +27,10 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 The production host runs API, Web, Redis, and `cloudflared`. It does not run
 PostgreSQL or MinIO. Compose publishes no host ports; Cloudflare Tunnel routes
 traffic to Web, and Web proxies API requests over the private Compose network.
+Cloudflare terminates browser-facing HTTPS. The Tunnel forwards to
+`http://web:3000` on the same-host private Docker network, so the production
+host does not run a public TLS listener or require an ACM or Certbot
+certificate.
 
 Redis persists append-only data to an encrypted host volume and uses
 `noeviction` so session and rate-limit loss is observable instead of silent.
@@ -117,3 +121,6 @@ change has created and reviewed:
 
 Creating these resources can incur cost and change external state, so it is
 outside this repository-only foundation task.
+
+The selected HTTPS boundary and staging verification requirements are defined
+in [Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).

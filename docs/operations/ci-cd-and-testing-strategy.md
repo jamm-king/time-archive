@@ -90,7 +90,7 @@ Purpose:
 
 Production must have:
 
-- HTTPS only
+- HTTPS only through Cloudflare-managed edge TLS and Cloudflare Tunnel
 - Managed database backups
 - Point-in-time recovery
 - Strict secret management
@@ -184,7 +184,9 @@ Why:
   or media records
 
 The complete selected topology and its limitations are defined in
-[EC2 And RDS Deployment Architecture](ec2-rds-deployment-architecture.md).
+[EC2 And RDS Deployment Architecture](ec2-rds-deployment-architecture.md), and
+the public HTTPS boundary is defined in
+[Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).
 
 ### Deferred Scale-Out Path
 

@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #60 on 2026-06-23.
+Current baseline: `main` after PR #61 on 2026-06-23.
 
 Status legend:
 
@@ -143,8 +143,8 @@ Release candidate verification:
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
 | Production secret injection | Blocked for production | The SSM runtime renderer and parameter contract are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
-| HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
-| Cloudflare | Needs verification | Implement the selected Tunnel ingress, DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
+| HTTPS | Needs verification | Cloudflare-managed edge TLS and Tunnel ingress are selected; provision the hostname and certificate, redirect HTTP, then verify secure cookies and forwarded protocol behavior in staging. |
+| Cloudflare | Needs verification | Configure isolated Tunnels, DNS, edge certificates, HTTPS redirect, API and presigned-response cache bypass, WAF, rate limits, and public health checks. |
 | Application health checks | Needs verification | Compose and deployment scripts check API, Web, Redis, and optional public endpoints; verify them on staging. |
 | Rollback | Needs verification | Previous image references are recorded; verify image rollback and the forward-fix or point-in-time database recovery policy in staging. |
 
@@ -214,7 +214,7 @@ See [Cloudflare R2 Storage Setup](r2-storage-setup.md) for local verification.
 For a private demo, the system can be released when all CI checks are green and
 all local verification scripts pass in a clean environment.
 
-The current `main` baseline meets the automated private-demo gate as of PR #59.
+The current `main` baseline meets the automated private-demo gate as of PR #61.
 A demo release should still repeat the manual verification steps above from the
 exact release candidate.
 

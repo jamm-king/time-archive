@@ -8,7 +8,7 @@ Time Archive accepts payments, stores ownership records, and hosts user-uploaded
 
 Recommended controls:
 
-- HTTPS only
+- HTTPS only through the environment-specific Cloudflare Tunnel hostname
 - Secure, HTTP-only cookies when using session-based authentication
 - CSRF protection for cookie-authenticated flows
 - Strict CORS policy
@@ -19,6 +19,12 @@ Recommended controls:
 The MVP authentication foundation uses server-side sessions stored in Redis.
 Clients receive an HTTP-only session cookie and should not send self-asserted
 identity claims for production behavior.
+
+Cloudflare terminates public HTTPS with a managed edge certificate. EC2 does
+not expose public application ports or terminate public TLS. The same-host
+private hop from `cloudflared` to Web uses the private Docker network. See
+[Cloudflare Tunnel HTTPS](../operations/cloudflare-tunnel-https.md) for the
+certificate, forwarded-header, cache, and verification boundaries.
 
 Purchase APIs derive buyer identity from authenticated server-side session
 identity. Clients must not send buyer or owner identity claims for purchase
