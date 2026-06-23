@@ -35,14 +35,16 @@ Implemented MVP areas:
 - Docker Compose local stack.
 - GitHub Actions CI and local shell verification scripts.
 - OpenAPI validation.
+- Redis-backed application rate limiting.
+- Externalized local secrets and an isolated local R2 verification path.
 
 Production blockers:
 
-- Real payment provider integration and signature-verified webhooks.
-- Production Cloudflare R2 or equivalent object storage configuration.
-- Production secret management and removal of local default credentials.
-- Database backup, restore, and migration procedures.
-- Rate limiting and abuse controls.
+- PayPal integration and signature-verified webhooks.
+- Production Cloudflare R2 provisioning and staging verification.
+- Production SSM Parameter Store injection and IAM controls.
+- RDS provisioning, backup, restore, and migration procedures.
+- Cloudflare edge abuse controls and trusted client-address propagation.
 - Observability, error tracking, and alerting.
 - Media signature validation, malware scanning, and production media
   processing policy.
@@ -58,6 +60,7 @@ for the release gate.
 - [Transaction Boundaries](docs/architecture/transaction-boundaries.md)
 - [Security and Operations](docs/architecture/security-and-operations.md)
 - [CI/CD and Testing Strategy](docs/operations/ci-cd-and-testing-strategy.md)
+- [EC2 and RDS Deployment Architecture](docs/operations/ec2-rds-deployment-architecture.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 - [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)
 
@@ -84,7 +87,7 @@ The validation script runs Redocly CLI through Docker.
 - Redis-backed server sessions
 - Next.js
 - Docker and Docker Compose
-- S3-compatible object storage: MinIO locally, Cloudflare R2 planned for
+- S3-compatible object storage: MinIO locally, Cloudflare R2 selected for
   deployed environments
 - GitHub Actions
 
@@ -432,12 +435,16 @@ restore procedure before public launch.
 The following tasks require project-owner decisions, external accounts, or
 production credentials:
 
-- Choose the real payment provider and provide test credentials.
+- Create PayPal Sandbox and production applications and provide their
+  environment-specific credentials through secret management.
 - Decide payment capture/refund/dispute policy.
-- Create Cloudflare R2 bucket, access keys, and deployed environment values.
-- Decide production deployment target and secret management path.
+- Create isolated staging and production Cloudflare R2 buckets, access keys,
+  CORS rules, and environment values.
+- Provide the AWS account, domain names, alert destinations, and approved
+  maintenance windows required to provision the selected EC2, RDS, SSM, and
+  CloudWatch architecture.
 - Configure domain, DNS, TLS, and Cloudflare security settings.
-- Decide operational alert destination and error tracking service.
+- Create the Sentry organization and project for the selected Developer plan.
 - Decide media safety policy: file signature validation, malware scanning,
   transcoding, and thumbnail generation.
 - Decide admin provisioning policy beyond local bootstrap.
