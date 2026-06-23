@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #61 on 2026-06-23.
+Current baseline: `main` after PR #62 on 2026-06-23.
 
 Status legend:
 
@@ -121,6 +121,7 @@ Required checks before merging a release candidate:
 - Local web purchase and upload flows.
 - Local web smoke check.
 - Production deployment policy and Linux ARM64 image builds.
+- Staging CloudFormation schema and architecture-policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
@@ -139,6 +140,7 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
+| Staging infrastructure as code | Needs verification | CloudFormation defines the approved staging AWS boundary and passes static policy checks; review an AWS change set before provisioning. |
 | Docker images | Needs verification | ARM64 builds run in CI; push immutable Git SHA images to tag-immutable ECR repositories and verify their digests in staging. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
 | Production secret injection | Blocked for production | The SSM runtime renderer and parameter contract are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |

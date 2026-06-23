@@ -34,6 +34,7 @@ The selected production baseline is:
 | Error tracking | Selected | Sentry Developer, pending SDK implementation. |
 | Payment | Selected | PayPal, pending provider design and implementation. |
 | Infrastructure as code | Selected | AWS CloudFormation for the initial AWS resource baseline. |
+| Staging infrastructure template | Implemented | Schema and architecture-policy validation run in CI; no stack has been created. |
 | Repository deployment foundation | Implemented | Production Compose, SSM rendering, deployment scripts, and ARM64 CI validation are present. |
 | Resource provisioning | Not started | Requires a separate approved infrastructure implementation plan. |
 
@@ -460,8 +461,8 @@ The following work must be completed before the first staging deployment:
 
 - Add the ECR image push workflow; ARM64 application builds are validated in CI.
 - Add GitHub OIDC deployment roles and SSM Run Command workflow.
-- Add CloudFormation templates for network, EC2, RDS, IAM, ECR, SSM access,
-  CloudWatch, and staging lifecycle.
+- Review and apply the staging CloudFormation template through an approved
+  change set, then verify cost, host bootstrap, RDS, IAM, and deletion behavior.
 - Configure environment-specific Cloudflare Tunnels, application hostnames,
   edge certificates, HTTPS redirects, cache bypass, and security rules.
 - Separate Flyway migration credentials from runtime database credentials.
@@ -479,6 +480,8 @@ The following work must be completed before the first staging deployment:
 The repository-side Compose, host bootstrap, SSM runtime renderer, deployment,
 health verification, and static deployment policy are documented in
 [Production Deployment Foundation](production-deployment-foundation.md).
+The staging AWS template, prerequisites, and approval boundary are documented
+in [Staging CloudFormation Foundation](staging-cloudformation-foundation.md).
 
 ## Provisioning Approval Boundary
 
