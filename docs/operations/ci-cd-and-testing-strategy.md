@@ -14,7 +14,8 @@ Recommended initial direction:
 - Use Docker for application packaging.
 - Use PostgreSQL as the primary database in every meaningful environment.
 - Use Docker Compose for local infrastructure.
-- Use AWS ECS Fargate, RDS PostgreSQL, and S3 or Cloudflare R2 for production.
+- Use EC2 with Docker Compose, RDS PostgreSQL, and Cloudflare R2 for the initial
+  production deployment.
 - Use staging auto-deploy and production manual approval.
 - Use Testcontainers for database integration tests.
 - Defer Kafka, Jenkins, and microservice-oriented deployment until operational needs justify them.
@@ -162,34 +163,38 @@ Production should require manual approval.
 
 ## Deployment Targets
 
-### Recommended Production Path
+### Selected MVP Production Path
 
 Use:
 
-- AWS ECS Fargate
+- One ARM64 EC2 application host with Docker Compose
 - AWS RDS PostgreSQL
-- AWS S3 or Cloudflare R2
-- Cloudflare CDN and WAF
-- AWS Secrets Manager or SSM Parameter Store
+- Cloudflare R2
+- Cloudflare Tunnel, DNS, TLS, and WAF
+- AWS SSM Parameter Store
+- CloudWatch and Sentry Developer
 
 Why:
 
-- No server patching for the application runtime
-- Good fit for Dockerized Spring Boot services
-- Easier rolling deployments than raw VM operations
-- Clear integration with AWS networking, secrets, logs, and autoscaling
+- Lower initial operating cost and complexity than an orchestrated cluster
+- Good fit for the current API, Web, Redis, and Docker packaging
+- Database failure isolation and managed backup support through RDS
+- Short-lived deployment credentials through GitHub OIDC
+- A documented path to replace the application host without moving ownership
+  or media records
 
-### Simpler Early Alternative
+The complete selected topology and its limitations are defined in
+[EC2 And RDS Deployment Architecture](ec2-rds-deployment-architecture.md).
 
-Use:
+### Deferred Scale-Out Path
 
-- EC2
-- Docker Compose
-- RDS PostgreSQL
-- S3 or Cloudflare R2
-- Cloudflare CDN and WAF
+Consider ECS Fargate or multiple EC2 application hosts behind a load balancer
+when:
 
-This is acceptable for an early prototype, but it increases server maintenance responsibility.
+- one application host no longer meets availability requirements;
+- deployments require zero-downtime instance replacement;
+- application load requires horizontal scaling; or
+- maintaining the EC2 host becomes more expensive than managed orchestration.
 
 ## Docker Image Strategy
 
@@ -338,7 +343,9 @@ Do not store production secrets in the repository.
 Recommended setup:
 
 - Use GitHub Actions OIDC to assume an AWS role.
-- Store production secrets in AWS Secrets Manager or SSM Parameter Store.
+- Store production configuration and secrets in the selected SSM Parameter
+  Store hierarchy. Reconsider Secrets Manager only when automatic rotation is
+  required.
 - Store only minimal deployment configuration in GitHub Actions secrets.
 - Keep payment provider secrets, webhook signing secrets, DB passwords, and storage credentials out of Git.
 
@@ -377,8 +384,8 @@ Recommended alerts:
 Application rollback:
 
 - Deploy the previous Docker image by Git SHA.
-- Keep previous task definition or deployment revision available.
-- Prefer rolling rollback through ECS.
+- Keep the previous EC2 deployment manifest and immutable image SHAs available.
+- Use SSM Run Command to restore the previous immutable image SHAs on EC2.
 
 Database rollback:
 

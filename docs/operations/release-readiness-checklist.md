@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #58 on 2026-06-22.
+Current baseline: `main` after PR #59 on 2026-06-23.
 
 Status legend:
 
@@ -137,12 +137,13 @@ Release candidate verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
+| Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
 | Docker images | Needs verification | Build immutable images for API and web. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
-| Production secret injection | Blocked for production | Select a deployment secret manager, inject every required runtime value, restrict access, and define rotation. |
+| Production secret injection | Blocked for production | Implement the selected SSM Parameter Store hierarchy, EC2 IAM access, runtime injection, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Blocked for production | Terminate HTTPS at Cloudflare or the deployment platform. |
-| Cloudflare | Needs verification | Configure DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
+| Cloudflare | Needs verification | Implement the selected Tunnel ingress, DNS, TLS, caching bypass for API responses with presigned URLs, and basic security rules. |
 | Application health checks | Needs verification | Confirm `/actuator/health` and web smoke checks are wired to deployment health probes. |
 | Rollback | Needs verification | Define image rollback and database migration rollback policy. |
 
@@ -212,7 +213,7 @@ See [Cloudflare R2 Storage Setup](r2-storage-setup.md) for local verification.
 For a private demo, the system can be released when all CI checks are green and
 all local verification scripts pass in a clean environment.
 
-The current `main` baseline meets the automated private-demo gate as of PR #58.
+The current `main` baseline meets the automated private-demo gate as of PR #59.
 A demo release should still repeat the manual verification steps above from the
 exact release candidate.
 
