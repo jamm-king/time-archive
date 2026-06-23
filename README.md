@@ -61,6 +61,7 @@ for the release gate.
 - [Security and Operations](docs/architecture/security-and-operations.md)
 - [CI/CD and Testing Strategy](docs/operations/ci-cd-and-testing-strategy.md)
 - [EC2 and RDS Deployment Architecture](docs/operations/ec2-rds-deployment-architecture.md)
+- [Cloudflare Tunnel HTTPS](docs/operations/cloudflare-tunnel-https.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 - [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)
 
@@ -443,7 +444,10 @@ production credentials:
 - Provide the AWS account, domain names, alert destinations, and approved
   maintenance windows required to provision the selected EC2, RDS, SSM, and
   CloudWatch architecture.
-- Configure domain, DNS, TLS, and Cloudflare security settings.
+- Provide distinct staging and production application hostnames, create their
+  Cloudflare Tunnels, and configure Cloudflare-managed edge certificates,
+  HTTPS redirects, cache bypass, and security rules. EC2 does not use ALB,
+  ACM, Certbot, or public application ingress for the selected MVP design.
 - Create the Sentry organization and project for the selected Developer plan.
 - Decide media safety policy: file signature validation, malware scanning,
   transcoding, and thumbnail generation.

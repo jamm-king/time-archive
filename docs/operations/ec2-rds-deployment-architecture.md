@@ -28,6 +28,7 @@ The selected production baseline is:
 | Redis | Selected | EC2 container for sessions and rate-limit counters. |
 | Media storage | Selected | Dedicated private production R2 bucket. |
 | Ingress | Selected | Cloudflare Tunnel; no direct public application ports. |
+| Public HTTPS | Selected | Cloudflare-managed edge certificate and HTTPS redirect; no ALB, ACM, or EC2 TLS termination. |
 | Secrets | Selected | SSM Parameter Store with `SecureString` for sensitive values. |
 | Logs and metrics | Selected | CloudWatch with 14-day application log retention. |
 | Error tracking | Selected | Sentry Developer, pending SDK implementation. |
@@ -214,6 +215,10 @@ time-archive-web -> time-archive-api:8080
 
 Security group rules do not expose ports `3000`, `8080`, `5432`, or `6379` to
 the internet. EC2 administration uses SSM Session Manager instead of SSH.
+Ports `80` and `443` are also closed because Cloudflare terminates public HTTPS
+and `cloudflared` establishes the Tunnel as an outbound connection. The initial
+architecture does not include an ALB, ACM certificate, Nginx, Certbot, or an
+EC2-managed public certificate.
 
 The Tunnel design allows the API to trust a Cloudflare-provided client address
 only after the Web proxy forwards it safely. The current Next.js proxy does not
@@ -229,7 +234,17 @@ forward `CF-Connecting-IP`. Therefore:
 
 ### TLS And Cookies
 
-Cloudflare terminates public TLS and the Tunnel protects origin transport.
+Cloudflare terminates public TLS with a Cloudflare-managed edge certificate and
+redirects HTTP to HTTPS. The Tunnel protects transport from Cloudflare to the
+connector. The same-host private Docker hop from `cloudflared` to
+`http://time-archive-web:3000` remains HTTP for the MVP. It must use
+authenticated TLS if the connector and origin are separated onto different
+hosts or an untrusted network.
+
+RDS TLS and R2 hostname TLS are independent of application ingress and remain
+required. The complete certificate, edge-control, and verification boundary is
+defined in [Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).
+
 Before staging approval, verify:
 
 - Session cookies are `Secure`, `HttpOnly`, and use the intended `SameSite`
@@ -238,6 +253,9 @@ Before staging approval, verify:
 - HSTS, frame protection, content type sniffing protection, and referrer policy
   are present.
 - Forwarded protocol handling does not cause insecure redirects or cookies.
+- EC2 has no inbound application, HTTPS, or SSH rules.
+- Direct origin requests cannot bypass Cloudflare edge controls.
+- API and presigned-URL responses are not stored in shared Cloudflare caches.
 
 These controls are not fully configured or verified in the current application
 and remain part of the operational security phase.
@@ -444,6 +462,8 @@ The following work must be completed before the first staging deployment:
 - Add GitHub OIDC deployment roles and SSM Run Command workflow.
 - Add CloudFormation templates for network, EC2, RDS, IAM, ECR, SSM access,
   CloudWatch, and staging lifecycle.
+- Configure environment-specific Cloudflare Tunnels, application hostnames,
+  edge certificates, HTTPS redirects, cache bypass, and security rules.
 - Separate Flyway migration credentials from runtime database credentials.
 - Configure production session cookies and security headers.
 - Add trusted Cloudflare client-address propagation through the Web proxy.
