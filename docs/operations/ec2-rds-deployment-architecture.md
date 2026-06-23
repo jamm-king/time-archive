@@ -33,6 +33,7 @@ The selected production baseline is:
 | Error tracking | Selected | Sentry Developer, pending SDK implementation. |
 | Payment | Selected | PayPal, pending provider design and implementation. |
 | Infrastructure as code | Selected | AWS CloudFormation for the initial AWS resource baseline. |
+| Repository deployment foundation | Implemented | Production Compose, SSM rendering, deployment scripts, and ARM64 CI validation are present. |
 | Resource provisioning | Not started | Requires a separate approved infrastructure implementation plan. |
 
 ## Runtime Topology
@@ -439,8 +440,7 @@ future malware scanning can increase the total.
 
 The following work must be completed before the first staging deployment:
 
-- Add production-specific Compose and host bootstrap files.
-- Add ECR ARM64 image build and push workflow.
+- Add the ECR image push workflow; ARM64 application builds are validated in CI.
 - Add GitHub OIDC deployment roles and SSM Run Command workflow.
 - Add CloudFormation templates for network, EC2, RDS, IAM, ECR, SSM access,
   CloudWatch, and staging lifecycle.
@@ -455,6 +455,10 @@ The following work must be completed before the first staging deployment:
 - Implement PayPal before enabling real payments.
 - Implement media signature validation and the approved malware-scanning path
   before public media publication.
+
+The repository-side Compose, host bootstrap, SSM runtime renderer, deployment,
+health verification, and static deployment policy are documented in
+[Production Deployment Foundation](production-deployment-foundation.md).
 
 ## Provisioning Approval Boundary
 
