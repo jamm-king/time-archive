@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "DatabaseEngineVersion",
+    "ParameterValue": "REPLACE_WITH_SUPPORTED_POSTGRES_VERSION"
+  },
+  {
+    "ParameterKey": "DockerComposeVersion",
+    "ParameterValue": "REPLACE_WITH_REVIEWED_VERSION"
+  },
+  {
+    "ParameterKey": "DockerComposeSha256",
+    "ParameterValue": "REPLACE_WITH_REVIEWED_LINUX_AARCH64_SHA256"
+  },
+  {
+    "ParameterKey": "GitHubOidcProviderArn",
+    "ParameterValue": "arn:aws:iam::000000000000:oidc-provider/token.actions.githubusercontent.com"
+  },
+  {
+    "ParameterKey": "AlertEmail",
+    "ParameterValue": ""
+  }
+]

@@ -61,6 +61,7 @@ for the release gate.
 - [Security and Operations](docs/architecture/security-and-operations.md)
 - [CI/CD and Testing Strategy](docs/operations/ci-cd-and-testing-strategy.md)
 - [EC2 and RDS Deployment Architecture](docs/operations/ec2-rds-deployment-architecture.md)
+- [Staging CloudFormation Foundation](docs/operations/staging-cloudformation-foundation.md)
 - [Cloudflare Tunnel HTTPS](docs/operations/cloudflare-tunnel-https.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 - [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)

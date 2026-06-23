@@ -124,3 +124,5 @@ outside this repository-only foundation task.
 
 The selected HTTPS boundary and staging verification requirements are defined
 in [Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).
+The AWS staging resource template and change-set approval boundary are defined
+in [Staging CloudFormation Foundation](staging-cloudformation-foundation.md).

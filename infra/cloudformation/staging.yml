@@ -1,0 +1,813 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Cost-conscious Time Archive staging foundation. Creates AWS resources only;
+  Cloudflare, R2, application secrets, image publication, and deployment remain
+  separate approved operations.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: staging
+    AllowedValues:
+      - staging
+
+  VpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+    AllowedPattern: ^(?:\d{1,3}\.){3}\d{1,3}/(?:1[6-9]|2[0-8])$
+
+  ApplicationSubnetCidr:
+    Type: String
+    Default: 10.20.0.0/24
+    AllowedPattern: ^(?:\d{1,3}\.){3}\d{1,3}/(?:1[6-9]|2[0-8])$
+
+  DatabaseSubnetACidr:
+    Type: String
+    Default: 10.20.10.0/24
+    AllowedPattern: ^(?:\d{1,3}\.){3}\d{1,3}/(?:1[6-9]|2[0-8])$
+
+  DatabaseSubnetBCidr:
+    Type: String
+    Default: 10.20.11.0/24
+    AllowedPattern: ^(?:\d{1,3}\.){3}\d{1,3}/(?:1[6-9]|2[0-8])$
+
+  ApplicationInstanceType:
+    Type: String
+    Default: t4g.medium
+    AllowedValues:
+      - t4g.small
+      - t4g.medium
+      - t4g.large
+
+  ApplicationVolumeSize:
+    Type: Number
+    Default: 40
+    MinValue: 30
+    MaxValue: 100
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+
+  DockerComposeVersion:
+    Type: String
+    Description: Reviewed Docker Compose release, including the leading v.
+    AllowedPattern: ^v\d+\.\d+\.\d+$
+
+  DockerComposeSha256:
+    Type: String
+    Description: SHA-256 of the reviewed linux-aarch64 Docker Compose binary.
+    AllowedPattern: ^[0-9a-f]{64}$
+    NoEcho: true
+
+  DatabaseEngineVersion:
+    Type: String
+    Description: PostgreSQL version currently supported by RDS and verified by the application.
+    AllowedPattern: ^\d+(?:\.\d+){0,2}$
+
+  DatabaseInstanceClass:
+    Type: String
+    Default: db.t4g.small
+    AllowedValues:
+      - db.t4g.micro
+      - db.t4g.small
+      - db.t4g.medium
+
+  DatabaseAllocatedStorage:
+    Type: Number
+    Default: 20
+    MinValue: 20
+    MaxValue: 100
+
+  DatabaseMaxAllocatedStorage:
+    Type: Number
+    Default: 100
+    MinValue: 20
+    MaxValue: 500
+
+  DatabaseName:
+    Type: String
+    Default: time_archive
+    AllowedPattern: ^[a-z][a-z0-9_]{0,62}$
+
+  DatabaseMasterUsername:
+    Type: String
+    Default: timearchive_admin
+    AllowedPattern: ^[a-zA-Z][a-zA-Z0-9_]{0,62}$
+
+  DatabaseMasterPasswordParameterName:
+    Type: String
+    Default: /time-archive/staging/database/master-password
+    AllowedPattern: ^/time-archive/staging/[a-zA-Z0-9_.\-/]+$
+    Description: Existing SSM SecureString parameter read by CloudFormation.
+
+  GitHubRepository:
+    Type: String
+    Default: jamm-king/time-archive
+    AllowedPattern: ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$
+
+  GitHubOidcProviderArn:
+    Type: String
+    Description: Existing account-level GitHub Actions OIDC provider ARN.
+    AllowedPattern: ^arn:(aws|aws-us-gov|aws-cn):iam::[0-9]{12}:oidc-provider/token\.actions\.githubusercontent\.com$
+
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Optional staging alarm subscription address.
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+
+  ApplicationSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref ApplicationSubnetCidr
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-application
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  DatabaseSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref DatabaseSubnetACidr
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-database-a
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  DatabaseSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref DatabaseSubnetBCidr
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-database-b
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  ApplicationRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-application
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  ApplicationDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref ApplicationRouteTable
+
+  ApplicationRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ApplicationRouteTable
+      SubnetId: !Ref ApplicationSubnet
+
+  ApplicationSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Time Archive staging application host without inbound access
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Required outbound access for Tunnel, ECR, SSM, CloudWatch, and R2
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-application
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Time Archive staging PostgreSQL from application security group only
+      VpcId: !Ref Vpc
+      SecurityGroupEgress: []
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}-database
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  DatabaseIngressFromApplication:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: PostgreSQL from the staging application host only
+      FromPort: 5432
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref ApplicationSecurityGroup
+      ToPort: 5432
+
+  ApiRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      EmptyOnDelete: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: >-
+          {"rules":[{"rulePriority":1,"description":"Keep the 30 newest staging images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":30},"action":{"type":"expire"}}]}
+      RepositoryName: !Sub time-archive-${EnvironmentName}-api
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  WebRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      EmptyOnDelete: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: >-
+          {"rules":[{"rulePriority":1,"description":"Keep the 30 newest staging images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":30},"action":{"type":"expire"}}]}
+      RepositoryName: !Sub time-archive-${EnvironmentName}-web
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /time-archive/${EnvironmentName}/api
+      RetentionInDays: 14
+
+  WebLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /time-archive/${EnvironmentName}/web
+      RetentionInDays: 14
+
+  RedisLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /time-archive/${EnvironmentName}/redis
+      RetentionInDays: 14
+
+  CloudflaredLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /time-archive/${EnvironmentName}/cloudflared
+      RetentionInDays: 14
+
+  MigrationLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /time-archive/${EnvironmentName}/migration
+      RetentionInDays: 14
+
+  DatabaseLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/time-archive-${EnvironmentName}-postgres/postgresql
+      RetentionInDays: 14
+
+  ApplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Description: Time Archive staging EC2 runtime role
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: staging-ecr-pull
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: EcrAuthorization
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              - Sid: PullStagingImages
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource:
+                  - !GetAtt ApiRepository.Arn
+                  - !GetAtt WebRepository.Arn
+        - PolicyName: staging-parameter-read
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ReadStagingParameters
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/time-archive/${EnvironmentName}/*
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  ApplicationInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ApplicationRole
+
+  ApplicationInstance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT15M
+    DependsOn:
+      - ApplicationDefaultRoute
+      - ApplicationLogGroup
+      - WebLogGroup
+      - RedisLogGroup
+      - CloudflaredLogGroup
+      - MigrationLogGroup
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: !Ref ApplicationVolumeSize
+            VolumeType: gp3
+      CreditSpecification:
+        CPUCredits: standard
+      IamInstanceProfile: !Ref ApplicationInstanceProfile
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref ApplicationInstanceType
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpPutResponseHopLimit: 2
+        HttpTokens: required
+        InstanceMetadataTags: enabled
+      Monitoring: false
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref ApplicationSecurityGroup
+          SubnetId: !Ref ApplicationSubnet
+      PropagateTagsToVolumeOnCreation: true
+      SourceDestCheck: true
+      Tags:
+        - Key: Name
+          Value: !Sub time-archive-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+
+          signal_failure() {
+            /opt/aws/bin/cfn-signal \
+              --exit-code 1 \
+              --stack "${AWS::StackName}" \
+              --resource ApplicationInstance \
+              --region "${AWS::Region}" || true
+          }
+          trap signal_failure ERR
+
+          dnf install -y amazon-cloudwatch-agent aws-cfn-bootstrap curl docker python3
+          systemctl enable --now docker
+          systemctl enable --now amazon-ssm-agent
+
+          install -d -m 755 /usr/local/lib/docker/cli-plugins
+          curl --fail --silent --show-error --location \
+            "https://github.com/docker/compose/releases/download/${DockerComposeVersion}/docker-compose-linux-aarch64" \
+            --output /usr/local/lib/docker/cli-plugins/docker-compose
+          echo "${DockerComposeSha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check --strict
+          chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose
+
+          install -d -m 0750 /opt/time-archive/deploy
+          install -d -m 0700 /var/lib/time-archive/deployments
+          install -d -m 0700 /run/time-archive
+          cat > /etc/tmpfiles.d/time-archive.conf <<'EOF'
+          d /run/time-archive 0700 root root -
+          EOF
+
+          ln -sf \
+            /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+            /usr/local/bin/amazon-cloudwatch-agent-ctl
+
+          cat > /opt/aws/amazon-cloudwatch-agent/etc/time-archive.json <<'EOF'
+          {
+            "agent": {"metrics_collection_interval": 60},
+            "metrics": {
+              "namespace": "TimeArchive/Staging",
+              "append_dimensions": {"InstanceId": "${!aws:InstanceId}"},
+              "metrics_collected": {
+                "disk": {"measurement": ["used_percent"], "resources": ["/"]},
+                "mem": {"measurement": ["mem_used_percent"]}
+              }
+            }
+          }
+          EOF
+          amazon-cloudwatch-agent-ctl \
+            -a fetch-config \
+            -m ec2 \
+            -s \
+            -c file:/opt/aws/amazon-cloudwatch-agent/etc/time-archive.json
+
+          trap - ERR
+          /opt/aws/bin/cfn-signal \
+            --exit-code 0 \
+            --stack "${AWS::StackName}" \
+            --resource ApplicationInstance \
+            --region "${AWS::Region}"
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Time Archive staging private database subnets
+      SubnetIds:
+        - !Ref DatabaseSubnetA
+        - !Ref DatabaseSubnetB
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    DependsOn:
+      - ApplicationInstance
+      - DatabaseLogGroup
+    Properties:
+      AllocatedStorage: !Ref DatabaseAllocatedStorage
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 1
+      CopyTagsToSnapshot: true
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      DBInstanceIdentifier: !Sub time-archive-${EnvironmentName}-postgres
+      DBName: !Ref DatabaseName
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DeleteAutomatedBackups: true
+      DeletionProtection: false
+      EnableCloudwatchLogsExports:
+        - postgresql
+      EnableIAMDatabaseAuthentication: false
+      Engine: postgres
+      EngineVersion: !Ref DatabaseEngineVersion
+      MasterUsername: !Ref DatabaseMasterUsername
+      MasterUserPassword: !Sub "{{resolve:ssm-secure:${DatabaseMasterPasswordParameterName}}}"
+      MaxAllocatedStorage: !Ref DatabaseMaxAllocatedStorage
+      MultiAZ: false
+      NetworkType: IPV4
+      Port: 5432
+      PreferredBackupWindow: 18:00-18:30
+      PreferredMaintenanceWindow: sun:19:00-sun:19:30
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp3
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Time Archive staging alerts
+      TopicName: !Sub time-archive-${EnvironmentName}-alerts
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties:
+      Endpoint: !Ref AlertEmail
+      Protocol: email
+      TopicArn: !Ref AlertTopic
+
+  ApplicationStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlertTopic
+      AlarmDescription: Staging EC2 instance or system status check failed
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ApplicationInstance
+      EvaluationPeriods: 2
+      MetricName: StatusCheckFailed
+      Namespace: AWS/EC2
+      Period: 60
+      Statistic: Maximum
+      Threshold: 1
+      TreatMissingData: missing
+
+  ApplicationCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlertTopic
+      AlarmDescription: Staging EC2 CPU is above 80 percent
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ApplicationInstance
+      EvaluationPeriods: 3
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: 300
+      Statistic: Average
+      Threshold: 80
+      TreatMissingData: missing
+
+  ApplicationMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlertTopic
+      AlarmDescription: Staging EC2 memory is above 85 percent
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ApplicationInstance
+      EvaluationPeriods: 3
+      MetricName: mem_used_percent
+      Namespace: TimeArchive/Staging
+      Period: 300
+      Statistic: Average
+      Threshold: 85
+      TreatMissingData: missing
+
+  DatabaseCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlertTopic
+      AlarmDescription: Staging RDS CPU is above 80 percent
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref Database
+      EvaluationPeriods: 3
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Period: 300
+      Statistic: Average
+      Threshold: 80
+      TreatMissingData: missing
+
+  DatabaseFreeStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlertTopic
+      AlarmDescription: Staging RDS free storage is below 2 GiB
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref Database
+      EvaluationPeriods: 2
+      MetricName: FreeStorageSpace
+      Namespace: AWS/RDS
+      Period: 300
+      Statistic: Average
+      Threshold: 2147483648
+      TreatMissingData: missing
+
+  GitHubImagePublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepository}:ref:refs/heads/main
+      Description: GitHub main branch image publication to staging ECR
+      MaxSessionDuration: 3600
+      Policies:
+        - PolicyName: publish-staging-images
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: EcrAuthorization
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              - Sid: PushStagingImages
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource:
+                  - !GetAtt ApiRepository.Arn
+                  - !GetAtt WebRepository.Arn
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+  GitHubStagingDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepository}:environment:staging
+      Description: GitHub staging environment deployment through SSM Run Command
+      MaxSessionDuration: 3600
+      Policies:
+        - PolicyName: deploy-staging-through-ssm
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: SendCommandToStagingInstance
+                Effect: Allow
+                Action: ssm:SendCommand
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunShellScript
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${ApplicationInstance}
+              - Sid: ReadCommandStatus
+                Effect: Allow
+                Action:
+                  - ssm:GetCommandInvocation
+                  - ssm:ListCommandInvocations
+                  - ssm:ListCommands
+                Resource: "*"
+              - Sid: DescribeStagingInstance
+                Effect: Allow
+                Action: ec2:DescribeInstances
+                Resource: "*"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: time-archive
+
+Outputs:
+  VpcId:
+    Value: !Ref Vpc
+
+  ApplicationInstanceId:
+    Value: !Ref ApplicationInstance
+
+  ApplicationPublicIp:
+    Description: Outbound connectivity address only; no inbound rules are allowed.
+    Value: !GetAtt ApplicationInstance.PublicIp
+
+  ApplicationSecurityGroupId:
+    Value: !Ref ApplicationSecurityGroup
+
+  DatabaseEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+
+  DatabasePort:
+    Value: !GetAtt Database.Endpoint.Port
+
+  ApiRepositoryUri:
+    Value: !GetAtt ApiRepository.RepositoryUri
+
+  WebRepositoryUri:
+    Value: !GetAtt WebRepository.RepositoryUri
+
+  ApplicationRoleArn:
+    Value: !GetAtt ApplicationRole.Arn
+
+  GitHubImagePublisherRoleArn:
+    Value: !GetAtt GitHubImagePublisherRole.Arn
+
+  GitHubStagingDeployRoleArn:
+    Value: !GetAtt GitHubStagingDeployRole.Arn
+
+  AlertTopicArn:
+    Value: !Ref AlertTopic
+
+  RuntimeParameterPath:
+    Value: !Sub /time-archive/${EnvironmentName}/
