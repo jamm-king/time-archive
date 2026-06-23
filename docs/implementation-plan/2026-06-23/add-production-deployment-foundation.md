@@ -105,6 +105,9 @@ Out of scope:
   validation, and SSM fixture rendering pass locally.
 - GitHub Actions now performs the same deployment policy validation and builds
   API and Web images for `linux/arm64`.
+- PR #61 CI exposed that the missing-secret negative test inherited the
+  workflow-level `COMPOSE_ENV_FILES=.env.local.example`. The fix is complete:
+  Compose interpolation is now isolated from ambient env files.
 
 ## Completion Summary
 
@@ -159,3 +162,24 @@ provisioning plan.
    deployment after the infrastructure roles exist.
 3. Provision staging first and verify migration, health checks, rollback, log
    delivery, and environment isolation before production.
+
+## CI Follow-Up: Ambient Compose Environment
+
+GitHub Actions run `28003539296` failed in the Production deployment job before
+the ARM64 builds. The workflow-level `COMPOSE_ENV_FILES=.env.local.example`
+supplied `TIME_ARCHIVE_DATABASE_PASSWORD` after the verification subshell
+unset the shell variable. Compose therefore succeeded, and the negative test
+correctly reported that its expected failure did not occur.
+
+The fix isolates the negative test by unsetting `COMPOSE_ENV_FILES` and passing
+an explicit empty temporary env file to Compose. This preserves the global env
+file used by existing local-flow jobs while making the production policy test
+independent of the caller's Compose configuration.
+
+Verification after the fix:
+
+- Ran `./scripts/verify-production-deployment.sh` with
+  `COMPOSE_ENV_FILES=.env.local.example`, matching the failing CI environment.
+- Missing-secret fail-fast validation passed.
+- The complete production deployment verification passed.
+- `git diff --check` passed.

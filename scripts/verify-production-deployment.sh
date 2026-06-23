@@ -49,8 +49,9 @@ source "$EXAMPLE_ENV"
 CONFIG_JSON="$(mktemp)"
 RENDERED_ENV="$(mktemp)"
 RENDERED_CONFIG_JSON="$(mktemp)"
-trap 'rm -f "$CONFIG_JSON" "$RENDERED_ENV" "$RENDERED_CONFIG_JSON"' EXIT
-chmod 600 "$CONFIG_JSON" "$RENDERED_ENV" "$RENDERED_CONFIG_JSON"
+EMPTY_ENV="$(mktemp)"
+trap 'rm -f "$CONFIG_JSON" "$RENDERED_ENV" "$RENDERED_CONFIG_JSON" "$EMPTY_ENV"' EXIT
+chmod 600 "$CONFIG_JSON" "$RENDERED_ENV" "$RENDERED_CONFIG_JSON" "$EMPTY_ENV"
 
 docker compose -f "$COMPOSE_FILE" --profile migration config --format json > "$CONFIG_JSON"
 
@@ -132,8 +133,14 @@ print("production compose policy validation passed")
 PY
 
 if (
+  unset COMPOSE_ENV_FILES
   unset TIME_ARCHIVE_DATABASE_PASSWORD
-  docker compose -f "$COMPOSE_FILE" --profile migration config --quiet >/dev/null 2>&1
+  docker compose \
+    --env-file "$EMPTY_ENV" \
+    -f "$COMPOSE_FILE" \
+    --profile migration \
+    config \
+    --quiet >/dev/null 2>&1
 ); then
   fail "Compose accepted a missing required database password"
 fi
