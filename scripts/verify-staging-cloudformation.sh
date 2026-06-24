@@ -230,6 +230,24 @@ def validate(template):
     ):
         errors.append("GitHub image role trust must be limited to the main branch")
 
+    publisher_policies = (
+        resources.get("GitHubImagePublisherRole", {})
+        .get("Properties", {})
+        .get("Policies", [])
+    )
+    publisher_actions = {
+        action
+        for policy in publisher_policies
+        for statement in policy.get("PolicyDocument", {}).get("Statement", [])
+        for action in (
+            statement.get("Action", [])
+            if isinstance(statement.get("Action", []), list)
+            else [statement.get("Action")]
+        )
+    }
+    if "ecr:DescribeImages" not in publisher_actions:
+        errors.append("GitHub image role must verify published ECR image digests")
+
     deploy_trust = (
         resources.get("GitHubStagingDeployRole", {})
         .get("Properties", {})

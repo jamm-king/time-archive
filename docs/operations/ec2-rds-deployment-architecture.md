@@ -459,8 +459,9 @@ future malware scanning can increase the total.
 
 The following work must be completed before the first staging deployment:
 
-- Add the ECR image push workflow; ARM64 application builds are validated in CI.
-- Add GitHub OIDC deployment roles and SSM Run Command workflow.
+- Provision the account GitHub OIDC provider, apply the staging image-publisher
+  role, configure repository variables, and verify the ECR publication workflow.
+- Apply the staging deployment role and add the SSM Run Command workflow.
 - Review and apply the staging CloudFormation template through an approved
   change set, then verify cost, host bootstrap, RDS, IAM, and deletion behavior.
 - Configure environment-specific Cloudflare Tunnels, application hostnames,
@@ -482,6 +483,8 @@ health verification, and static deployment policy are documented in
 [Production Deployment Foundation](production-deployment-foundation.md).
 The staging AWS template, prerequisites, and approval boundary are documented
 in [Staging CloudFormation Foundation](staging-cloudformation-foundation.md).
+Immutable ARM64 ECR publication and partial-publication handling are documented
+in [Staging Image Publication](staging-image-publication.md).
 
 ## Provisioning Approval Boundary
 
