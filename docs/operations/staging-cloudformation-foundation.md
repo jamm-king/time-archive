@@ -92,8 +92,9 @@ The EC2 role can:
 - Pull only the staging API and Web ECR repositories.
 - Read only `/time-archive/staging/*` parameters.
 
-The GitHub image-publisher role trusts only the repository `main` branch and
-can push only the two staging ECR repositories. The GitHub deployment role
+The GitHub image-publisher role trusts only the repository `main` branch, can
+push only the two staging ECR repositories, and can read their image digests to
+verify completed publication. The GitHub deployment role
 trusts only the `staging` GitHub environment and can send the approved AWS shell
 document only to the staging EC2 instance.
 
@@ -153,7 +154,8 @@ and the staging host.
 ## Known Limitations
 
 - No production stack exists.
-- No deployment or image-push workflow exists yet.
+- The image-push workflow exists but has not been run against AWS; no deployment
+  workflow exists yet.
 - The template does not create SecureString values, runtime database users,
   Cloudflare resources, or R2 resources.
 - Staging uses one EC2 instance and Single-AZ RDS.

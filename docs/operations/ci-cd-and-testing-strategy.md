@@ -133,6 +133,7 @@ Current required checks:
 - Local auth flow verification through Docker Compose
 - Local web purchase and upload verification through Docker Compose
 - Local web smoke verification
+- Staging image-publication workflow policy validation
 
 Release candidates should also be reviewed against the
 [Release Readiness Checklist](release-readiness-checklist.md) before any
@@ -147,8 +148,8 @@ Pull Request
   -> CI checks
 
 Merge to main
-  -> Build Docker image
-  -> Push Docker image
+  -> Manually publish immutable ARM64 API and Web images
+  -> Verify ECR digests and scan results
   -> Deploy staging
   -> Run smoke tests
 
@@ -158,6 +159,10 @@ Manual approval
 ```
 
 GitHub Actions environments should be used for `staging` and `production`.
+
+Staging image publication is initially manual and restricted to `main`. It uses
+repository variables plus GitHub OIDC, not long-lived AWS secrets. See
+[Staging Image Publication](staging-image-publication.md).
 
 Production should require manual approval.
 
