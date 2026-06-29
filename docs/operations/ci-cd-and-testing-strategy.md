@@ -164,6 +164,13 @@ Staging image publication is initially manual and restricted to `main`. It uses
 repository variables plus GitHub OIDC, not long-lived AWS secrets. See
 [Staging Image Publication](staging-image-publication.md).
 
+Staging provisioning inputs are validated from a synthetic fixture in CI. The
+same preflight can validate an ignored operator parameter file and, when
+explicitly requested, use read-only AWS APIs to confirm the target account,
+GitHub OIDC provider, SSM parameter metadata, RDS offering, and CloudFormation
+template. CI never creates or executes a CloudFormation change set. See
+[Staging Provisioning Runbook](staging-provisioning-runbook.md).
+
 Production should require manual approval.
 
 ## Deployment Targets

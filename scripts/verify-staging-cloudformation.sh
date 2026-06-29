@@ -170,6 +170,17 @@ def validate(template):
         errors.append("host bootstrap must verify the Docker Compose binary checksum")
     if not sub_contains(user_data, "/opt/aws/bin/cfn-signal"):
         errors.append("host bootstrap must signal CloudFormation completion")
+    if not sub_contains(user_data, "--reason \"$reason\""):
+        errors.append("host bootstrap failure signal must include the failed command reason")
+    if not sub_contains(user_data, "/var/log/time-archive-bootstrap.log"):
+        errors.append("host bootstrap must persist and mirror diagnostic output")
+    if not sub_contains(
+        user_data,
+        "dnf install -y amazon-cloudwatch-agent aws-cfn-bootstrap docker python3",
+    ):
+        errors.append("host bootstrap must install the reviewed Amazon Linux packages")
+    if sub_contains(user_data, "aws-cfn-bootstrap curl docker"):
+        errors.append("host bootstrap must use the preinstalled curl-minimal provider")
 
     database = resources.get("Database", {}).get("Properties", {})
     database_dependencies = resources.get("Database", {}).get("DependsOn", [])
@@ -187,6 +198,18 @@ def validate(template):
     master_password = database.get("MasterUserPassword")
     if not sub_contains(master_password, "{{resolve:ssm-secure:${DatabaseMasterPasswordParameterName}}}"):
         errors.append("database master password must use the approved SSM SecureString reference")
+
+    master_password_parameter = template.get("Parameters", {}).get(
+        "DatabaseMasterPasswordParameterName",
+        {},
+    )
+    expected_master_password_path = "/time-archive/bootstrap/staging/database/master-password"
+    if master_password_parameter.get("Default") != expected_master_password_path:
+        errors.append("database master password must use the infrastructure-only bootstrap path")
+    if not str(master_password_parameter.get("AllowedPattern", "")).startswith(
+        "^/time-archive/bootstrap/staging/"
+    ):
+        errors.append("database master password parameter must reject application runtime paths")
 
     subnet_ids = (
         resources.get("DatabaseSubnetGroup", {})
@@ -307,6 +330,13 @@ mutated = copy.deepcopy(template)
 mutated["Resources"]["Database"]["Properties"]["PubliclyAccessible"] = True
 if not validate(mutated):
     raise SystemExit("policy self-test failed to detect public RDS")
+
+mutated = copy.deepcopy(template)
+mutated["Parameters"]["DatabaseMasterPasswordParameterName"]["Default"] = (
+    "/time-archive/staging/database/master-password"
+)
+if not validate(mutated):
+    raise SystemExit("policy self-test failed to detect a runtime-readable database master password")
 
 print("staging CloudFormation architecture policy validation passed")
 PY

@@ -31,6 +31,9 @@ jobs:
       - name: Verify staging CloudFormation
         run: ./scripts/verify-staging-cloudformation.sh
 
+      - name: Verify staging provisioning preflight
+        run: ./scripts/verify-staging-provisioning-preflight.sh
+
       - name: Verify staging image publication workflow
         run: ./scripts/verify-staging-image-publish-workflow.sh
 

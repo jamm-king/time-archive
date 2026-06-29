@@ -18,6 +18,8 @@ behavior are verified.
 | `infra/cloudformation/staging.parameters.example.json` | Non-secret placeholder inputs. |
 | `infra/cloudformation/requirements.txt` | Pinned CloudFormation validator. |
 | `scripts/verify-staging-cloudformation.sh` | Schema, architecture-policy, and policy self-test entry point. |
+| `scripts/verify-staging-provisioning-inputs.sh` | Operator parameter and optional read-only AWS preflight. |
+| `docs/operations/staging-provisioning-runbook.md` | Change-set preparation, review, approval, and cleanup procedure. |
 
 ## Resource Topology
 
@@ -56,13 +58,14 @@ migrations and drivers.
 The stack reads the master password from this prerequisite SSM SecureString:
 
 ```text
-/time-archive/staging/database/master-password
+/time-archive/bootstrap/staging/database/master-password
 ```
 
 CloudFormation uses the master credential only to create or update RDS. It is
 not written to the example parameter file and must not be injected into the API
-container. Runtime and Flyway database identities remain a separate bootstrap
-task.
+container. The bootstrap path is intentionally outside the EC2 application's
+`/time-archive/staging/*` runtime read boundary. Runtime and Flyway database
+identities remain a separate bootstrap task.
 
 Deleting the stack creates a final RDS snapshot. The snapshot continues to
 incur storage cost until it is reviewed and explicitly deleted.
@@ -78,6 +81,10 @@ EC2 user data:
 - Creates the runtime directories expected by the deployment scripts.
 - Starts basic host memory and disk metrics.
 - Signals CloudFormation only after bootstrap completes successfully.
+- Mirrors bootstrap output to the EC2 console and
+  `/var/log/time-archive-bootstrap.log`.
+- Includes the failed line, command, and exit code in a failed CloudFormation
+  resource signal.
 
 The user data does not contain application secrets, pull application images, or
 start Time Archive. Image publication and SSM Run Command deployment remain
@@ -139,6 +146,57 @@ Before requesting an AWS change set, the project owner must provide or approve:
 Do not put real values into the committed example file. Create an ignored or
 external parameter file for an approved change set.
 
+The repository ignores
+`infra/cloudformation/staging.parameters.local.json`. Validate that file both
+locally and against read-only AWS APIs before creating a change set. See
+[Staging Provisioning Runbook](staging-provisioning-runbook.md) for the exact
+input, preflight, review, and approval process.
+
+As of 2026-06-24, account `231851555445` has the required GitHub OIDC provider
+and staging database master password SecureString. The ignored operator file
+selects PostgreSQL `18.4` and Docker Compose `v2.40.3` with the reviewed Linux
+ARM64 checksum. Full read-only preflight passed in `ap-northeast-2`.
+
+The 34-resource change set `staging-foundation-0dbb58d7-667a49a5` was executed
+on 2026-06-24 after review. EC2 returned a failed bootstrap signal, so
+CloudFormation rolled the stack back to `ROLLBACK_COMPLETE`. RDS was never
+created, and post-rollback checks confirmed no ECR repositories, SNS topic,
+stack IAM roles, or running EC2 instance remain. The resource-empty rollback
+stack record was then deleted.
+
+The failed instance was terminated before its detailed cloud-init log could be
+retrieved. The template now mirrors bootstrap output to the EC2 console and
+adds failed line, command, and exit code details to `cfn-signal`.
+
+Diagnostic review-only change set `staging-foundation-d91a71c5-667a49a5` is
+now `CREATE_COMPLETE / AVAILABLE` with the same 34-resource topology. Review
+confirmed the diagnostic output, alert subscription, and credential boundary.
+It has not been executed; another execution requires separate approval.
+
+That diagnostic execution identified the exact failure: Amazon Linux 2023
+already includes `curl-minimal`, and requesting the separate `curl` package in
+the same DNF transaction caused a package-provider conflict. The template now
+uses the preinstalled `curl` command and installs only CloudWatch Agent,
+CloudFormation helpers, Docker, and Python. Policy validation rejects
+reintroducing the conflicting package request. Diagnostic rollback completed
+without residual stack resources, and the empty stack record was deleted.
+
+Corrected review-only change set `staging-foundation-ad3b63dc-667a49a5` is
+`CREATE_COMPLETE / AVAILABLE` with the same 34-resource topology. Actual
+change-set user-data review confirmed that the conflicting package request is
+absent while bootstrap diagnostics remain enabled.
+
+The corrected change set was executed on 2026-06-24 and the stack reached
+`CREATE_COMPLETE`. EC2 bootstrap, SSM registration, Docker, Compose checksum,
+CloudWatch Agent, private RDS connectivity, RDS isolation, ECR policy, IAM/OIDC
+trust, log retention, and alarms were verified against actual resources.
+
+The SNS email subscription remains pending owner confirmation. Actual resource
+inspection also found AWS's default outbound-all rule on the database security
+group despite the template's empty egress list. Database ingress remains
+limited to the application security group on port 5432, but a targeted egress
+hardening update is recommended before application deployment.
+
 ## Change Set And Approval Boundary
 
 The first infrastructure operation must create a CloudFormation change set,
@@ -150,6 +208,10 @@ Executing the change set creates billable external state and requires explicit
 project-owner approval. The same approval boundary applies to stack deletion
 because deletion takes a final RDS snapshot and removes ECR images, log groups,
 and the staging host.
+
+The repository preflight does not create a change set. Change-set creation and
+execution are separate operator commands so review state cannot become
+billable infrastructure without a second explicit action.
 
 ## Known Limitations
 

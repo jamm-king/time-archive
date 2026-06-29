@@ -34,9 +34,9 @@ The selected production baseline is:
 | Error tracking | Selected | Sentry Developer, pending SDK implementation. |
 | Payment | Selected | PayPal, pending provider design and implementation. |
 | Infrastructure as code | Selected | AWS CloudFormation for the initial AWS resource baseline. |
-| Staging infrastructure template | Implemented | Schema and architecture-policy validation run in CI; no stack has been created. |
+| Staging infrastructure template | Verified | The corrected stack reached `CREATE_COMPLETE`; static policy and actual EC2, RDS, ECR, IAM/OIDC, log, alarm, and network checks passed. |
 | Repository deployment foundation | Implemented | Production Compose, SSM rendering, deployment scripts, and ARM64 CI validation are present. |
-| Resource provisioning | Not started | Requires a separate approved infrastructure implementation plan. |
+| Resource provisioning | Staging foundation only | Staging AWS foundation exists; runtime parameters, images, application deployment, Cloudflare/R2 resources, and all production resources remain pending. |
 
 ## Runtime Topology
 
@@ -459,8 +459,9 @@ future malware scanning can increase the total.
 
 The following work must be completed before the first staging deployment:
 
-- Provision the account GitHub OIDC provider, apply the staging image-publisher
-  role, configure repository variables, and verify the ECR publication workflow.
+- Apply the staging image-publisher role against the existing account GitHub
+  OIDC provider, configure repository variables, and verify the ECR publication
+  workflow.
 - Apply the staging deployment role and add the SSM Run Command workflow.
 - Review and apply the staging CloudFormation template through an approved
   change set, then verify cost, host bootstrap, RDS, IAM, and deletion behavior.
