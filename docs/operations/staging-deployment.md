@@ -128,3 +128,30 @@ Verified runtime state:
 
 The workflow can now be rerun with `public_base_url` set to the staging HTTPS
 hostname when an automated public smoke check is desired.
+
+## Public Smoke Verification
+
+After the Cloudflare Published Application route is configured, the public
+hostname can be verified without redeploying.
+
+From a local shell:
+
+```bash
+./scripts/verify-staging-public-smoke.sh \
+  --base-url https://staging.time-archive.com
+```
+
+From GitHub Actions, run:
+
+```text
+Smoke staging public
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and checks only non-mutating public endpoints:
+
+- `GET /`
+- `GET /api/timeline?from=0&to=1`
+
+The workflow input `public_base_url` is optional. If omitted, the workflow uses
+the repository variable `STAGING_PUBLIC_BASE_URL`.
