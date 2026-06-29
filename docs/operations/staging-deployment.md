@@ -83,6 +83,14 @@ For the first deployment, omit `public_base_url` unless the Cloudflare public
 hostname is already routed to the Tunnel. After the public hostname works, rerun
 or verify with the selected HTTPS staging hostname.
 
+The staging Tunnel should be exposed as a Cloudflare Published Application, not
+as a Private Hostname, Private CIDR, or Workers VPC route. The public hostname
+routes browser HTTPS traffic to the private Docker Compose service:
+
+```text
+https://staging.time-archive.com -> http://web:3000
+```
+
 ## Failure And Rollback
 
 `deploy.sh` stops on image pull, migration, service startup, or health-check
@@ -97,7 +105,26 @@ Automated rollback is not implemented. If rollback is required:
 
 ## Current Status
 
-The workflow and static validation are implemented. The first staging
-deployment has not yet been run by this repository change. The staging
-CloudFormation stack must be updated before the first run so the deploy role
-has the reviewed ECR image-verification permission.
+The first staging deployment was completed and verified on 2026-06-29.
+
+Verified deployment image:
+
+```text
+813c73b1f2def9f64c8e9bde0115a59db4bd210e
+```
+
+Verified runtime state:
+
+- `api`: running and healthy.
+- `web`: running and healthy.
+- `redis`: running and healthy.
+- `cloudflared`: running and connected to Cloudflare.
+- API health endpoint returned `UP`.
+- The Web root responded from inside the deployment network.
+- `cloudflared` registered tunnel connections and passed DNS, UDP, TCP, and
+  Cloudflare API connectivity prechecks.
+- The Cloudflare Published Application route was configured and browser access
+  through the staging HTTPS hostname succeeded.
+
+The workflow can now be rerun with `public_base_url` set to the staging HTTPS
+hostname when an automated public smoke check is desired.

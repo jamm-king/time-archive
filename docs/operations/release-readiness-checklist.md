@@ -152,10 +152,10 @@ Release candidate verification:
 | Staging secret injection | Needs verification | The staging SSM runtime contract and metadata validator are implemented; provision real parameters and verify metadata before deployment. |
 | Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision production-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
-| HTTPS | Needs verification | Cloudflare-managed edge TLS and Tunnel ingress are selected; provision the hostname and certificate, redirect HTTP, then verify secure cookies and forwarded protocol behavior in staging. |
-| Cloudflare | Needs verification | Configure isolated Tunnels, DNS, edge certificates, HTTPS redirect, API and presigned-response cache bypass, WAF, rate limits, and public health checks. |
-| Staging deployment workflow | Needs verification | Manual SSM Run Command workflow is implemented; update the staging CloudFormation stack for the deploy-role ECR verification permission, then run it from `main` with published image SHA and digest-pinned Redis/cloudflared images. |
-| Application health checks | Needs verification | Compose and deployment scripts check API, Web, Redis, and optional public endpoints; verify them on staging. |
+| HTTPS | Ready | Cloudflare-managed edge TLS and Tunnel ingress were verified in staging through browser access to the published HTTPS hostname. Production must still verify secure cookies, forwarded protocol behavior, and redirect policy. |
+| Cloudflare | Needs verification | Staging Published Application routing to `web:3000` was verified through Cloudflare Tunnel. Production still needs edge cache bypass policy, WAF, rate limits, and public health checks. |
+| Staging deployment workflow | Ready | Manual SSM Run Command workflow deployed `813c73b1f2def9f64c8e9bde0115a59db4bd210e` from `main` with digest-pinned Redis/cloudflared images, after the deploy-role ECR verification permission was applied. |
+| Application health checks | Ready | Staging API, Web, and Redis containers were healthy; API returned `UP`, Web responded internally, and `cloudflared` passed connectivity prechecks. |
 | Rollback | Needs verification | Previous image references are recorded; verify image rollback and the forward-fix or point-in-time database recovery policy in staging. |
 
 ## Observability And Operations
