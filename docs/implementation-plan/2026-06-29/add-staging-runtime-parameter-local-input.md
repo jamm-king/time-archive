@@ -87,6 +87,16 @@ Out of scope:
 - Allowed the local input reader to accept UTF-8 files with a BOM because
   Windows PowerShell can write that encoding when the owner edits the ignored
   JSON file locally.
+- After the first real put attempt, confirmed that AWS SSM does not accept an
+  empty `String` value. Updated the scripts to omit the optional empty
+  `rate-limit/client-ip-header` parameter and allow metadata verification when
+  that optional parameter is absent.
+- Fixed Git Bash and Windows AWS CLI path handling for `put-parameter`
+  `--cli-input-json` files and SSM name-prefix metadata verification.
+- Ran the approved staging SSM parameter write. Thirteen non-empty runtime
+  parameters were created or overwritten; the optional empty
+  `rate-limit/client-ip-header` parameter was intentionally omitted.
+- Verified live SSM parameter names and types without decrypting values.
 
 ## Completion Summary
 
@@ -112,6 +122,15 @@ without printing them.
 - `scripts/put-staging-runtime-parameters.sh --validate-only` with a temporary
   fake-value local input file
   - Passed.
+- `scripts/put-staging-runtime-parameters.sh --dry-run` against AWS account
+  `231851555445`
+  - Passed.
+- `scripts/put-staging-runtime-parameters.sh` against AWS account
+  `231851555445`
+  - Passed after omitting the optional empty `rate-limit/client-ip-header`.
+- `scripts/verify-staging-runtime-parameters.sh --check-aws` against AWS
+  account `231851555445`
+  - Passed.
 - `git check-ignore -v deploy/staging/runtime-parameters.local.json`
   - Passed.
 - `C:\Program Files\Git\bin\bash.exe -lc "./scripts/verify-staging-runtime-parameters.sh"`
@@ -129,8 +148,8 @@ real local input path is ignored by Git.
 
 ## Known Limitations
 
-- Real staging parameter values have not been entered or written to AWS.
-- The AWS write path has not been executed in this task.
+- Real staging parameter values were written to SSM, but value-level application
+  verification has not happened yet.
 - The staging database application/migration user still needs to be created
   before deployment.
 

@@ -204,7 +204,7 @@ account_id="$("${AWS_CLI[@]}" sts get-caller-identity --query Account --output t
 [[ "$account_id" == "$EXPECTED_ACCOUNT_ID" ]] ||
   fail "Authenticated AWS account $account_id does not match expected $EXPECTED_ACCOUNT_ID"
 
-"${AWS_CLI[@]}" ssm describe-parameters \
+MSYS2_ARG_CONV_EXCL="*" "${AWS_CLI[@]}" ssm describe-parameters \
   --parameter-filters "Key=Name,Option=BeginsWith,Values=/time-archive/staging/" \
   --query "Parameters[].{Name:Name,Type:Type}" \
   --output json > "$AWS_METADATA_JSON"
@@ -223,7 +223,8 @@ if not isinstance(actual_payload, list):
     raise SystemExit("AWS SSM metadata response must be a list")
 
 actual = {item.get("Name"): item.get("Type") for item in actual_payload}
-missing = sorted(set(expected) - set(actual))
+optional = {"/time-archive/staging/rate-limit/client-ip-header"}
+missing = sorted(set(expected) - optional - set(actual))
 wrong_type = sorted(
     name for name, expected_type in expected.items()
     if name in actual and actual[name] != expected_type

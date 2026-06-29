@@ -33,6 +33,16 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
 }
 
+file_uri() {
+  local path="$1"
+
+  if command -v cygpath >/dev/null 2>&1; then
+    printf 'file://%s\n' "$(cygpath -m "$path")"
+  else
+    printf 'file://%s\n' "$path"
+  fi
+}
+
 if command -v python3 >/dev/null 2>&1 && python3 -c 'import json' >/dev/null 2>&1; then
   PYTHON_BIN=python3
 elif command -v python >/dev/null 2>&1 && python -c 'import json' >/dev/null 2>&1; then
@@ -159,6 +169,8 @@ for name in sorted(expected):
         raise SystemExit(f"empty value is not allowed for {name}")
     if "replace-with-" in value:
         raise SystemExit(f"placeholder value must be replaced for {name}")
+    if name == "/time-archive/staging/rate-limit/client-ip-header" and value == "":
+        continue
     validated.append({"Name": name, "Type": actual_type, "Value": value})
 
 with open(output_path, "w", encoding="utf-8") as target:
@@ -230,7 +242,7 @@ with open(output_path, "w", encoding="utf-8") as target:
     json.dump(payload, target)
 PY
 
-  "${AWS_CLI[@]}" ssm put-parameter --cli-input-json "file://$PUT_INPUT_FILE" >/dev/null
+  "${AWS_CLI[@]}" ssm put-parameter --cli-input-json "$(file_uri "$PUT_INPUT_FILE")" >/dev/null
   : > "$PUT_INPUT_FILE"
   log "Wrote $name ($type)"
 done
