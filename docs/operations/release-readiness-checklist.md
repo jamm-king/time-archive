@@ -99,6 +99,7 @@ MVP-ready areas after target-environment verification:
 | Canonical timeline constraint | Ready | Keep one fixed 86,400-second archive. |
 | Ownership transaction boundaries | Needs verification | Re-run reservation, checkout, webhook, and duplicate event flows after deployment. |
 | Migration execution | Needs verification | Confirm Flyway migrations run in staging before production. |
+| Staging database user | Needs verification | The staging `timearchive_app` database user exists and login/DDL bootstrap checks passed; verify Flyway migrations and runtime queries during first deployment. |
 | Backups | Blocked for production | Enable automated PostgreSQL backups and point-in-time recovery. |
 | Restore test | Blocked for production | Perform at least one restore drill before public launch. |
 | Data retention policy | Needs verification | Define retention for audit logs, upload requests, sessions, and rejected media. |
