@@ -270,6 +270,8 @@ def validate(template):
     }
     if "ecr:DescribeImages" not in publisher_actions:
         errors.append("GitHub image role must verify published ECR image digests")
+    if "ecr:BatchGetImage" not in publisher_actions:
+        errors.append("GitHub image role must read ECR image manifests after push")
 
     deploy_trust = (
         resources.get("GitHubStagingDeployRole", {})
