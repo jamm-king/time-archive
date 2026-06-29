@@ -16,11 +16,14 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `deploy/production/docker-compose.yml` | Production service topology and runtime security defaults. |
 | `deploy/production/runtime.env.example` | Shell-compatible placeholder contract used by static validation. |
 | `deploy/production/ssm-parameters.example.json` | Non-secret SSM response fixture for renderer tests. |
+| `deploy/staging/runtime.env.example` | Staging shell-compatible placeholder contract used by static validation. |
+| `deploy/staging/ssm-parameters.example.json` | Non-secret staging SSM response fixture for renderer tests. |
 | `deploy/production/render-runtime-env.sh` | Fetches an environment SSM path and writes a mode `0600` runtime file. |
 | `deploy/production/bootstrap-host.sh` | Prepares an approved Amazon Linux 2023 host. |
 | `deploy/production/deploy.sh` | Pulls immutable images, runs Flyway, starts services, and verifies health. |
 | `deploy/production/verify-deployment.sh` | Checks private service health and optional public endpoints. |
 | `scripts/verify-production-deployment.sh` | Validates shell syntax, Compose policy, fail-fast secrets, and SSM rendering. |
+| `scripts/verify-staging-deployment-runtime.sh` | Validates the staging SSM contract and Compose rendering without contacting AWS. |
 
 ## Runtime Topology
 
@@ -58,10 +61,15 @@ Parameters live under one environment-specific path:
 ```
 
 Required names and placeholder value shapes are listed in
-`ssm-parameters.example.json`. Database passwords, R2 credentials, the
-rate-limit HMAC salt, and the Cloudflare Tunnel token must be `SecureString`
-parameters protected by the environment KMS key when infrastructure is
-provisioned.
+the environment fixture files. Database usernames, database passwords, R2
+credentials, the rate-limit HMAC salt, and the Cloudflare Tunnel token must be
+`SecureString` parameters protected by the environment KMS key when
+infrastructure is provisioned.
+
+Staging uses the same renderer and Compose topology as production, but its
+runtime contract is tracked separately under `deploy/staging/` so the
+`/time-archive/staging/` path, log group prefix, R2 bucket, and Cloudflare
+Tunnel values cannot silently drift into production placeholders.
 
 The EC2 instance role should read only its environment path. The renderer uses
 `GetParametersByPath` with decryption, rejects missing or duplicate required
@@ -93,6 +101,7 @@ From Git Bash or Linux:
 
 ```bash
 ./scripts/verify-production-deployment.sh
+./scripts/verify-staging-deployment-runtime.sh
 ```
 
 This check does not contact AWS, Cloudflare, R2, or ECR. Windows Git Bash cannot
