@@ -126,6 +126,9 @@ jobs:
       - name: Verify staging deployment runtime policy
         run: ./scripts/verify-staging-deployment-runtime.sh
 
+      - name: Verify staging runtime parameter contract
+        run: ./scripts/verify-staging-runtime-parameters.sh
+
       - name: Build API image for ARM64
         uses: docker/build-push-action@v6
         with:
