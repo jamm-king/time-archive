@@ -127,6 +127,12 @@ After a real publication:
 - Record actor, workflow run, commit, tag, digest, scan result, and deployment
   decision.
 
+If Buildx fails while pushing with `403 Forbidden` on an ECR manifest `HEAD`
+request, verify that the CloudFormation-created image publisher role includes
+`ecr:BatchGetImage` for both staging repositories. Code changes alone do not
+update the existing IAM role; merge the fix and run a staging CloudFormation
+stack update before retrying the workflow.
+
 ## Cost And Retention
 
 GitHub-hosted runner use, ECR storage, ECR scanning, attestations, and data
@@ -137,9 +143,8 @@ and SBOM manifests add registry objects.
 
 ## Current Limitations
 
-- The workflow has not exchanged a real OIDC token or pushed to ECR.
-- The account-level OIDC provider, stack-owned publisher role, and ECR
-  repositories exist, but required GitHub repository variables are not yet
-  configured.
+- The first real publication attempt exchanged a GitHub OIDC token but failed
+  during ECR manifest verification because the publisher role could not read
+  the pushed image manifest.
 - ECR scan findings are not yet an automated release gate.
 - No staging deployment workflow consumes the published references yet.
