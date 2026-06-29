@@ -1,0 +1,74 @@
+{
+  "Parameters": [
+    {
+      "Name": "/time-archive/staging/aws/region",
+      "Type": "String",
+      "Value": "ap-northeast-2"
+    },
+    {
+      "Name": "/time-archive/staging/cloudwatch/log-group-prefix",
+      "Type": "String",
+      "Value": "/time-archive/staging"
+    },
+    {
+      "Name": "/time-archive/staging/database/url",
+      "Type": "String",
+      "Value": "jdbc:postgresql://replace-with-private-staging-rds-endpoint:5432/time_archive?sslmode=require"
+    },
+    {
+      "Name": "/time-archive/staging/database/username",
+      "Type": "SecureString",
+      "Value": "replace-with-staging-database-user"
+    },
+    {
+      "Name": "/time-archive/staging/database/password",
+      "Type": "SecureString",
+      "Value": "replace-with-staging-database-password"
+    },
+    {
+      "Name": "/time-archive/staging/r2/endpoint",
+      "Type": "String",
+      "Value": "https://replace-with-account-id.r2.cloudflarestorage.com"
+    },
+    {
+      "Name": "/time-archive/staging/r2/presigned-url-endpoint",
+      "Type": "String",
+      "Value": "https://replace-with-account-id.r2.cloudflarestorage.com"
+    },
+    {
+      "Name": "/time-archive/staging/r2/public-base-url",
+      "Type": "String",
+      "Value": "https://replace-with-staging-private-canonical-storage-base"
+    },
+    {
+      "Name": "/time-archive/staging/r2/bucket",
+      "Type": "String",
+      "Value": "replace-with-staging-r2-bucket"
+    },
+    {
+      "Name": "/time-archive/staging/r2/access-key",
+      "Type": "SecureString",
+      "Value": "replace-with-staging-r2-access-key"
+    },
+    {
+      "Name": "/time-archive/staging/r2/secret-key",
+      "Type": "SecureString",
+      "Value": "replace-with-staging-r2-secret-key"
+    },
+    {
+      "Name": "/time-archive/staging/rate-limit/key-salt",
+      "Type": "SecureString",
+      "Value": "replace-with-random-staging-hmac-key"
+    },
+    {
+      "Name": "/time-archive/staging/rate-limit/client-ip-header",
+      "Type": "String",
+      "Value": ""
+    },
+    {
+      "Name": "/time-archive/staging/cloudflare/tunnel-token",
+      "Type": "SecureString",
+      "Value": "replace-with-staging-cloudflare-tunnel-token"
+    }
+  ]
+}

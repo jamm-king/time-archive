@@ -116,36 +116,42 @@ Do not paste the generated value into a committed file.
 
 ## Create Or Update Parameters
 
-Use `put-parameter --overwrite` only after reviewing the value source. Avoid
-placing commands with real values into shell history. Prefer entering values
-through a protected terminal session or a temporary ignored script that is
-deleted after use.
-
-Example for non-secret values:
+Copy the committed local-input template to the ignored local path:
 
 ```bash
-aws ssm put-parameter \
-  --name /time-archive/staging/aws/region \
-  --type String \
-  --value ap-northeast-2 \
-  --overwrite \
+cp deploy/staging/runtime-parameters.local.example.json \
+  deploy/staging/runtime-parameters.local.json
+```
+
+Edit only `deploy/staging/runtime-parameters.local.json` and replace every
+placeholder with the real staging value. The real local file is ignored by Git.
+Confirm that before entering secrets:
+
+```bash
+git check-ignore deploy/staging/runtime-parameters.local.json
+```
+
+Validate the local file without contacting AWS:
+
+```bash
+./scripts/put-staging-runtime-parameters.sh \
+  --validate-only \
+  --expected-account-id 231851555445
+```
+
+Then create or overwrite the AWS parameters:
+
+```bash
+./scripts/put-staging-runtime-parameters.sh \
+  --expected-account-id 231851555445 \
+  --profile time-archive-staging-admin \
   --region ap-northeast-2
 ```
 
-Example for secret values:
-
-```bash
-aws ssm put-parameter \
-  --name /time-archive/staging/rate-limit/key-salt \
-  --type SecureString \
-  --value "$TIME_ARCHIVE_STAGING_RATE_LIMIT_KEY_SALT" \
-  --overwrite \
-  --region ap-northeast-2
-```
-
-Repeat for every required parameter. The committed fixture
-`deploy/staging/ssm-parameters.example.json` is the source of truth for required
-names and types.
+The script validates the input against
+`deploy/staging/ssm-parameters.example.json`, checks the AWS account, and writes
+each parameter with `ssm put-parameter --overwrite`. It logs only parameter
+names and types, never values.
 
 ## Verification
 
