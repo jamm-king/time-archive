@@ -147,7 +147,8 @@ Release candidate verification:
 | Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
 | Docker images | Needs verification | ARM64 builds pass CI and staging images publish to ECR; review ECR scan findings, attestations, and digest-qualified deployment references before deployment. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
-| Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |
+| Staging secret injection | Needs verification | The staging SSM runtime contract and metadata validator are implemented; provision real parameters and verify metadata before deployment. |
+| Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision production-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Needs verification | Cloudflare-managed edge TLS and Tunnel ingress are selected; provision the hostname and certificate, redirect HTTP, then verify secure cookies and forwarded protocol behavior in staging. |
 | Cloudflare | Needs verification | Configure isolated Tunnels, DNS, edge certificates, HTTPS redirect, API and presigned-response cache bypass, WAF, rate limits, and public health checks. |

@@ -24,6 +24,7 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `deploy/production/verify-deployment.sh` | Checks private service health and optional public endpoints. |
 | `scripts/verify-production-deployment.sh` | Validates shell syntax, Compose policy, fail-fast secrets, and SSM rendering. |
 | `scripts/verify-staging-deployment-runtime.sh` | Validates the staging SSM contract and Compose rendering without contacting AWS. |
+| `scripts/verify-staging-runtime-parameters.sh` | Validates the staging parameter fixture and optionally verifies live SSM metadata without decryption. |
 
 ## Runtime Topology
 
@@ -102,6 +103,7 @@ From Git Bash or Linux:
 ```bash
 ./scripts/verify-production-deployment.sh
 ./scripts/verify-staging-deployment-runtime.sh
+./scripts/verify-staging-runtime-parameters.sh
 ```
 
 This check does not contact AWS, Cloudflare, R2, or ECR. Windows Git Bash cannot
@@ -135,3 +137,5 @@ The selected HTTPS boundary and staging verification requirements are defined
 in [Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).
 The AWS staging resource template and change-set approval boundary are defined
 in [Staging CloudFormation Foundation](staging-cloudformation-foundation.md).
+Staging runtime parameter creation and metadata validation are defined in
+[Staging Runtime Parameters](staging-runtime-parameters.md).
