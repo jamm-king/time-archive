@@ -198,6 +198,6 @@ runtime parameters have been written to SSM in account `231851555445`, region
 defaults it to empty during deployment.
 
 Live SSM metadata validation has passed without decrypting parameter values.
-The next required external step is creating the staging database
-application/migration user that matches the stored database username and
-password.
+The staging database application/migration user matching the stored database
+username and password has been created. See
+[Staging Database User](staging-database-user.md).
