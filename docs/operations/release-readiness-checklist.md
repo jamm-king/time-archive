@@ -125,6 +125,7 @@ Required checks before merging a release candidate:
 - Staging CloudFormation schema and architecture-policy validation.
 - Staging provisioning input and read-only command policy validation.
 - Staging image-publication workflow policy validation.
+- Staging deployment workflow policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
@@ -153,6 +154,7 @@ Release candidate verification:
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Needs verification | Cloudflare-managed edge TLS and Tunnel ingress are selected; provision the hostname and certificate, redirect HTTP, then verify secure cookies and forwarded protocol behavior in staging. |
 | Cloudflare | Needs verification | Configure isolated Tunnels, DNS, edge certificates, HTTPS redirect, API and presigned-response cache bypass, WAF, rate limits, and public health checks. |
+| Staging deployment workflow | Needs verification | Manual SSM Run Command workflow is implemented; update the staging CloudFormation stack for the deploy-role ECR verification permission, then run it from `main` with published image SHA and digest-pinned Redis/cloudflared images. |
 | Application health checks | Needs verification | Compose and deployment scripts check API, Web, Redis, and optional public endpoints; verify them on staging. |
 | Rollback | Needs verification | Previous image references are recorded; verify image rollback and the forward-fix or point-in-time database recovery policy in staging. |
 

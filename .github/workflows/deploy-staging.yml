@@ -1,0 +1,231 @@
+name: Deploy staging
+run-name: Deploy staging for ${{ inputs.image_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_sha:
+        description: Full Git SHA tag published to both staging ECR repositories.
+        required: true
+        type: string
+      redis_image:
+        description: Digest-pinned Redis image reference.
+        required: true
+        type: string
+      cloudflared_image:
+        description: Digest-pinned cloudflared image reference.
+        required: true
+        type: string
+      public_base_url:
+        description: Optional public staging URL for post-deploy smoke checks.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_STAGING_DEPLOY_ROLE_ARN: ${{ vars.AWS_STAGING_DEPLOY_ROLE_ARN }}
+  STAGING_INSTANCE_ID: ${{ vars.STAGING_INSTANCE_ID }}
+  ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+  API_REPOSITORY_NAME: time-archive-staging-api
+  WEB_REPOSITORY_NAME: time-archive-staging-web
+
+jobs:
+  deploy:
+    name: Deploy through SSM
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        env:
+          IMAGE_SHA: ${{ inputs.image_sha }}
+          REDIS_IMAGE: ${{ inputs.redis_image }}
+          CLOUDFLARED_IMAGE: ${{ inputs.cloudflared_image }}
+          PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+        run: |
+          set -euo pipefail
+
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+            echo "Staging deployment is allowed only from main" >&2
+            exit 1
+          }
+          [[ "$AWS_ACCOUNT_ID" =~ ^[0-9]{12}$ ]] || {
+            echo "AWS_ACCOUNT_ID must be a 12-digit variable" >&2
+            exit 1
+          }
+          [[ "$AWS_REGION" == "ap-northeast-2" ]] || {
+            echo "AWS_REGION must be ap-northeast-2" >&2
+            exit 1
+          }
+          [[ "$AWS_STAGING_DEPLOY_ROLE_ARN" =~ ^arn:aws:iam::${AWS_ACCOUNT_ID}:role/.+$ ]] || {
+            echo "AWS_STAGING_DEPLOY_ROLE_ARN must belong to AWS_ACCOUNT_ID" >&2
+            exit 1
+          }
+          [[ "$STAGING_INSTANCE_ID" =~ ^i-[0-9a-f]+$ ]] || {
+            echo "STAGING_INSTANCE_ID must be an EC2 instance id" >&2
+            exit 1
+          }
+          [[ "$IMAGE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "image_sha must be a full Git SHA" >&2
+            exit 1
+          }
+          [[ "$REDIS_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || {
+            echo "redis_image must be digest-pinned" >&2
+            exit 1
+          }
+          [[ "$CLOUDFLARED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || {
+            echo "cloudflared_image must be digest-pinned" >&2
+            exit 1
+          }
+          if [[ -n "$PUBLIC_BASE_URL" && ! "$PUBLIC_BASE_URL" =~ ^https:// ]]; then
+            echo "public_base_url must be HTTPS when provided" >&2
+            exit 1
+          fi
+
+      - name: Configure short-lived AWS credentials
+        uses: aws-actions/configure-aws-credentials@633526dcc9c26211a4282d6d8de3d8b5cb7ad07b # v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_STAGING_DEPLOY_ROLE_ARN }}
+          role-session-name: time-archive-staging-deploy-${{ github.run_id }}
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+          mask-aws-account-id: true
+
+      - name: Verify immutable staging images
+        shell: bash
+        env:
+          IMAGE_SHA: ${{ inputs.image_sha }}
+        run: |
+          set -euo pipefail
+
+          for repository in "$API_REPOSITORY_NAME" "$WEB_REPOSITORY_NAME"; do
+            digest="$(aws ecr describe-images \
+              --repository-name "$repository" \
+              --image-ids "imageTag=${IMAGE_SHA}" \
+              --query 'imageDetails[0].imageDigest' \
+              --output text)"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "Image tag does not exist or has invalid digest: ${repository}:${IMAGE_SHA}" >&2
+              exit 1
+            }
+          done
+
+      - name: Send staging deployment command
+        id: deploy-command
+        shell: bash
+        env:
+          IMAGE_SHA: ${{ inputs.image_sha }}
+          REDIS_IMAGE: ${{ inputs.redis_image }}
+          CLOUDFLARED_IMAGE: ${{ inputs.cloudflared_image }}
+          PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+        run: |
+          set -euo pipefail
+
+          bundle="$RUNNER_TEMP/time-archive-deploy.tgz"
+          bundle_b64="$RUNNER_TEMP/time-archive-deploy.tgz.b64"
+          payload="$RUNNER_TEMP/staging-deploy-command.json"
+          remote_script="$RUNNER_TEMP/staging-deploy-remote.sh"
+
+          tar -C deploy/production -czf "$bundle" .
+          base64 "$bundle" > "$bundle_b64"
+
+          cat > "$remote_script" <<REMOTE
+          set -euo pipefail
+
+          install -d -m 0750 /opt/time-archive/deploy
+          install -d -m 0700 /run/time-archive
+          install -d -m 0700 /var/lib/time-archive/deployments
+
+          cat > /tmp/time-archive-deploy.tgz.b64 <<'BUNDLE'
+          $(cat "$bundle_b64")
+          BUNDLE
+
+          base64 -d /tmp/time-archive-deploy.tgz.b64 > /tmp/time-archive-deploy.tgz
+          tar -xzf /tmp/time-archive-deploy.tgz -C /opt/time-archive/deploy
+          chmod 0755 /opt/time-archive/deploy/*.sh
+          rm -f /tmp/time-archive-deploy.tgz /tmp/time-archive-deploy.tgz.b64
+
+          export TIME_ARCHIVE_API_IMAGE="$ECR_REGISTRY/$API_REPOSITORY_NAME:$IMAGE_SHA"
+          export TIME_ARCHIVE_WEB_IMAGE="$ECR_REGISTRY/$WEB_REPOSITORY_NAME:$IMAGE_SHA"
+          export TIME_ARCHIVE_REDIS_IMAGE="$REDIS_IMAGE"
+          export TIME_ARCHIVE_CLOUDFLARED_IMAGE="$CLOUDFLARED_IMAGE"
+          export TIME_ARCHIVE_PUBLIC_BASE_URL="$PUBLIC_BASE_URL"
+
+          /opt/time-archive/deploy/deploy.sh staging
+          REMOTE
+
+          python - "$STAGING_INSTANCE_ID" "$remote_script" "$payload" <<'PY'
+          import json
+          import sys
+
+          instance_id, script_path, payload_path = sys.argv[1:4]
+          with open(script_path, encoding="utf-8") as source:
+              commands = source.read().splitlines()
+
+          payload = {
+              "DocumentName": "AWS-RunShellScript",
+              "InstanceIds": [instance_id],
+              "Comment": "Deploy Time Archive staging",
+              "Parameters": {
+                  "commands": commands,
+                  "executionTimeout": ["1800"],
+              },
+          }
+          with open(payload_path, "w", encoding="utf-8") as target:
+              json.dump(payload, target)
+          PY
+
+          command_id="$(aws ssm send-command \
+            --cli-input-json "file://$payload" \
+            --query 'Command.CommandId' \
+            --output text)"
+          echo "command_id=$command_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for staging deployment
+        shell: bash
+        env:
+          COMMAND_ID: ${{ steps.deploy-command.outputs.command_id }}
+        run: |
+          set -euo pipefail
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$STAGING_INSTANCE_ID"
+
+          invocation="$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$STAGING_INSTANCE_ID" \
+            --output json)"
+
+          status="$(python -c 'import json,sys; print(json.load(sys.stdin)["Status"])' <<< "$invocation")"
+          stdout="$(python -c 'import json,sys; print(json.load(sys.stdin).get("StandardOutputContent",""))' <<< "$invocation")"
+          stderr="$(python -c 'import json,sys; print(json.load(sys.stdin).get("StandardErrorContent",""))' <<< "$invocation")"
+
+          if [[ "$status" != "Success" ]]; then
+            printf '%s\n' "$stderr" >&2
+            exit 1
+          fi
+
+          printf '%s\n' "$stdout"
+          {
+            echo "## Staging deployment"
+            echo
+            echo "- Commit: \`${{ inputs.image_sha }}\`"
+            echo "- SSM command: \`${COMMAND_ID}\`"
+            echo "- Instance: \`${STAGING_INSTANCE_ID}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -145,6 +145,7 @@ and SBOM manifests add registry objects.
 
 - The first real publication attempt exchanged a GitHub OIDC token but failed
   during ECR manifest verification because the publisher role could not read
-  the pushed image manifest.
+  the pushed image manifest. The role policy was corrected, and the workflow
+  subsequently published staging images successfully.
 - ECR scan findings are not yet an automated release gate.
-- No staging deployment workflow consumes the published references yet.
+- The staging deployment workflow is implemented but has not yet been run.
