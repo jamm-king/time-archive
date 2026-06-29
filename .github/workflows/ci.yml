@@ -123,6 +123,9 @@ jobs:
       - name: Verify production deployment policy
         run: ./scripts/verify-production-deployment.sh
 
+      - name: Verify staging deployment runtime policy
+        run: ./scripts/verify-staging-deployment-runtime.sh
+
       - name: Build API image for ARM64
         uses: docker/build-push-action@v6
         with:

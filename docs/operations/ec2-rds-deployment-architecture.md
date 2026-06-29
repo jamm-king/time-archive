@@ -35,8 +35,8 @@ The selected production baseline is:
 | Payment | Selected | PayPal, pending provider design and implementation. |
 | Infrastructure as code | Selected | AWS CloudFormation for the initial AWS resource baseline. |
 | Staging infrastructure template | Verified | The corrected stack reached `CREATE_COMPLETE`; static policy and actual EC2, RDS, ECR, IAM/OIDC, log, alarm, and network checks passed. |
-| Repository deployment foundation | Implemented | Production Compose, SSM rendering, deployment scripts, and ARM64 CI validation are present. |
-| Resource provisioning | Staging foundation only | Staging AWS foundation exists; runtime parameters, images, application deployment, Cloudflare/R2 resources, and all production resources remain pending. |
+| Repository deployment foundation | Implemented | Shared Compose, SSM rendering, staging and production runtime fixtures, deployment scripts, and ARM64 CI validation are present. |
+| Resource provisioning | Staging foundation plus images | Staging AWS foundation exists and staging images have been published to ECR; runtime parameters, application deployment, Cloudflare/R2 resources, and all production resources remain pending. |
 
 ## Runtime Topology
 
@@ -459,10 +459,10 @@ future malware scanning can increase the total.
 
 The following work must be completed before the first staging deployment:
 
-- Apply the staging image-publisher role against the existing account GitHub
-  OIDC provider, configure repository variables, and verify the ECR publication
-  workflow.
-- Apply the staging deployment role and add the SSM Run Command workflow.
+- Provision the runtime SSM parameters defined by the staging deployment
+  fixture.
+- Add the SSM Run Command workflow that copies the reviewed deployment bundle
+  to the EC2 host and runs `deploy.sh staging`.
 - Review and apply the staging CloudFormation template through an approved
   change set, then verify cost, host bootstrap, RDS, IAM, and deletion behavior.
 - Configure environment-specific Cloudflare Tunnels, application hostnames,

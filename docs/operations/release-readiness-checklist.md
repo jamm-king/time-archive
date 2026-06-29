@@ -144,10 +144,10 @@ Release candidate verification:
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
 | Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. |
 | Staging provisioning preflight | Ready | Non-root SSO, real operator inputs, GitHub OIDC metadata, SSM SecureString metadata, RDS offering, and target-account template validation passed in `ap-northeast-2`; no change set has been created. |
-| Staging image publication | Needs verification | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification; provision AWS prerequisites and run it from `main`. |
-| Docker images | Needs verification | ARM64 builds pass CI, but real ECR images, scan findings, attestations, and digest-qualified deployment references remain unverified. |
+| Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
+| Docker images | Needs verification | ARM64 builds pass CI and staging images publish to ECR; review ECR scan findings, attestations, and digest-qualified deployment references before deployment. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
-| Production secret injection | Blocked for production | The SSM runtime renderer and parameter contract are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |
+| Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision environment-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Needs verification | Cloudflare-managed edge TLS and Tunnel ingress are selected; provision the hostname and certificate, redirect HTTP, then verify secure cookies and forwarded protocol behavior in staging. |
 | Cloudflare | Needs verification | Configure isolated Tunnels, DNS, edge certificates, HTTPS redirect, API and presigned-response cache bypass, WAF, rate limits, and public health checks. |
