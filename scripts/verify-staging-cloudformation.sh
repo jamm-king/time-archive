@@ -287,6 +287,46 @@ def validate(template):
     ):
         errors.append("GitHub deploy role trust must be limited to the staging environment")
 
+    deploy_policies = (
+        resources.get("GitHubStagingDeployRole", {})
+        .get("Properties", {})
+        .get("Policies", [])
+    )
+    deploy_statements = [
+        statement
+        for policy in deploy_policies
+        for statement in policy.get("PolicyDocument", {}).get("Statement", [])
+    ]
+    deploy_actions = {
+        action
+        for statement in deploy_statements
+        for action in (
+            statement.get("Action", [])
+            if isinstance(statement.get("Action", []), list)
+            else [statement.get("Action")]
+        )
+    }
+    if "ecr:DescribeImages" not in deploy_actions:
+        errors.append("GitHub deploy role must verify staging image tags before deployment")
+
+    describe_image_resources = [
+        statement.get("Resource")
+        for statement in deploy_statements
+        for action in (
+            statement.get("Action", [])
+            if isinstance(statement.get("Action", []), list)
+            else [statement.get("Action")]
+        )
+        if action == "ecr:DescribeImages"
+    ]
+    if describe_image_resources != [
+        [
+            {"Fn::GetAtt": "ApiRepository.Arn"},
+            {"Fn::GetAtt": "WebRepository.Arn"},
+        ]
+    ]:
+        errors.append("GitHub deploy role ECR verification must be limited to staging repositories")
+
     return errors
 
 

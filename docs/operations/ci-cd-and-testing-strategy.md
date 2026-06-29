@@ -150,7 +150,7 @@ Pull Request
 Merge to main
   -> Manually publish immutable ARM64 API and Web images
   -> Verify ECR digests and scan results
-  -> Deploy staging
+  -> Deploy staging through SSM Run Command
   -> Run smoke tests
 
 Manual approval
@@ -163,6 +163,11 @@ GitHub Actions environments should be used for `staging` and `production`.
 Staging image publication is initially manual and restricted to `main`. It uses
 repository variables plus GitHub OIDC, not long-lived AWS secrets. See
 [Staging Image Publication](staging-image-publication.md).
+
+Staging deployment is also manual and restricted to `main`. It uses the
+`staging` GitHub Environment, the CloudFormation-created deploy role, and SSM
+Run Command to execute the reviewed EC2 Docker Compose deployment bundle. See
+[Staging Deployment](staging-deployment.md).
 
 Staging provisioning inputs are validated from a synthetic fixture in CI. The
 same preflight can validate an ignored operator parameter file and, when

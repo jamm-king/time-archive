@@ -37,6 +37,9 @@ jobs:
       - name: Verify staging image publication workflow
         run: ./scripts/verify-staging-image-publish-workflow.sh
 
+      - name: Verify staging deployment workflow
+        run: ./scripts/verify-staging-deploy-workflow.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest

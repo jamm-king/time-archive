@@ -91,7 +91,7 @@ docker compose -f "$COMPOSE_FILE" pull api web redis cloudflared migrate
 log "Running controlled Flyway migration"
 docker compose -f "$COMPOSE_FILE" --profile migration run --rm migrate
 
-log "Starting production services"
+log "Starting $ENVIRONMENT services"
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans api web redis cloudflared
 
 TIME_ARCHIVE_COMPOSE_FILE="$COMPOSE_FILE" \

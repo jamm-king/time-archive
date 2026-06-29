@@ -776,6 +776,12 @@ Resources:
                 Effect: Allow
                 Action: ec2:DescribeInstances
                 Resource: "*"
+              - Sid: VerifyStagingImages
+                Effect: Allow
+                Action: ecr:DescribeImages
+                Resource:
+                  - !GetAtt ApiRepository.Arn
+                  - !GetAtt WebRepository.Arn
       Tags:
         - Key: Environment
           Value: !Ref EnvironmentName

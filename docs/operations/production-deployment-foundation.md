@@ -139,3 +139,5 @@ The AWS staging resource template and change-set approval boundary are defined
 in [Staging CloudFormation Foundation](staging-cloudformation-foundation.md).
 Staging runtime parameter creation and metadata validation are defined in
 [Staging Runtime Parameters](staging-runtime-parameters.md).
+The manual SSM Run Command deployment workflow is defined in
+[Staging Deployment](staging-deployment.md).
