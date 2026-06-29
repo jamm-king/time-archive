@@ -62,6 +62,7 @@ for the release gate.
 - [CI/CD and Testing Strategy](docs/operations/ci-cd-and-testing-strategy.md)
 - [EC2 and RDS Deployment Architecture](docs/operations/ec2-rds-deployment-architecture.md)
 - [Staging CloudFormation Foundation](docs/operations/staging-cloudformation-foundation.md)
+- [Staging Provisioning Runbook](docs/operations/staging-provisioning-runbook.md)
 - [Staging Image Publication](docs/operations/staging-image-publication.md)
 - [Cloudflare Tunnel HTTPS](docs/operations/cloudflare-tunnel-https.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
@@ -446,10 +447,9 @@ production credentials:
 - Provide the AWS account, domain names, alert destinations, and approved
   maintenance windows required to provision the selected EC2, RDS, SSM, and
   CloudWatch architecture.
-- Create the account-level GitHub Actions OIDC provider, then configure
-  `AWS_ACCOUNT_ID`, `AWS_REGION`, and
-  `AWS_STAGING_IMAGE_PUBLISH_ROLE_ARN` as non-secret repository variables after
-  the staging stack is applied.
+- Configure `AWS_ACCOUNT_ID`, `AWS_REGION`, and
+  `AWS_STAGING_IMAGE_PUBLISH_ROLE_ARN` as non-secret repository variables from
+  the applied staging stack outputs.
 - Provide distinct staging and production application hostnames, create their
   Cloudflare Tunnels, and configure Cloudflare-managed edge certificates,
   HTTPS redirects, cache bypass, and security rules. EC2 does not use ALB,

@@ -97,9 +97,9 @@ Parameters:
 
   DatabaseMasterPasswordParameterName:
     Type: String
-    Default: /time-archive/staging/database/master-password
-    AllowedPattern: ^/time-archive/staging/[a-zA-Z0-9_.\-/]+$
-    Description: Existing SSM SecureString parameter read by CloudFormation.
+    Default: /time-archive/bootstrap/staging/database/master-password
+    AllowedPattern: ^/time-archive/bootstrap/staging/[a-zA-Z0-9_.\-/]+$
+    Description: Infrastructure-only SSM SecureString read by CloudFormation.
 
   GitHubRepository:
     Type: String
@@ -462,16 +462,25 @@ Resources:
           #!/usr/bin/env bash
           set -Eeuo pipefail
 
+          exec > >(tee -a /var/log/time-archive-bootstrap.log | logger -t time-archive-bootstrap -s 2>/dev/console) 2>&1
+
           signal_failure() {
+            local exit_code="$1"
+            local line="$2"
+            local command="$3"
+            local reason="bootstrap failed with exit $exit_code at line $line: $command"
+
+            printf '%s\n' "$reason" >&2
             /opt/aws/bin/cfn-signal \
-              --exit-code 1 \
+              --exit-code "$exit_code" \
+              --reason "$reason" \
               --stack "${AWS::StackName}" \
               --resource ApplicationInstance \
               --region "${AWS::Region}" || true
           }
-          trap signal_failure ERR
+          trap 'exit_code=$?; signal_failure "$exit_code" "$LINENO" "$BASH_COMMAND"' ERR
 
-          dnf install -y amazon-cloudwatch-agent aws-cfn-bootstrap curl docker python3
+          dnf install -y amazon-cloudwatch-agent aws-cfn-bootstrap docker python3
           systemctl enable --now docker
           systemctl enable --now amazon-ssm-agent
 

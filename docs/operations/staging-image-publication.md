@@ -104,7 +104,8 @@ Prerequisites:
 
 1. Apply and verify the staging CloudFormation stack through an approved change
    set.
-2. Create the account-level GitHub OIDC provider used by the stack role.
+2. Confirm the existing account-level GitHub OIDC provider used by the stack
+   role.
 3. Configure the three repository variables.
 4. Merge the publication workflow to `main`.
 5. Confirm the target commit passed all required CI checks.
@@ -137,6 +138,8 @@ and SBOM manifests add registry objects.
 ## Current Limitations
 
 - The workflow has not exchanged a real OIDC token or pushed to ECR.
-- Repository variables and the account-level OIDC provider are not provisioned.
+- The account-level OIDC provider, stack-owned publisher role, and ECR
+  repositories exist, but required GitHub repository variables are not yet
+  configured.
 - ECR scan findings are not yet an automated release gate.
 - No staging deployment workflow consumes the published references yet.

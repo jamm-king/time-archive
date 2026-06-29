@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #63 on 2026-06-24.
+Current baseline: `main` after PR #64 on 2026-06-24.
 
 Status legend:
 
@@ -122,6 +122,7 @@ Required checks before merging a release candidate:
 - Local web smoke check.
 - Production deployment policy and Linux ARM64 image builds.
 - Staging CloudFormation schema and architecture-policy validation.
+- Staging provisioning input and read-only command policy validation.
 - Staging image-publication workflow policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
@@ -141,7 +142,8 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
-| Staging infrastructure as code | Needs verification | CloudFormation defines the approved staging AWS boundary and passes static policy checks; review an AWS change set before provisioning. |
+| Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. |
+| Staging provisioning preflight | Ready | Non-root SSO, real operator inputs, GitHub OIDC metadata, SSM SecureString metadata, RDS offering, and target-account template validation passed in `ap-northeast-2`; no change set has been created. |
 | Staging image publication | Needs verification | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification; provision AWS prerequisites and run it from `main`. |
 | Docker images | Needs verification | ARM64 builds pass CI, but real ECR images, scan findings, attestations, and digest-qualified deployment references remain unverified. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |

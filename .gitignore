@@ -31,6 +31,7 @@ logs/
 .env.*
 !.env.example
 !.env.*.example
+infra/cloudformation/staging.parameters.local.json
 application-local.yml
 application-local.yaml
 application-secret.yml
