@@ -50,7 +50,7 @@ history, screenshots, or logs.
 | `/time-archive/staging/r2/access-key` | `SecureString` | Least-privilege staging R2 access key ID. |
 | `/time-archive/staging/r2/secret-key` | `SecureString` | Least-privilege staging R2 secret access key. |
 | `/time-archive/staging/rate-limit/key-salt` | `SecureString` | Random staging-only HMAC salt. |
-| `/time-archive/staging/rate-limit/client-ip-header` | `String` | Empty until Cloudflare client IP propagation is implemented and verified. |
+| `/time-archive/staging/rate-limit/client-ip-header` | `String` | Optional. Omit while empty; the renderer defaults it to empty until Cloudflare client IP propagation is implemented and verified. |
 | `/time-archive/staging/cloudflare/tunnel-token` | `SecureString` | Staging Cloudflare Tunnel token. |
 
 ## Database User Policy
@@ -150,8 +150,9 @@ Then create or overwrite the AWS parameters:
 
 The script validates the input against
 `deploy/staging/ssm-parameters.example.json`, checks the AWS account, and writes
-each parameter with `ssm put-parameter --overwrite`. It logs only parameter
-names and types, never values.
+each non-empty parameter with `ssm put-parameter --overwrite`. The optional
+empty `rate-limit/client-ip-header` value is intentionally omitted from SSM.
+The script logs only parameter names and types, never values.
 
 ## Verification
 
@@ -189,5 +190,14 @@ deployment and requires explicit approval.
 
 ## Current Status
 
-The required parameter contract is committed and locally validated. Real
-staging runtime parameters have not been created by this repository change.
+The required parameter contract is committed and locally validated. The staging
+runtime parameters have been written to SSM in account `231851555445`, region
+`ap-northeast-2`. Thirteen non-empty parameters exist under
+`/time-archive/staging/`; the optional empty
+`rate-limit/client-ip-header` parameter is intentionally omitted so the renderer
+defaults it to empty during deployment.
+
+Live SSM metadata validation has passed without decrypting parameter values.
+The next required external step is creating the staging database
+application/migration user that matches the stored database username and
+password.
