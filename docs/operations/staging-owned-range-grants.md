@@ -56,6 +56,12 @@ database credentials.
 Use short, isolated ranges for smoke tests. Record the operator, target email,
 range, timestamp, reason, and SSM command id.
 
+The staging media preview smoke workflow expects the authenticated staging admin
+account to own the configured range. The current smoke-test reservation is
+`[7000, 7001)` for the configured staging admin account; if that account or
+range changes, grant a replacement range first and pass the matching workflow
+inputs.
+
 If a grant was created incorrectly, revoke the ownership record in a separately
 reviewed operation by setting `status = 'REVOKED'` and `valid_until` to the
 current timestamp.

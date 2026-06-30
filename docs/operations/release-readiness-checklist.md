@@ -84,6 +84,7 @@ MVP-ready areas after target-environment verification:
 | Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
 | Production Cloudflare R2 | Blocked for production | Provision a separate production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback from staging. |
 | Presigned upload URLs | Needs verification | Confirm TTL, content type, content length, and CORS behavior from the deployed web origin. |
+| Staging media upload and admin preview | Needs verification | Manual staging media preview smoke workflow uploads to the pre-granted `[7000, 7001)` range, verifies admin list visibility, and downloads through a short-lived admin preview URL. Run before a release candidate. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
 | File signature validation | Blocked for production | Add signature sniffing before trusting content type. |
 | Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |
@@ -131,6 +132,7 @@ Required checks before merging a release candidate:
 - Staging admin role grant script policy validation.
 - Staging admin smoke workflow policy validation.
 - Staging owned range grant script policy validation.
+- Staging media preview smoke workflow policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the

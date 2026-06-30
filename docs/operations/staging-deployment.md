@@ -203,3 +203,29 @@ to verify deployed admin authorization boundaries.
 Staging media smoke tests can use explicit `ADMIN_GRANT` ownership records
 instead of enabling fake payments. See
 [Staging Owned Range Grants](staging-owned-range-grants.md).
+
+## Media Preview Smoke Verification
+
+After a staging account has an active owned range, the deployed media upload and
+admin original preview path can be verified without SSH or AWS access.
+
+From GitHub Actions, run:
+
+```text
+Smoke staging media preview
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- Login using the configured staging admin credentials.
+- Lookup of an active owned range, defaulting to `[7000, 7001)`.
+- Owned media upload request creation.
+- Presigned PUT upload to the configured object store.
+- Upload completion and `UPLOADED` media asset creation.
+- Admin moderation-list visibility.
+- Short-lived admin preview URL creation and download.
+
+This check mutates staging by uploading a smoke-test media object and creating
+an `UPLOADED` media asset. It does not approve, reject, hide, publish, or clean
+up the media asset.
