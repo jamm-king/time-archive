@@ -52,6 +52,9 @@ jobs:
       - name: Verify staging admin smoke workflow
         run: ./scripts/verify-staging-admin-smoke-workflow.sh
 
+      - name: Verify staging owned range grant script
+        run: ./scripts/verify-staging-owned-range-grant.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest
