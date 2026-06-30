@@ -1,5 +1,6 @@
 package com.timearchive.adapter.inbound.rest
 
+import com.timearchive.adapter.inbound.web.RequestCorrelationFilter
 import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -188,5 +189,12 @@ class ApiExceptionHandler {
     ): ResponseEntity<ApiErrorResponse> =
         ResponseEntity
             .status(status)
-            .body(ApiErrorResponse(code = code, message = message, details = details))
+            .body(
+                ApiErrorResponse(
+                    code = code,
+                    message = message,
+                    details = details,
+                    requestId = RequestCorrelationFilter.currentRequestId(),
+                ),
+            )
 }

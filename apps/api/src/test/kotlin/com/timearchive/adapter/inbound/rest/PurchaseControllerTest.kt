@@ -2,6 +2,7 @@ package com.timearchive.adapter.inbound.rest
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.timearchive.adapter.inbound.web.RequestCorrelationFilter
 import com.timearchive.application.CreateCheckout
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.model.CheckoutSession
@@ -14,6 +15,7 @@ import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.hasItem
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.slf4j.MDC
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpSession
 import org.springframework.test.web.servlet.MockMvc
@@ -52,6 +54,7 @@ class PurchaseControllerTest {
         every { reserveTimeRange.reserve(any()) } returns reservation
 
         mockMvc.post("/api/purchase/reservations") {
+            header(RequestCorrelationFilter.HEADER_NAME, "test-request-123")
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
@@ -89,23 +92,30 @@ class PurchaseControllerTest {
     fun `rejects invalid reservation request`() {
         val session = signedInSession(UUID.randomUUID())
 
-        mockMvc.post("/api/purchase/reservations") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(
-                mapOf(
-                    "startSecond" to -1,
-                    "endSecond" to 0,
-                ),
-            )
-            this.session = session
-        }
-            .andExpect {
-                status { isBadRequest() }
-                jsonPath("$.code") { value("INVALID_REQUEST") }
-                jsonPath("$.message") { value("Request validation failed") }
-                jsonPath("$.details[*].field") { value(hasItem("startSecond")) }
-                jsonPath("$.details[*].field") { value(hasItem("endSecond")) }
+        try {
+            MDC.put(RequestCorrelationFilter.MDC_KEY, "test-request-123")
+
+            mockMvc.post("/api/purchase/reservations") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "startSecond" to -1,
+                        "endSecond" to 0,
+                    ),
+                )
+                this.session = session
             }
+                .andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.code") { value("INVALID_REQUEST") }
+                    jsonPath("$.message") { value("Request validation failed") }
+                    jsonPath("$.details[*].field") { value(hasItem("startSecond")) }
+                    jsonPath("$.details[*].field") { value(hasItem("endSecond")) }
+                    jsonPath("$.requestId") { value("test-request-123") }
+                }
+        } finally {
+            MDC.clear()
+        }
     }
 
     @Test

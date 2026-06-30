@@ -1,11 +1,13 @@
 package com.timearchive.adapter.inbound.security
 
 import com.timearchive.configuration.RateLimitProperties
+import com.timearchive.adapter.inbound.web.RequestCorrelationFilter
 import com.timearchive.domain.port.RateLimitPort
 import jakarta.servlet.FilterChain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.slf4j.MDC
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -16,6 +18,7 @@ class ApiRateLimitingFilterTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
+        MDC.clear()
     }
 
     @Test
@@ -109,6 +112,7 @@ class ApiRateLimitingFilterTest {
             ),
         )
         val filter = ApiRateLimitingFilter(port, properties())
+        MDC.put(RequestCorrelationFilter.MDC_KEY, "rate-limit-request-123")
 
         val result = execute(filter, "POST", "/api/auth/login")
 
@@ -118,6 +122,7 @@ class ApiRateLimitingFilterTest {
         assertThat(result.response.getHeader("X-RateLimit-Limit")).isEqualTo("10")
         assertThat(result.response.getHeader("X-RateLimit-Remaining")).isEqualTo("0")
         assertThat(result.response.contentAsString).contains("\"code\":\"RATE_LIMIT_EXCEEDED\"")
+        assertThat(result.response.contentAsString).contains("\"requestId\":\"rate-limit-request-123\"")
     }
 
     @Test
