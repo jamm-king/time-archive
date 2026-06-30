@@ -155,3 +155,36 @@ Environment, and checks only non-mutating public endpoints:
 
 The workflow input `public_base_url` is optional. If omitted, the workflow uses
 the repository variable `STAGING_PUBLIC_BASE_URL`.
+
+## Auth Smoke Verification
+
+The deployed HTTPS authentication path can be verified without SSH or AWS
+access.
+
+From a local shell:
+
+```bash
+./scripts/verify-staging-auth-smoke.sh \
+  --base-url https://staging.time-archive.com
+```
+
+From GitHub Actions, run:
+
+```text
+Smoke staging auth
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- CSRF token retrieval.
+- Rejection of a mutation without `X-XSRF-TOKEN`.
+- Registration of a disposable smoke-test user.
+- Session cookie attributes: `HttpOnly`, `Secure`, and `SameSite=Lax`.
+- Authenticated `/api/me` lookup.
+- Logout and post-logout rejection.
+- Login and final `/api/me` lookup.
+
+This check creates a disposable staging user with a
+`staging-auth-smoke-...@example.com` email address. Cleanup is a data-retention
+operation and is not part of the smoke workflow.
