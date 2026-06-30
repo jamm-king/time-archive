@@ -197,3 +197,9 @@ not through an application bootstrap API. See
 
 After provisioning an admin user, run the manual `Smoke staging admin` workflow
 to verify deployed admin authorization boundaries.
+
+## Owned Range Grants
+
+Staging media smoke tests can use explicit `ADMIN_GRANT` ownership records
+instead of enabling fake payments. See
+[Staging Owned Range Grants](staging-owned-range-grants.md).

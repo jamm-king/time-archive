@@ -97,7 +97,7 @@ MVP-ready areas after target-environment verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Canonical timeline constraint | Ready | Keep one fixed 86,400-second archive. |
-| Ownership transaction boundaries | Needs verification | Re-run reservation, checkout, webhook, and duplicate event flows after deployment. |
+| Ownership transaction boundaries | Needs verification | Local purchase flows are covered; staging media smoke can use explicit `ADMIN_GRANT` owned ranges while real provider ownership remains a production blocker. |
 | Migration execution | Needs verification | Confirm Flyway migrations run in staging before production. |
 | Staging database user | Needs verification | The staging `timearchive_app` database user exists and login/DDL bootstrap checks passed; verify Flyway migrations and runtime queries during first deployment. |
 | Backups | Blocked for production | Enable automated PostgreSQL backups and point-in-time recovery. |
@@ -130,6 +130,7 @@ Required checks before merging a release candidate:
 - Staging auth smoke workflow policy validation.
 - Staging admin role grant script policy validation.
 - Staging admin smoke workflow policy validation.
+- Staging owned range grant script policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
