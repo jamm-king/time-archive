@@ -3,7 +3,9 @@ package com.timearchive.configuration
 import com.timearchive.adapter.inbound.rest.CurrentUserSession
 import com.timearchive.adapter.inbound.security.ApiRateLimitingFilter
 import com.timearchive.adapter.inbound.security.SessionAuthenticationFilter
+import com.timearchive.adapter.inbound.web.RequestCorrelationFilter
 import com.timearchive.domain.port.UserAccountRepository
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
@@ -27,6 +29,7 @@ class SecurityConfiguration {
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
+        requestCorrelationFilter: RequestCorrelationFilter,
         sessionAuthenticationFilter: SessionAuthenticationFilter,
         apiRateLimitingFilter: ApiRateLimitingFilter,
     ): SecurityFilterChain =
@@ -45,22 +48,19 @@ class SecurityConfiguration {
                     .sessionFixation { sessionFixation -> sessionFixation.none() }
             }
             .exceptionHandling {
-                it.authenticationEntryPoint { _, response, _ ->
+                it.authenticationEntryPoint { request, response, _ ->
                     response.status = HttpStatus.UNAUTHORIZED.value()
                     response.contentType = MediaType.APPLICATION_JSON_VALUE
-                    response.writer.write(
-                        """{"code":"AUTHENTICATION_REQUIRED","message":"Authentication required","details":[]}""",
-                    )
+                    response.writer.write(errorBody("AUTHENTICATION_REQUIRED", "Authentication required", request))
                 }
-                it.accessDeniedHandler { _, response, _ ->
+                it.accessDeniedHandler { request, response, _ ->
                     response.status = HttpStatus.FORBIDDEN.value()
                     response.contentType = MediaType.APPLICATION_JSON_VALUE
-                    response.writer.write(
-                        """{"code":"CSRF_TOKEN_INVALID","message":"CSRF token is missing or invalid","details":[]}""",
-                    )
+                    response.writer.write(errorBody("CSRF_TOKEN_INVALID", "CSRF token is missing or invalid", request))
                 }
             }
-            .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter::class.java)
+            .addFilterBefore(requestCorrelationFilter, AnonymousAuthenticationFilter::class.java)
+            .addFilterAfter(sessionAuthenticationFilter, RequestCorrelationFilter::class.java)
             .addFilterAfter(apiRateLimitingFilter, SessionAuthenticationFilter::class.java)
             .authorizeHttpRequests {
                 it
@@ -93,4 +93,22 @@ class SecurityConfiguration {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+
+    @Bean
+    fun requestCorrelationFilter(): RequestCorrelationFilter = RequestCorrelationFilter()
+
+    private fun errorBody(
+        code: String,
+        message: String,
+        request: HttpServletRequest,
+    ): String {
+        val requestId = RequestCorrelationFilter.requestIdFrom(request)
+        return """{"code":"$code","message":"$message","details":[],"requestId":${requestIdJson(requestId)}}"""
+    }
+
+    private fun requestIdJson(requestId: String?): String =
+        requestId
+            ?.takeIf(RequestCorrelationFilter::isValidRequestId)
+            ?.let { "\"$it\"" }
+            ?: "null"
 }

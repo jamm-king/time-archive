@@ -1693,6 +1693,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ApiErrorDetail"
+        requestId:
+          type:
+            - string
+            - "null"
+          description: Correlation ID returned in the `X-Request-Id` response header.
+          minLength: 8
+          maxLength: 128
     ApiErrorCode:
       type: string
       enum:

@@ -1,6 +1,7 @@
 package com.timearchive.adapter.inbound.security
 
 import com.timearchive.configuration.RateLimitProperties
+import com.timearchive.adapter.inbound.web.RequestCorrelationFilter
 import com.timearchive.domain.port.RateLimitPort
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -123,8 +124,16 @@ class ApiRateLimitingFilter(
         response.status = status
         response.contentType = "application/json"
         response.characterEncoding = StandardCharsets.UTF_8.name()
-        response.writer.write("""{"code":"$code","message":"$message","details":[]}""")
+        response.writer.write(
+            """{"code":"$code","message":"$message","details":[],"requestId":${requestIdJson()}}""",
+        )
     }
+
+    private fun requestIdJson(): String =
+        RequestCorrelationFilter.currentRequestId()
+            ?.takeIf(RequestCorrelationFilter::isValidRequestId)
+            ?.let { "\"$it\"" }
+            ?: "null"
 
     private data class AppliedPolicy(
         val scope: String,
