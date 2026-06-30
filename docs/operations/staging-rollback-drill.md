@@ -100,6 +100,35 @@ smoke workflows.
 The drill is not complete until forward recovery succeeds and staging is back on
 the intended release.
 
+## Completed Drill Log
+
+### 2026-06-30
+
+The first staging rollback drill completed successfully.
+
+Release state before rollback:
+
+- Current image SHA:
+  `1fe77be2beb27c59487529aa1007eac68648b808`.
+- Previous image SHA:
+  `813c73b1f2def9f64c8e9bde0115a59db4bd210e`.
+- Redis image remained digest-pinned.
+- `cloudflared` image remained digest-pinned.
+
+Drill result:
+
+- Rolled back staging to
+  `813c73b1f2def9f64c8e9bde0115a59db4bd210e` through `Deploy staging`.
+- Ran the required staging smoke workflows after rollback.
+- Forward recovered staging to
+  `1fe77be2beb27c59487529aa1007eac68648b808` through `Deploy staging`.
+- Ran the required staging smoke workflows after forward recovery.
+
+Outcome:
+
+- Staging image rollback and forward recovery are verified.
+- Database rollback remains out of scope for this drill.
+
 ## Abort Conditions
 
 Stop and escalate instead of continuing when:

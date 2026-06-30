@@ -164,7 +164,7 @@ Release candidate verification:
 | Cloudflare | Needs verification | Staging Published Application routing to `web:3000` was verified through Cloudflare Tunnel. Production still needs edge cache bypass policy, WAF, rate limits, and public health checks. |
 | Staging deployment workflow | Ready | Manual SSM Run Command workflow deployed `813c73b1f2def9f64c8e9bde0115a59db4bd210e` from `main` with digest-pinned Redis/cloudflared images, after the deploy-role ECR verification permission was applied. |
 | Application health checks | Ready | Staging API, Web, and Redis containers were healthy; API returned `UP`, Web responded internally, `cloudflared` passed connectivity prechecks, and a manual public smoke workflow is available for the staging hostname. |
-| Rollback | Needs verification | Staging rollback drill runbook and release-state inspection script are available; execute rollback and forward recovery in staging before production. |
+| Rollback | Ready | Staging image rollback and forward recovery were verified on 2026-06-30 using the documented drill. Database rollback remains a separate high-impact recovery procedure. |
 
 ## Observability And Operations
 
