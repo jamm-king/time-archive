@@ -96,7 +96,11 @@ https://staging.time-archive.com -> http://web:3000
 `deploy.sh` stops on image pull, migration, service startup, or health-check
 failure. It records the current release only after verification succeeds.
 
-Automated rollback is not implemented. If rollback is required:
+Automated rollback is not implemented. Staging rollback drills reuse the manual
+`Deploy staging` workflow with the previous immutable image SHA. See
+[Staging Rollback Drill](staging-rollback-drill.md).
+
+If rollback is required:
 
 1. Inspect `/var/lib/time-archive/deployments/previous.env` on the EC2 host.
 2. Rerun deployment with the previous API and Web image references.

@@ -58,6 +58,9 @@ jobs:
       - name: Verify staging media preview smoke workflow
         run: ./scripts/verify-staging-media-preview-smoke-workflow.sh
 
+      - name: Verify staging rollback drill
+        run: ./scripts/verify-staging-rollback-drill.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest
