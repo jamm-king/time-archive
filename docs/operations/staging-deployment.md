@@ -188,3 +188,9 @@ Environment, and verifies:
 This check creates a disposable staging user with a
 `staging-auth-smoke-...@example.com` email address. Cleanup is a data-retention
 operation and is not part of the smoke workflow.
+
+## Admin Provisioning
+
+Staging admin users are provisioned through an operator-controlled SSM script,
+not through an application bootstrap API. See
+[Staging Admin Provisioning](staging-admin-provisioning.md).
