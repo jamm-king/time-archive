@@ -43,6 +43,9 @@ jobs:
       - name: Verify staging public smoke workflow
         run: ./scripts/verify-staging-public-smoke-workflow.sh
 
+      - name: Verify staging request ID smoke workflow
+        run: ./scripts/verify-staging-request-id-smoke-workflow.sh
+
       - name: Verify staging auth smoke workflow
         run: ./scripts/verify-staging-auth-smoke-workflow.sh
 
