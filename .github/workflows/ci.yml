@@ -61,6 +61,9 @@ jobs:
       - name: Verify staging rollback drill
         run: ./scripts/verify-staging-rollback-drill.sh
 
+      - name: Verify CloudWatch log operations
+        run: ./scripts/verify-cloudwatch-log-operations.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest

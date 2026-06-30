@@ -76,7 +76,7 @@ credentials or provider payloads.
 
 Default retention target:
 
-- Staging: 7 days.
+- Staging: 14 days.
 - Production MVP: 14 days.
 
 Longer retention requires an explicit cost and privacy review. Audit logs stored
@@ -98,6 +98,9 @@ Before public launch, confirm:
 - Log groups have the approved retention period.
 - Operators can search by request ID during an incident.
 - Logs do not contain the forbidden values listed above.
+
+See [CloudWatch Log Operations](cloudwatch-log-operations.md) for the current
+staging log groups, retention checks, and request ID search procedure.
 
 ## Follow-up Work
 
