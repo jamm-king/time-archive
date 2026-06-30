@@ -63,7 +63,7 @@ MVP-ready areas after target-environment verification:
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
-| Sensitive logging | Needs verification | Logging policy defines forbidden values and request correlation; confirm deployed CloudWatch logs do not include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
+| Sensitive logging | Needs verification | Logging and CloudWatch operations policies define forbidden values and sampling checks; confirm deployed logs do not include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
 | Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
 
 ## Payment
@@ -170,7 +170,7 @@ Release candidate verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Application logs | Needs verification | API request correlation is implemented with `X-Request-Id`; centralize API and web logs and verify request ID search in CloudWatch. |
+| Application logs | Needs verification | API request correlation is implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified, but live request ID search must be verified in staging. |
 | Error tracking | Blocked for production | Add an error tracking or alerting path for API and web failures. |
 | Metrics | Needs verification | Track request rate, error rate, latency, DB health, storage errors, and payment webhook failures. |
 | Audit logs | Ready | Admin approval, rejection, and hiding append audit records in the moderation transaction. |
