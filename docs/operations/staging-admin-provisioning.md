@@ -75,3 +75,25 @@ production admin provisioning should be an explicit operator runbook with:
 
 An admin invitation UI can be considered later, after email verification, MFA,
 and a broader role-management model exist.
+
+## Staging Authorization Smoke
+
+After an admin user exists, run the manual GitHub Actions workflow:
+
+```text
+Smoke staging admin
+```
+
+The workflow uses the `staging` GitHub Environment and requires these
+environment secrets:
+
+- `STAGING_ADMIN_EMAIL`
+- `STAGING_ADMIN_PASSWORD`
+
+It verifies:
+
+- unauthenticated admin API requests return `401`;
+- disposable non-admin users receive `403`;
+- the configured admin user can read the moderation list.
+
+The workflow does not approve, reject, hide, or preview media.

@@ -49,6 +49,9 @@ jobs:
       - name: Verify staging admin role grant script
         run: ./scripts/verify-staging-admin-role-grant.sh
 
+      - name: Verify staging admin smoke workflow
+        run: ./scripts/verify-staging-admin-smoke-workflow.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest

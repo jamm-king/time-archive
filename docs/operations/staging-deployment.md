@@ -194,3 +194,6 @@ operation and is not part of the smoke workflow.
 Staging admin users are provisioned through an operator-controlled SSM script,
 not through an application bootstrap API. See
 [Staging Admin Provisioning](staging-admin-provisioning.md).
+
+After provisioning an admin user, run the manual `Smoke staging admin` workflow
+to verify deployed admin authorization boundaries.
