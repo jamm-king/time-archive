@@ -8,10 +8,17 @@ COPY gradlew.bat gradlew.bat
 COPY settings.gradle.kts settings.gradle.kts
 COPY build.gradle.kts build.gradle.kts
 COPY gradle.properties gradle.properties
-COPY src src
 
 RUN sed -i 's/\r$//' ./gradlew && chmod +x ./gradlew
-RUN ./gradlew bootJar --no-daemon
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
+    ./gradlew dependencies --no-daemon > /tmp/gradle-dependencies.txt || \
+    (cat /tmp/gradle-dependencies.txt && exit 1); \
+    rm /tmp/gradle-dependencies.txt
+
+COPY src src
+
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
+    ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
 
