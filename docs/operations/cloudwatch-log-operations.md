@@ -54,7 +54,8 @@ aws logs describe-log-groups \
 
 ## Request ID Search
 
-API responses include `X-Request-Id`. To trace a request:
+API responses include `X-Request-Id`, and API request completion logs include
+the same request ID. To trace a request:
 
 1. Capture the `X-Request-Id` response header from the browser, curl, or smoke
    workflow logs.
@@ -70,9 +71,10 @@ aws logs filter-log-events \
 3. Use the same request ID when comparing Web, API, and related operational
    logs.
 
-Until structured request completion logs are added, request ID search verifies
-that application logs emitted during request handling can be correlated. It does
-not guarantee that every successful request emits a log line.
+The expected API log event is a safe request completion line containing
+`api request completed`, `requestId`, `method`, `path`, `status`, and
+`durationMs`. It must not include query strings, request bodies, cookies,
+authorization headers, CSRF tokens, credentials, or presigned URLs.
 
 ## Sensitive Log Checks
 

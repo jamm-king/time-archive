@@ -171,7 +171,7 @@ Release candidate verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Application logs | Needs verification | API request correlation is implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified, and the staging request ID smoke workflow is available, but deployed workflow execution and live CloudWatch request ID search still need verification. |
+| Application logs | Needs verification | API request correlation and safe request completion logging are implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified, and the staging request ID smoke workflow is available, but deployed workflow execution and live CloudWatch request ID search still need verification. |
 | Error tracking | Blocked for production | Add an error tracking or alerting path for API and web failures. |
 | Metrics | Needs verification | Track request rate, error rate, latency, DB health, storage errors, and payment webhook failures. |
 | Audit logs | Ready | Admin approval, rejection, and hiding append audit records in the moderation transaction. |

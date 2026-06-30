@@ -20,6 +20,7 @@ Rules:
 - API error responses include the same value in `requestId`.
 - Request-scoped API logs include the request ID in the logging MDC as
   `requestId`.
+- The API emits one safe request completion log line after each request.
 - The request ID must be cleared after the request completes.
 
 Accepted request IDs are limited to 8-128 characters using only letters,
@@ -48,6 +49,16 @@ them. At minimum, production logs should make the following values searchable:
 Use stable identifiers instead of raw request bodies. Prefer domain IDs such as
 `reservationId`, `ownershipRecordId`, `mediaAssetId`, and `uploadRequestId` only
 when they are needed for debugging.
+
+The default API request completion log line must include only:
+
+- `requestId`
+- `method`
+- `path`, without query string
+- `status`
+- `durationMs`
+- `exception`, only as sanitized exception class metadata when the request
+  fails before normal completion
 
 ## Values That Must Not Be Logged
 
@@ -93,6 +104,8 @@ prefix.
 Before public launch, confirm:
 
 - API logs contain `requestId`.
+- API request completion logs are searchable by `requestId` for successful and
+  failed requests.
 - Web proxy or frontend logs can be correlated to API responses through
   `X-Request-Id` where practical.
 - The manual `Smoke staging request ID` workflow passes after each staging
@@ -106,7 +119,8 @@ staging log groups, retention checks, and request ID search procedure.
 
 ## Follow-up Work
 
-- Add request duration access logs or structured request completion logs.
+- Replace plain request completion logs with JSON structured logs if CloudWatch
+  field extraction becomes necessary.
 - Add CloudWatch metric filters or alarms for repeated `UNEXPECTED_ERROR`,
   rate-limit storage failures, storage failures, and payment failures.
 - Add error tracking only after the event fields and sensitive-data scrubbing
