@@ -58,7 +58,7 @@ MVP-ready areas after target-environment verification:
 | --- | --- | --- |
 | Session authentication | Needs verification | Manual staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed session cookie attributes. Repeat after auth changes and before production. |
 | CSRF protection | Needs verification | Manual staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks must still remain non-browser-facing in deployed environments. |
-| Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
+| Admin authorization | Needs verification | Manual staging admin smoke workflow verifies unauthenticated rejection, non-admin rejection, and admin moderation-list access. Repeat before production and extend to media actions. |
 | Admin bootstrap | Blocked for production | Staging has an operator-controlled SSM admin grant script; production still needs an approved provisioning process and role-change audit path. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
@@ -129,6 +129,7 @@ Required checks before merging a release candidate:
 - Staging public smoke workflow policy validation.
 - Staging auth smoke workflow policy validation.
 - Staging admin role grant script policy validation.
+- Staging admin smoke workflow policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
