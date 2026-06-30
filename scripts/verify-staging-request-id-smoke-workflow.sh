@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+log() {
+  printf '[verify-staging-request-id-smoke-workflow] %s\n' "$1"
+}
+
+fail() {
+  printf '[verify-staging-request-id-smoke-workflow] ERROR: %s\n' "$1" >&2
+  exit 1
+}
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKFLOW="$ROOT_DIR/.github/workflows/smoke-staging-request-id.yml"
+SCRIPT="$ROOT_DIR/scripts/verify-staging-request-id-smoke.sh"
+
+[[ -f "$WORKFLOW" ]] || fail "Workflow not found: $WORKFLOW"
+[[ -f "$SCRIPT" ]] || fail "Smoke script not found: $SCRIPT"
+
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+elif command -v python >/dev/null 2>&1 && python -c 'import yaml' >/dev/null 2>&1; then
+  PYTHON_BIN=python
+else
+  fail "python3 or python with PyYAML is required"
+fi
+
+"$PYTHON_BIN" - "$WORKFLOW" "$SCRIPT" <<'PY'
+import copy
+import re
+import sys
+
+import yaml
+
+
+CHECKOUT_REVISION = "34e114876b0b11c390a56381ad16ebd13914f8d5"
+
+
+def as_bool(value):
+    return str(value).lower() == "true"
+
+
+def validate(workflow, script_text):
+    errors = []
+
+    triggers = workflow.get("on")
+    if not isinstance(triggers, dict) or set(triggers) != {"workflow_dispatch"}:
+        errors.append("workflow must be manual workflow_dispatch only")
+
+    inputs = triggers.get("workflow_dispatch", {}).get("inputs", {})
+    if set(inputs) != {"public_base_url", "request_id"}:
+        errors.append("workflow inputs must contain only public_base_url and request_id")
+    if as_bool(inputs.get("public_base_url", {}).get("required")):
+        errors.append("public_base_url must remain optional")
+    if as_bool(inputs.get("request_id", {}).get("required")):
+        errors.append("request_id must remain optional")
+
+    if workflow.get("permissions") != {"contents": "read"}:
+        errors.append("workflow permissions must be contents: read only")
+
+    concurrency = workflow.get("concurrency", {})
+    if concurrency.get("group") != "staging-request-id-smoke":
+        errors.append("workflow must serialize the staging request ID smoke group")
+    if as_bool(concurrency.get("cancel-in-progress")):
+        errors.append("workflow must not cancel an in-progress smoke check")
+
+    env = workflow.get("env", {})
+    if env != {"STAGING_PUBLIC_BASE_URL": "${{ vars.STAGING_PUBLIC_BASE_URL }}"}:
+        errors.append("workflow must read only the reviewed staging public URL variable")
+
+    raw_workflow = yaml.dump(workflow)
+    if "secrets." in raw_workflow:
+        errors.append("workflow must not read GitHub secrets")
+    if "id-token" in raw_workflow:
+        errors.append("workflow must not request OIDC permissions")
+    if re.search(r"(?<![0-9])[0-9]{12}(?![0-9])", raw_workflow):
+        errors.append("workflow must not contain a literal AWS account ID")
+
+    jobs = workflow.get("jobs", {})
+    if set(jobs) != {"smoke"}:
+        errors.append("workflow must contain only the smoke job")
+        return errors
+
+    job = jobs["smoke"]
+    if job.get("environment") != "staging":
+        errors.append("smoke job must use the staging environment")
+    if "refs/heads/main" not in str(job.get("if", "")):
+        errors.append("smoke job must be limited to refs/heads/main")
+    if job.get("runs-on") != "ubuntu-latest":
+        errors.append("smoke job must use ubuntu-latest")
+    try:
+        if int(job.get("timeout-minutes", "0")) > 5:
+            errors.append("smoke job timeout must not exceed 5 minutes")
+    except ValueError:
+        errors.append("smoke job timeout must be numeric")
+
+    actions = [
+        step.get("uses")
+        for step in job.get("steps", [])
+        if isinstance(step, dict) and step.get("uses")
+    ]
+    if actions != [f"actions/checkout@{CHECKOUT_REVISION}"]:
+        errors.append("workflow action dependency set must contain only pinned checkout")
+
+    step_text = "\n".join(
+        str(step.get("run", "")) for step in job.get("steps", []) if isinstance(step, dict)
+    )
+    for required in (
+        "verify-staging-request-id-smoke.sh",
+        "INPUT_PUBLIC_BASE_URL",
+        "INPUT_REQUEST_ID",
+        "STAGING_PUBLIC_BASE_URL",
+        "GITHUB_STEP_SUMMARY",
+    ):
+        if required not in step_text:
+            errors.append(f"workflow is missing required request ID smoke behavior: {required}")
+
+    for required in (
+        "X-Request-Id",
+        "requestId",
+        "/api/timeline?from=0&to=1",
+        "/api/timeline?from=1&to=1",
+        "Expected invalid timeline request HTTP 400",
+        "Successful response header propagation passed",
+        "Error response header and body propagation passed",
+    ):
+        if required not in script_text:
+            errors.append(f"script is missing required request ID smoke behavior: {required}")
+
+    for forbidden in ("POST ", "PUT ", "PATCH ", "DELETE ", "--request POST", "aws "):
+        if forbidden in script_text:
+            errors.append(f"script must not use forbidden operation: {forbidden}")
+
+    return errors
+
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    workflow = yaml.load(source, Loader=yaml.BaseLoader)
+with open(sys.argv[2], encoding="utf-8") as source:
+    script_text = source.read()
+
+errors = validate(workflow, script_text)
+if errors:
+    raise SystemExit("\n".join(f"- {error}" for error in errors))
+
+mutated = copy.deepcopy(workflow)
+mutated["on"]["push"] = {"branches": ["main"]}
+if not validate(mutated, script_text):
+    raise SystemExit("policy self-test failed to detect automatic trigger")
+
+mutated = copy.deepcopy(workflow)
+mutated["permissions"]["id-token"] = "write"
+if not validate(mutated, script_text):
+    raise SystemExit("policy self-test failed to detect OIDC permission")
+
+mutated = copy.deepcopy(workflow)
+mutated["jobs"]["smoke"].pop("environment", None)
+if not validate(mutated, script_text):
+    raise SystemExit("policy self-test failed to detect staging environment removal")
+
+mutated_script = script_text.replace("Expected invalid timeline request HTTP 400", "")
+if not validate(workflow, mutated_script):
+    raise SystemExit("policy self-test failed to detect missing error response assertion")
+
+print("staging request ID smoke workflow policy validation passed")
+PY
+
+log "Staging request ID smoke workflow validation passed"

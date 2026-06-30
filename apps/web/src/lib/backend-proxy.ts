@@ -26,12 +26,16 @@ export async function proxyBackendJson({
   });
   const cookie = request.headers.get("cookie");
   const csrfToken = request.headers.get("x-xsrf-token");
+  const requestId = request.headers.get("x-request-id");
 
   if (cookie) {
     headers.set("Cookie", cookie);
   }
   if (csrfToken) {
     headers.set("X-XSRF-TOKEN", csrfToken);
+  }
+  if (requestId) {
+    headers.set("X-Request-Id", requestId);
   }
   if (body !== undefined) {
     headers.set("Content-Type", "application/json");
@@ -56,6 +60,10 @@ export async function proxyBackendJson({
 
   for (const cookieValue of getSetCookieValues(upstreamResponse.headers)) {
     response.headers.append("Set-Cookie", cookieValue);
+  }
+  const upstreamRequestId = upstreamResponse.headers.get("x-request-id");
+  if (upstreamRequestId) {
+    response.headers.set("X-Request-Id", upstreamRequestId);
   }
 
   return response;

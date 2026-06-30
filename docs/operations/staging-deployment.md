@@ -160,6 +160,28 @@ Environment, and checks only non-mutating public endpoints:
 The workflow input `public_base_url` is optional. If omitted, the workflow uses
 the repository variable `STAGING_PUBLIC_BASE_URL`.
 
+## Request ID Smoke Verification
+
+After deploying a release with API request correlation, verify public
+`X-Request-Id` propagation through the staging Web proxy.
+
+From GitHub Actions, run:
+
+```text
+Smoke staging request ID
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- a known `X-Request-Id` sent to a successful public API request is returned in
+  the response header;
+- a known `X-Request-Id` sent to an invalid public API request is returned in
+  both the response header and JSON `requestId` field.
+
+The workflow input `public_base_url` is optional. If omitted, the workflow uses
+the repository variable `STAGING_PUBLIC_BASE_URL`.
+
 ## Auth Smoke Verification
 
 The deployed HTTPS authentication path can be verified without SSH or AWS

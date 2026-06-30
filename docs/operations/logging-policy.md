@@ -95,6 +95,8 @@ Before public launch, confirm:
 - API logs contain `requestId`.
 - Web proxy or frontend logs can be correlated to API responses through
   `X-Request-Id` where practical.
+- The manual `Smoke staging request ID` workflow passes after each staging
+  deployment that changes request correlation or Web proxy behavior.
 - Log groups have the approved retention period.
 - Operators can search by request ID during an incident.
 - Logs do not contain the forbidden values listed above.

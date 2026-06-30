@@ -1,0 +1,59 @@
+name: Smoke staging request ID
+run-name: Smoke staging request ID
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_base_url:
+        description: Optional HTTPS staging URL. Defaults to STAGING_PUBLIC_BASE_URL.
+        required: false
+        type: string
+      request_id:
+        description: Optional safe request ID token to verify.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-request-id-smoke
+  cancel-in-progress: false
+
+env:
+  STAGING_PUBLIC_BASE_URL: ${{ vars.STAGING_PUBLIC_BASE_URL }}
+
+jobs:
+  smoke:
+    name: Request ID smoke
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Verify request ID propagation
+        shell: bash
+        env:
+          INPUT_PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+          INPUT_REQUEST_ID: ${{ inputs.request_id }}
+        run: |
+          set -euo pipefail
+
+          base_url="${INPUT_PUBLIC_BASE_URL:-${STAGING_PUBLIC_BASE_URL:-}}"
+          request_id="${INPUT_REQUEST_ID:-staging-request-id-smoke-${GITHUB_RUN_ID}}"
+
+          ./scripts/verify-staging-request-id-smoke.sh \
+            --base-url "$base_url" \
+            --request-id "$request_id"
+
+          {
+            echo "## Staging request ID smoke"
+            echo
+            echo "- Base URL: \`${base_url%/}\`"
+            echo "- Successful response header propagation: passed"
+            echo "- Error response header and body propagation: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
