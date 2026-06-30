@@ -59,7 +59,7 @@ MVP-ready areas after target-environment verification:
 | Session authentication | Needs verification | Manual staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed session cookie attributes. Repeat after auth changes and before production. |
 | CSRF protection | Needs verification | Manual staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks must still remain non-browser-facing in deployed environments. |
 | Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
-| Admin bootstrap | Blocked for production | Replace local `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS` bootstrap with an operator-controlled provisioning process or tightly controlled one-time bootstrap. |
+| Admin bootstrap | Blocked for production | Staging has an operator-controlled SSM admin grant script; production still needs an approved provisioning process and role-change audit path. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
@@ -128,6 +128,7 @@ Required checks before merging a release candidate:
 - Staging deployment workflow policy validation.
 - Staging public smoke workflow policy validation.
 - Staging auth smoke workflow policy validation.
+- Staging admin role grant script policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the
