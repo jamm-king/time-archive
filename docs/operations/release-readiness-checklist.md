@@ -56,8 +56,8 @@ MVP-ready areas after target-environment verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Session authentication | Needs verification | Verify session cookie attributes in the deployed HTTPS environment. |
-| CSRF protection | Needs verification | Confirm every browser mutation requires `X-XSRF-TOKEN`; fake provider callbacks must not be browser-facing. |
+| Session authentication | Needs verification | Manual staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed session cookie attributes. Repeat after auth changes and before production. |
+| CSRF protection | Needs verification | Manual staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks must still remain non-browser-facing in deployed environments. |
 | Admin authorization | Needs verification | Confirm every admin route derives identity from the server-side session and requires `ADMIN`. |
 | Admin bootstrap | Blocked for production | Replace local `TIME_ARCHIVE_INITIAL_ADMIN_EMAILS` bootstrap with an operator-controlled provisioning process or tightly controlled one-time bootstrap. |
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
@@ -127,6 +127,7 @@ Required checks before merging a release candidate:
 - Staging image-publication workflow policy validation.
 - Staging deployment workflow policy validation.
 - Staging public smoke workflow policy validation.
+- Staging auth smoke workflow policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and
 MinIO initialization were stabilized. Future release candidates must pass the

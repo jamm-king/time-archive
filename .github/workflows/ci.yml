@@ -43,6 +43,9 @@ jobs:
       - name: Verify staging public smoke workflow
         run: ./scripts/verify-staging-public-smoke-workflow.sh
 
+      - name: Verify staging auth smoke workflow
+        run: ./scripts/verify-staging-auth-smoke-workflow.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest
