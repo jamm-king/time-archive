@@ -83,8 +83,8 @@ MVP-ready areas after target-environment verification:
 | Local MinIO flow | Ready | Verified by local upload, public timeline, and admin preview scripts. |
 | Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
 | Production Cloudflare R2 | Blocked for production | Provision a separate production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback from staging. |
-| Presigned upload URLs | Needs verification | Confirm TTL, content type, content length, and CORS behavior from the deployed web origin. |
-| Staging media upload and admin preview | Needs verification | Manual staging media preview smoke workflow uploads to the pre-granted `[7000, 7001)` range, verifies admin list visibility, and downloads through a short-lived admin preview URL. Run before a release candidate. |
+| Presigned upload URLs | Needs verification | Staging media preview smoke verifies deployed upload request creation, presigned PUT upload with the declared content type and length, and completion verification. Browser-origin CORS behavior from the deployed Web app still needs an explicit browser or preflight verification before public launch. |
+| Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
 | File signature validation | Blocked for production | Add signature sniffing before trusting content type. |
 | Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |

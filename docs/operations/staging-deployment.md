@@ -287,3 +287,9 @@ Environment, and verifies:
 This check mutates staging by uploading a smoke-test media object and creating
 an `UPLOADED` media asset. It does not approve, reject, hide, publish, or clean
 up the media asset.
+
+This workflow passed against the deployed staging public HTTPS hostname after
+the staging admin account was granted ownership of `[7000, 7001)`. The result
+verifies the staging object storage upload path and admin original preview path,
+but it does not prove browser-origin CORS behavior because the object PUT is
+performed by `curl` in the workflow.
