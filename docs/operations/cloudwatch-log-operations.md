@@ -76,6 +76,20 @@ The expected API log event is a safe request completion line containing
 `durationMs`. It must not include query strings, request bodies, cookies,
 authorization headers, CSRF tokens, credentials, or presigned URLs.
 
+## Staging Verification Record
+
+On 2026-07-01, after PR #87 was merged and deployed to staging, the manual
+`Smoke staging request ID` workflow passed. The smoke request ID was then found
+in the `/time-archive/staging/api` CloudWatch log group through the safe API
+request completion log line.
+
+This verifies the current staging path:
+
+- Cloudflare Tunnel and Web proxy preserve `X-Request-Id`.
+- API responses return the effective `X-Request-Id`.
+- API error responses include the same `requestId`.
+- API request completion logs are searchable by request ID in CloudWatch.
+
 ## Sensitive Log Checks
 
 During staging release verification, sample API and Web logs and confirm they do
