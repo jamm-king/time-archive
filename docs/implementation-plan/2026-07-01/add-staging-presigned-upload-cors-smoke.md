@@ -99,6 +99,11 @@ origin.
   because the local Python installation does not include PyYAML. CI installs
   PyYAML through the existing CloudFormation validator requirements before
   running workflow policy checks.
+- 2026-07-01: The first deployed smoke run failed with `403 Forbidden` on the
+  preflight request because the staging R2 bucket CORS policy did not allow the
+  deployed Web origin, `PUT`, and `Content-Type`.
+- 2026-07-01: After the staging R2 bucket CORS policy was updated, the manual
+  `Smoke staging presigned upload CORS` workflow passed.
 
 ## Completion Summary
 
@@ -128,8 +133,11 @@ allowed origin CORS header when the deployed Web origin is sent.
 
 ## Manual Verification Results
 
-The deployed staging CORS smoke was not run in this branch. After merge, run the
-manual `Smoke staging presigned upload CORS` workflow from `main`.
+After merge, the first deployed staging CORS smoke failed with `403 Forbidden`
+on the preflight request. The staging R2 bucket CORS policy was then updated to
+allow the deployed Web origin to issue `PUT` requests with the `Content-Type`
+header, and the manual `Smoke staging presigned upload CORS` workflow passed
+from `main`.
 
 ## Known Limitations
 
@@ -142,7 +150,7 @@ manual `Smoke staging presigned upload CORS` workflow from `main`.
 
 ## Follow-Up Recommendations
 
-- After the workflow passes in staging, update the release readiness checklist
-  to mark `Presigned upload URLs` as `Ready`.
+- Repeat `Smoke staging presigned upload CORS` after storage bucket, CORS, Web
+  origin, or upload-header changes.
 - Add browser automation only if the shell CORS smoke passes but real browser
   uploads still fail.
