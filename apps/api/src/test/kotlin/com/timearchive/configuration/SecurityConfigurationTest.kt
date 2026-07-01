@@ -2,6 +2,7 @@ package com.timearchive.configuration
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.web.cors.CorsConfigurationSource
 
@@ -23,5 +24,15 @@ class SecurityConfigurationTest {
         assertThat(corsConfiguration?.allowedOriginPatterns).isNull()
         assertThat(corsConfiguration?.allowedMethods).isNull()
         assertThat(corsConfiguration?.allowedHeaders).isNull()
+    }
+
+    @Test
+    fun `user details service is empty to prevent generated default password logging`() {
+        // When
+        val userDetailsService = configuration.userDetailsService()
+
+        // Then
+        assertThat(userDetailsService).isInstanceOf(InMemoryUserDetailsManager::class.java)
+        assertThat((userDetailsService as InMemoryUserDetailsManager).userExists("user")).isFalse()
     }
 }

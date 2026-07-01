@@ -63,7 +63,7 @@ MVP-ready areas after target-environment verification:
 | Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
-| Sensitive logging | Needs verification | Logging and CloudWatch operations policies define forbidden values and sampling checks; confirm deployed logs do not include passwords, session cookies, CSRF tokens, storage credentials, presigned URLs, or payment payload secrets. |
+| Sensitive logging | Needs verification | Staging sampling found Spring Boot generated default password startup logs in the API log group; the application now disables default generated user creation, but staging must be redeployed and API/Web CloudWatch logs rechecked before this gate can be marked ready. |
 | Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
 
 ## Payment

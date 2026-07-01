@@ -120,6 +120,21 @@ aws logs filter-log-events \
 Treat matches as review candidates, not automatic incidents. Some words may
 appear in sanitized policy messages or documentation-like startup output.
 
+### Staging Sensitive Logging Verification Record
+
+On 2026-07-01, API and Web CloudWatch logs were sampled for the reviewed
+sensitive keywords. The Web log group did not return matches for the reviewed
+keywords. The API log group returned Spring Boot generated default password
+startup messages, which are not acceptable for staging or production logs.
+
+The application now declares an empty `UserDetailsService` because Time Archive
+uses session-derived authentication and does not need Spring Boot's generated
+default user. After this fix is merged and deployed, rerun the API/Web sensitive
+keyword checks before marking sensitive logging ready.
+
+The reviewed `X-Amz-Signature` API candidates were false positives from JVM
+option text, not presigned URLs.
+
 ## CI Guard
 
 The static validator:
