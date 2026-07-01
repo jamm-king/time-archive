@@ -293,3 +293,31 @@ the staging admin account was granted ownership of `[7000, 7001)`. The result
 verifies the staging object storage upload path and admin original preview path,
 but it does not prove browser-origin CORS behavior because the object PUT is
 performed by `curl` in the workflow.
+
+## Presigned Upload CORS Smoke Verification
+
+The deployed staging presigned upload CORS path can be verified without SSH or
+AWS access after the staging admin account owns the configured range.
+
+From GitHub Actions, run:
+
+```text
+Smoke staging presigned upload CORS
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- Login using the configured staging admin credentials.
+- Lookup of an active owned range, defaulting to `[7000, 7001)`.
+- Owned media upload request creation.
+- `OPTIONS` preflight to the presigned upload URL with the deployed Web origin,
+  `Access-Control-Request-Method: PUT`, and
+  `Access-Control-Request-Headers: content-type`.
+- Required CORS response headers for origin, method, and request headers.
+- Actual presigned `PUT` with the deployed Web origin and CORS response header.
+
+This check mutates staging by creating an upload request and uploading a small
+smoke-test object. It intentionally does not complete the upload request or
+create a media asset because completion and admin preview are covered by the
+media preview smoke workflow.
