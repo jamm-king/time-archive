@@ -222,16 +222,17 @@ architecture does not include an ALB, ACM certificate, Nginx, Certbot, or an
 EC2-managed public certificate.
 
 The Tunnel design allows the API to trust a Cloudflare-provided client address
-only after the Web proxy forwards it safely. The current Next.js proxy does not
-forward `CF-Connecting-IP`. Therefore:
+after the Web proxy forwards reviewed Cloudflare headers safely. The Next.js
+proxy forwards `CF-Connecting-IP`, `CF-Ray`, `CF-Visitor`, and `CF-IPCountry` to
+the API. Therefore:
 
-- Keep `TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER` empty in the first staging
-  deployment.
-- Add and test trusted client-address propagation as an operational security
-  task.
-- Set `TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP` only after
-  direct origin access is impossible and the Web proxy overwrites, rather than
-  appends, the forwarded value.
+- Keep `TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER` empty only until the header
+  path is verified through Cloudflare.
+- Set `TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP` after
+  Cloudflare Tunnel is the only public ingress and direct origin access is
+  impossible.
+- Keep `X-Forwarded-For` out of application rate-limit identity unless a future
+  trusted proxy policy explicitly justifies it.
 
 ### TLS And Cookies
 

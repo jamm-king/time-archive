@@ -50,7 +50,7 @@ history, screenshots, or logs.
 | `/time-archive/staging/r2/access-key` | `SecureString` | Least-privilege staging R2 access key ID. |
 | `/time-archive/staging/r2/secret-key` | `SecureString` | Least-privilege staging R2 secret access key. |
 | `/time-archive/staging/rate-limit/key-salt` | `SecureString` | Random staging-only HMAC salt. |
-| `/time-archive/staging/rate-limit/client-ip-header` | `String` | Optional. Omit while empty; the renderer defaults it to empty until Cloudflare client IP propagation is implemented and verified. |
+| `/time-archive/staging/rate-limit/client-ip-header` | `String` | Set to `CF-Connecting-IP` after Cloudflare Tunnel is confirmed as the only public ingress and the Web proxy forwards reviewed Cloudflare headers to the API. Omit while empty before that verification. |
 | `/time-archive/staging/cloudflare/tunnel-token` | `SecureString` | Staging Cloudflare Tunnel token. |
 
 ## Database User Policy
@@ -87,7 +87,7 @@ TIME_ARCHIVE_DATABASE_NAME=time_archive
 TIME_ARCHIVE_DATABASE_PORT=5432
 TIME_ARCHIVE_STORAGE_S3_REGION=auto
 TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS=true
-TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=
+TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP
 ```
 
 Get the RDS endpoint from the stack output:
@@ -151,7 +151,8 @@ Then create or overwrite the AWS parameters:
 The script validates the input against
 `deploy/staging/ssm-parameters.example.json`, checks the AWS account, and writes
 each non-empty parameter with `ssm put-parameter --overwrite`. The optional
-empty `rate-limit/client-ip-header` value is intentionally omitted from SSM.
+empty `rate-limit/client-ip-header` value is intentionally omitted from SSM
+before trusted Cloudflare client IP propagation is enabled.
 The script logs only parameter names and types, never values.
 
 ## Verification
@@ -194,8 +195,10 @@ The required parameter contract is committed and locally validated. The staging
 runtime parameters have been written to SSM in account `231851555445`, region
 `ap-northeast-2`. Thirteen non-empty parameters exist under
 `/time-archive/staging/`; the optional empty
-`rate-limit/client-ip-header` parameter is intentionally omitted so the renderer
-defaults it to empty during deployment.
+`rate-limit/client-ip-header` parameter was intentionally omitted in the first
+staging deployment. After Cloudflare edge hardening is applied, set that
+parameter to `CF-Connecting-IP` so application rate limits group anonymous
+traffic by the visitor IP supplied by Cloudflare.
 
 Live SSM metadata validation has passed without decrypting parameter values.
 The staging database application/migration user matching the stored database

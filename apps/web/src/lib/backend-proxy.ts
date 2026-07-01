@@ -14,6 +14,13 @@ type ProxyOptions = {
   body?: string;
 };
 
+const FORWARDED_CLOUDFLARE_HEADERS = [
+  "cf-connecting-ip",
+  "cf-ray",
+  "cf-visitor",
+  "cf-ipcountry",
+] as const;
+
 export async function proxyBackendJson({
   method = "GET",
   path,
@@ -36,6 +43,12 @@ export async function proxyBackendJson({
   }
   if (requestId) {
     headers.set("X-Request-Id", requestId);
+  }
+  for (const headerName of FORWARDED_CLOUDFLARE_HEADERS) {
+    const headerValue = request.headers.get(headerName);
+    if (headerValue) {
+      headers.set(headerName, headerValue);
+    }
   }
   if (body !== undefined) {
     headers.set("Content-Type", "application/json");

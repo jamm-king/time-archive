@@ -73,6 +73,9 @@ jobs:
       - name: Verify CloudWatch log operations
         run: ./scripts/verify-cloudwatch-log-operations.sh
 
+      - name: Verify Cloudflare edge hardening policy
+        run: ./scripts/verify-cloudflare-edge-hardening.sh
+
   openapi:
     name: OpenAPI
     runs-on: ubuntu-latest
