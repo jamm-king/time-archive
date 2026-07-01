@@ -64,7 +64,7 @@ MVP-ready areas after target-environment verification:
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
 | Sensitive logging | Ready | After the generated default password logging fix was deployed to staging, API/Web CloudWatch keyword sampling and Logs Insights regex checks found no confirmed sensitive-log matches for passwords, session cookies, CSRF tokens, authorization headers, storage credentials, presigned URLs, or payment payload secrets. Repeat after logging, auth, storage, payment, or deployment changes. |
-| Security headers | Needs verification | Web security headers and a manual staging smoke workflow are implemented for HSTS, frame policy, content type sniffing protection, conservative referrer policy, minimal CSP, and browser permission restrictions. Run after the next staging deployment. |
+| Security headers | Ready | After redeploying staging from the security-header change, the manual `Smoke staging security headers` workflow passed against the public HTTPS hostname and verified HSTS, frame policy, content type sniffing protection, conservative referrer policy, minimal CSP, and browser permission restrictions. Repeat after Web routing, Cloudflare, or header-policy changes. |
 
 ## Payment
 

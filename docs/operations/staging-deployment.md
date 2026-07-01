@@ -244,6 +244,9 @@ Environment, and verifies both the Web root and same-origin public API proxy:
   `object-src 'none'`, and `base-uri 'self'`.
 - `Permissions-Policy` denying camera, microphone, and geolocation access.
 
+This workflow passed against the redeployed staging public HTTPS hostname after
+the Web security header change was deployed on 2026-07-01.
+
 ## Admin Provisioning
 
 Staging admin users are provisioned through an operator-controlled SSM script,

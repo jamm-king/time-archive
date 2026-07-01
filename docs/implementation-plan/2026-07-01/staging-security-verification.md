@@ -110,6 +110,9 @@ release-readiness checks.
   because the local Python installation does not include PyYAML. CI installs
   PyYAML through the existing CloudFormation validator requirements before
   running workflow policy checks.
+- 2026-07-01: After the change was merged, staging images were republished,
+  staging was redeployed, and the manual `Smoke staging security headers`
+  workflow passed against the public HTTPS hostname.
 
 ## Completion Summary
 
@@ -142,21 +145,18 @@ permissions. CI now validates the workflow policy and script coverage.
 
 ## Manual Verification Results
 
-The deployed staging security header smoke was not run in this branch because
-the new headers are not deployed until this change is merged, images are
-published, and staging is redeployed.
+After the change was merged and staging was redeployed, the manual
+`Smoke staging security headers` workflow passed against the public HTTPS
+hostname. This confirms that the Web root and public timeline proxy responses
+include the expected HSTS, frame policy, content type sniffing protection,
+referrer policy, minimal CSP, and browser permission headers.
 
 ## Known Limitations
 
-- The new `Security headers` release gate remains `Needs verification` until the
-  `Smoke staging security headers` workflow passes against the redeployed
-  staging environment.
 - Cloudflare edge abuse controls and direct-origin restriction remain separate
   environment tasks.
 
 ## Follow-Up Recommendations
 
-- After merge, publish staging images, deploy staging, and run:
-  - `Smoke staging auth`
-  - `Smoke staging admin`
-  - `Smoke staging security headers`
+- Repeat `Smoke staging security headers` after Web routing, Cloudflare, or
+  header-policy changes.
