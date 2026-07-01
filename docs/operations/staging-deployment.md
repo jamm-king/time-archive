@@ -321,3 +321,7 @@ This check mutates staging by creating an upload request and uploading a small
 smoke-test object. It intentionally does not complete the upload request or
 create a media asset because completion and admin preview are covered by the
 media preview smoke workflow.
+
+This workflow passed on 2026-07-01 after the staging R2 bucket CORS policy was
+updated to allow the deployed Web origin to issue `PUT` requests with the
+`Content-Type` header.
