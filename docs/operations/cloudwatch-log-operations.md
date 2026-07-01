@@ -135,6 +135,14 @@ keyword checks before marking sensitive logging ready.
 The reviewed `X-Amz-Signature` API candidates were false positives from JVM
 option text, not presigned URLs.
 
+After PR #89 was merged and redeployed to staging on 2026-07-01, API and Web
+CloudWatch logs generated after the deployment were rechecked. Keyword-count
+checks for `password`, `cookie`, `csrf`, `authorization`, `presigned`,
+`X-Amz-Signature`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` returned no
+confirmed sensitive-log matches in the API or Web log groups. A stricter Logs
+Insights regex search across the same API and Web log groups also returned zero
+matches.
+
 ## CI Guard
 
 The static validator:
