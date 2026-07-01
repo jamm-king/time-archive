@@ -56,15 +56,15 @@ MVP-ready areas after target-environment verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Session authentication | Needs verification | Manual staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed session cookie attributes. Repeat after auth changes and before production. |
-| CSRF protection | Needs verification | Manual staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks must still remain non-browser-facing in deployed environments. |
-| Admin authorization | Needs verification | Manual staging admin smoke workflow verifies unauthenticated rejection, non-admin rejection, and admin moderation-list access. Repeat before production and extend to media actions. |
+| Session authentication | Ready | Staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie attributes. Repeat after auth changes and before production. |
+| CSRF protection | Ready | Staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks remain excluded from browser-facing deployed environments. Repeat after auth or payment callback changes. |
+| Admin authorization | Ready | Staging admin smoke workflow verifies unauthenticated rejection, non-admin rejection, and admin moderation-list access. Repeat before production and extend if new admin actions are added. |
 | Admin bootstrap | Blocked for production | Staging has an operator-controlled SSM admin grant script; production still needs an approved provisioning process and role-change audit path. |
-| Password policy | Needs verification | Confirm minimum length and hashing are acceptable for MVP; add reset flow later. |
+| Password policy | Ready for MVP | Registration enforces a minimum password length of 8 characters, passwords are stored through BCrypt hashing, and registration tests cover short-password rejection. Password reset remains a post-MVP follow-up. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Needs verification | Restrict direct origin access, configure the trusted client IP header, and add Cloudflare edge limits in the deployed environment. |
 | Sensitive logging | Ready | After the generated default password logging fix was deployed to staging, API/Web CloudWatch keyword sampling and Logs Insights regex checks found no confirmed sensitive-log matches for passwords, session cookies, CSRF tokens, authorization headers, storage credentials, presigned URLs, or payment payload secrets. Repeat after logging, auth, storage, payment, or deployment changes. |
-| Security headers | Needs verification | Confirm HTTPS, HSTS, secure cookies, frame policy, content type sniffing protection, and conservative referrer policy at the edge or app layer. |
+| Security headers | Needs verification | Web security headers and a manual staging smoke workflow are implemented for HSTS, frame policy, content type sniffing protection, conservative referrer policy, minimal CSP, and browser permission restrictions. Run after the next staging deployment. |
 
 ## Payment
 

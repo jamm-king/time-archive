@@ -215,6 +215,35 @@ This check creates a disposable staging user with a
 `staging-auth-smoke-...@example.com` email address. Cleanup is a data-retention
 operation and is not part of the smoke workflow.
 
+## Security Headers Smoke Verification
+
+After deploying a release with Web security headers, verify the public HTTPS
+entrypoint without SSH or AWS access.
+
+From a local shell:
+
+```bash
+./scripts/verify-staging-security-headers.sh \
+  --base-url https://staging.time-archive.com
+```
+
+From GitHub Actions, run:
+
+```text
+Smoke staging security headers
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies both the Web root and same-origin public API proxy:
+
+- `Strict-Transport-Security` with at least one year of `max-age`.
+- `X-Content-Type-Options: nosniff`.
+- `X-Frame-Options: DENY`.
+- `Referrer-Policy: strict-origin-when-cross-origin`.
+- `Content-Security-Policy` containing `frame-ancestors 'none'`,
+  `object-src 'none'`, and `base-uri 'self'`.
+- `Permissions-Policy` denying camera, microphone, and geolocation access.
+
 ## Admin Provisioning
 
 Staging admin users are provisioned through an operator-controlled SSM script,

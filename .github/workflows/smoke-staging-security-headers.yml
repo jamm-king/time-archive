@@ -1,0 +1,50 @@
+name: Smoke staging security headers
+run-name: Smoke staging security headers
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_base_url:
+        description: Optional HTTPS staging URL. Defaults to STAGING_PUBLIC_BASE_URL.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-security-headers-smoke
+  cancel-in-progress: false
+
+env:
+  STAGING_PUBLIC_BASE_URL: ${{ vars.STAGING_PUBLIC_BASE_URL }}
+
+jobs:
+  smoke:
+    name: Security headers smoke
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Verify staging security headers
+        shell: bash
+        env:
+          INPUT_PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+        run: |
+          set -euo pipefail
+
+          base_url="${INPUT_PUBLIC_BASE_URL:-${STAGING_PUBLIC_BASE_URL:-}}"
+          ./scripts/verify-staging-security-headers.sh --base-url "$base_url"
+
+          {
+            echo "## Staging security headers smoke"
+            echo
+            echo "- Base URL: \`${base_url%/}\`"
+            echo "- Web root headers: passed"
+            echo "- Public API proxy headers: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
