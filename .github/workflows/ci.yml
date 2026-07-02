@@ -64,6 +64,9 @@ jobs:
       - name: Verify staging media preview smoke workflow
         run: ./scripts/verify-staging-media-preview-smoke-workflow.sh
 
+      - name: Verify staging media duration smoke workflow
+        run: ./scripts/verify-staging-media-duration-smoke-workflow.sh
+
       - name: Verify staging presigned upload CORS smoke workflow
         run: ./scripts/verify-staging-presigned-upload-cors-smoke-workflow.sh
 
