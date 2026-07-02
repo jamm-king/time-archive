@@ -126,6 +126,10 @@ class ApiExceptionHandler {
             message.contains("uploaded media content length does not match upload request") ||
                 message.contains("uploaded media content type does not match upload request") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_MISMATCH", "Uploaded media object does not match upload request")
+            message.contains("uploaded video duration exceeds owned range duration") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_DURATION_EXCEEDS_OWNED_RANGE", "Uploaded video duration exceeds owned range duration")
+            message.contains("uploaded video duration metadata not found") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_DURATION_METADATA_NOT_FOUND", "Uploaded video duration metadata was not found")
             message.contains("media asset is not approvable") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_ASSET_NOT_APPROVABLE", "Media asset is not approvable")
             message.contains("approved media file url is not managed by storage") ||

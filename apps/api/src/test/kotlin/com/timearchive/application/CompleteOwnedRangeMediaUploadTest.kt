@@ -9,6 +9,7 @@ import com.timearchive.domain.model.OwnershipRecord
 import com.timearchive.domain.model.TimeRange
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
+import com.timearchive.domain.port.MediaInspectionPort
 import com.timearchive.domain.port.MediaObjectStoragePort
 import com.timearchive.domain.port.MediaUploadRequestRepository
 import com.timearchive.domain.port.OwnershipRepository
@@ -48,6 +49,7 @@ class CompleteOwnedRangeMediaUploadTest {
         assertThat(result.mediaAsset.id).isEqualTo(mediaAssetId)
         assertThat(result.mediaAsset.ownershipRecordId).isEqualTo(ownershipRecord.id)
         assertThat(result.mediaAsset.originalFileUrl).isEqualTo("http://localhost:9000/time-archive-media/object")
+        assertThat(result.mediaAsset.durationMs).isNull()
         assertThat(result.mediaAsset.moderationStatus.name).isEqualTo("UPLOADED")
         assertThat(result.uploadRequest.status.name).isEqualTo("COMPLETED")
         assertThat(result.uploadRequest.mediaAssetId).isEqualTo(mediaAssetId)
@@ -117,10 +119,61 @@ class CompleteOwnedRangeMediaUploadTest {
             .withMessage("uploaded media content length does not match upload request")
     }
 
+    @Test
+    fun `completes video upload when duration is within owned range`() {
+        val useCase = useCase(
+            uploadRequestRepository = FakeMediaUploadRequestRepository(
+                uploadRequest(
+                    mediaType = MediaType.VIDEO,
+                    contentType = "video/mp4",
+                    contentLengthBytes = 4096,
+                ),
+            ),
+            storage = FakeMediaObjectStoragePort(
+                metadata = MediaObjectStoragePort.ObjectMetadata(
+                    objectKey = "media/originals/object",
+                    contentType = "video/mp4",
+                    contentLengthBytes = 4096,
+                ),
+            ),
+            mediaInspectionPort = FakeMediaInspectionPort(durationMs = 1_250),
+        )
+
+        val result = useCase.complete(command())
+
+        assertThat(result.mediaAsset.durationMs).isEqualTo(1_250)
+    }
+
+    @Test
+    fun `rejects video upload when duration exceeds owned range`() {
+        val useCase = useCase(
+            uploadRequestRepository = FakeMediaUploadRequestRepository(
+                uploadRequest(
+                    mediaType = MediaType.VIDEO,
+                    contentType = "video/mp4",
+                    contentLengthBytes = 4096,
+                ),
+            ),
+            storage = FakeMediaObjectStoragePort(
+                metadata = MediaObjectStoragePort.ObjectMetadata(
+                    objectKey = "media/originals/object",
+                    contentType = "video/mp4",
+                    contentLengthBytes = 4096,
+                ),
+            ),
+            mediaInspectionPort = FakeMediaInspectionPort(durationMs = 1_251),
+        )
+
+        assertThatIllegalArgumentException()
+            .isThrownBy { useCase.complete(command()) }
+            .withMessage("uploaded video duration exceeds owned range duration")
+    }
+
     private fun useCase(
         uploadRequestRepository: MediaUploadRequestRepository = FakeMediaUploadRequestRepository(uploadRequest()),
         mediaAssetRepository: MediaAssetRepository = FakeMediaAssetRepository(),
         storage: MediaObjectStoragePort = FakeMediaObjectStoragePort(),
+        mediaInspectionPort: MediaInspectionPort = FakeMediaInspectionPort(),
     ): CompleteOwnedRangeMediaUpload =
         CompleteOwnedRangeMediaUpload(
             transactionPort = ImmediateTransactionPort,
@@ -128,6 +181,7 @@ class CompleteOwnedRangeMediaUploadTest {
             mediaUploadRequestRepository = uploadRequestRepository,
             mediaAssetRepository = mediaAssetRepository,
             mediaObjectStoragePort = storage,
+            mediaInspectionPort = mediaInspectionPort,
             clockPort = ClockPort { now },
             idGenerator = { mediaAssetId },
         )
@@ -139,15 +193,20 @@ class CompleteOwnedRangeMediaUploadTest {
             uploadRequestId = uploadRequestId,
         )
 
-    private fun uploadRequest(expiresAt: Instant = now.plusSeconds(600)): MediaUploadRequest =
+    private fun uploadRequest(
+        expiresAt: Instant = now.plusSeconds(600),
+        mediaType: MediaType = MediaType.IMAGE,
+        contentType: String = "image/png",
+        contentLengthBytes: Long = 1024,
+    ): MediaUploadRequest =
         MediaUploadRequest.requested(
             id = uploadRequestId,
             ownershipRecordId = ownershipRecord.id,
             ownerId = ownerId,
-            mediaType = MediaType.IMAGE,
+            mediaType = mediaType,
             originalFilename = "original.png",
-            contentType = "image/png",
-            contentLengthBytes = 1024,
+            contentType = contentType,
+            contentLengthBytes = contentLengthBytes,
             objectKey = "media/originals/object",
             originalFileUrl = "http://localhost:9000/time-archive-media/object",
             now = now.minusSeconds(60),
@@ -237,5 +296,14 @@ class CompleteOwnedRangeMediaUploadTest {
         override fun isManagedFileUrl(fileUrl: String): Boolean = true
 
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = metadata
+
+        override fun openObject(objectKey: String): java.io.InputStream? = null
+    }
+
+    private class FakeMediaInspectionPort(
+        private val durationMs: Long? = null,
+    ) : MediaInspectionPort {
+        override fun inspect(command: MediaInspectionPort.Command): MediaInspectionPort.Result =
+            MediaInspectionPort.Result(durationMs = durationMs)
     }
 }

@@ -12,6 +12,7 @@ data class MediaAsset(
     val approvedFileUrl: String?,
     val thumbnailUrl: String?,
     val externalLink: String?,
+    val durationMs: Long?,
     val moderationStatus: ModerationStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -26,6 +27,9 @@ data class MediaAsset(
         }
         require(externalLink == null || externalLink.isNotBlank()) {
             "externalLink must not be blank"
+        }
+        require(durationMs == null || durationMs > 0) {
+            "durationMs must be greater than 0"
         }
         require(moderationStatus != ModerationStatus.APPROVED || approvedFileUrl != null) {
             "approved media must have approvedFileUrl"
@@ -84,6 +88,7 @@ data class MediaAsset(
             originalFileUrl: String,
             thumbnailUrl: String? = null,
             externalLink: String? = null,
+            durationMs: Long? = null,
             now: Instant,
         ): MediaAsset =
             MediaAsset(
@@ -95,6 +100,7 @@ data class MediaAsset(
                 approvedFileUrl = null,
                 thumbnailUrl = thumbnailUrl,
                 externalLink = externalLink,
+                durationMs = durationMs,
                 moderationStatus = ModerationStatus.UPLOADED,
                 createdAt = now,
                 updatedAt = now,

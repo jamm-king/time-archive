@@ -11,6 +11,7 @@ export type MediaAsset = {
   approvedFileUrl: string | null;
   thumbnailUrl: string | null;
   externalLink: string | null;
+  durationMs: number | null;
   moderationStatus: string;
   publiclyVisible: boolean;
   createdAt: string;
@@ -196,6 +197,7 @@ function parseMediaAsset(value: unknown): MediaAsset {
     approvedFileUrl,
     thumbnailUrl,
     externalLink,
+    durationMs,
     moderationStatus,
     publiclyVisible,
     createdAt,
@@ -211,6 +213,7 @@ function parseMediaAsset(value: unknown): MediaAsset {
     !isNullableString(approvedFileUrl) ||
     !isNullableString(thumbnailUrl) ||
     !isNullableString(externalLink) ||
+    !isNullableNumber(durationMs) ||
     typeof moderationStatus !== "string" ||
     typeof publiclyVisible !== "boolean" ||
     typeof createdAt !== "string" ||
@@ -228,6 +231,7 @@ function parseMediaAsset(value: unknown): MediaAsset {
     approvedFileUrl,
     thumbnailUrl,
     externalLink,
+    durationMs,
     moderationStatus,
     publiclyVisible,
     createdAt,
@@ -313,6 +317,10 @@ function parseCompleteMediaUploadResponse(value: unknown): CompleteMediaUploadRe
 
 function isNullableString(value: unknown): value is string | null {
   return typeof value === "string" || value === null;
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return typeof value === "number" || value === null;
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {

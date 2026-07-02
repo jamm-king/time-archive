@@ -26,6 +26,7 @@ class JdbcMediaAssetRepository(
             .addValue("approvedFileUrl", asset.approvedFileUrl)
             .addValue("thumbnailUrl", asset.thumbnailUrl)
             .addValue("externalLink", asset.externalLink)
+            .addValue("durationMs", asset.durationMs)
             .addValue("moderationStatus", asset.moderationStatus.name)
             .addValue("createdAt", Timestamp.from(asset.createdAt), Types.TIMESTAMP)
             .addValue("updatedAt", Timestamp.from(asset.updatedAt), Types.TIMESTAMP)
@@ -41,6 +42,7 @@ class JdbcMediaAssetRepository(
                 approved_file_url,
                 thumbnail_url,
                 external_link,
+                duration_ms,
                 moderation_status,
                 created_at,
                 updated_at
@@ -53,6 +55,7 @@ class JdbcMediaAssetRepository(
                 :approvedFileUrl,
                 :thumbnailUrl,
                 :externalLink,
+                :durationMs,
                 :moderationStatus,
                 :createdAt,
                 :updatedAt
@@ -181,6 +184,7 @@ class JdbcMediaAssetRepository(
             approvedFileUrl = getString("approved_file_url"),
             thumbnailUrl = getString("thumbnail_url"),
             externalLink = getString("external_link"),
+            durationMs = getLong("duration_ms").takeUnless { wasNull() },
             moderationStatus = ModerationStatus.valueOf(getString("moderation_status")),
             createdAt = getTimestamp("created_at").toInstant(),
             updatedAt = getTimestamp("updated_at").toInstant(),
@@ -198,6 +202,7 @@ class JdbcMediaAssetRepository(
                 approved_file_url,
                 thumbnail_url,
                 external_link,
+                duration_ms,
                 moderation_status,
                 created_at,
                 updated_at

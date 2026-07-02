@@ -21,6 +21,7 @@ import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
+import com.timearchive.domain.port.MediaInspectionPort
 import com.timearchive.domain.port.MediaObjectStoragePort
 import com.timearchive.domain.port.MediaUploadRequestRepository
 import com.timearchive.domain.port.OutboxPort
@@ -162,6 +163,7 @@ class ApplicationUseCaseConfiguration {
         mediaUploadRequestRepository: MediaUploadRequestRepository,
         mediaAssetRepository: MediaAssetRepository,
         mediaObjectStoragePort: MediaObjectStoragePort,
+        mediaInspectionPort: MediaInspectionPort,
         clockPort: ClockPort,
     ): CompleteOwnedRangeMediaUpload =
         CompleteOwnedRangeMediaUpload(
@@ -170,6 +172,7 @@ class ApplicationUseCaseConfiguration {
             mediaUploadRequestRepository = mediaUploadRequestRepository,
             mediaAssetRepository = mediaAssetRepository,
             mediaObjectStoragePort = mediaObjectStoragePort,
+            mediaInspectionPort = mediaInspectionPort,
             clockPort = clockPort,
         )
 
