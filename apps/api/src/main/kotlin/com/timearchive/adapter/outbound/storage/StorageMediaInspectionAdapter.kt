@@ -5,13 +5,24 @@ import com.timearchive.domain.port.MediaObjectStoragePort
 import org.springframework.stereotype.Component
 
 @Component
-class Mp4MediaInspectionAdapter(
+class StorageMediaInspectionAdapter(
     private val mediaObjectStoragePort: MediaObjectStoragePort,
     private val mp4DurationParser: Mp4DurationParser = Mp4DurationParser(),
+    private val signatureDetector: MediaFileSignatureDetector = MediaFileSignatureDetector(),
 ) : MediaInspectionPort {
     override fun inspect(command: MediaInspectionPort.Command): MediaInspectionPort.Result {
+        val signatureMatches = mediaObjectStoragePort.openObject(command.objectKey)?.use { input ->
+            signatureDetector.matchesContentType(
+                input = input,
+                contentType = command.contentType,
+            )
+        } ?: throw IllegalStateException("uploaded media object not found")
+
         if (command.contentType != "video/mp4") {
-            return MediaInspectionPort.Result(durationMs = null)
+            return MediaInspectionPort.Result(
+                signatureMatchesContentType = signatureMatches,
+                durationMs = null,
+            )
         }
 
         val durationMs = mediaObjectStoragePort.openObject(command.objectKey)?.use { input ->
@@ -19,6 +30,9 @@ class Mp4MediaInspectionAdapter(
                 .getOrElse { throw IllegalArgumentException("uploaded video duration metadata not found", it) }
         } ?: throw IllegalStateException("uploaded media object not found")
 
-        return MediaInspectionPort.Result(durationMs = durationMs)
+        return MediaInspectionPort.Result(
+            signatureMatchesContentType = signatureMatches,
+            durationMs = durationMs,
+        )
     }
 }

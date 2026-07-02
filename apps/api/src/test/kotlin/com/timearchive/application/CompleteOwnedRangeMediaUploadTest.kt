@@ -120,6 +120,17 @@ class CompleteOwnedRangeMediaUploadTest {
     }
 
     @Test
+    fun `rejects file signature mismatch`() {
+        val useCase = useCase(
+            mediaInspectionPort = FakeMediaInspectionPort(signatureMatchesContentType = false),
+        )
+
+        assertThatIllegalArgumentException()
+            .isThrownBy { useCase.complete(command()) }
+            .withMessage("uploaded media file signature does not match content type")
+    }
+
+    @Test
     fun `completes video upload when duration is within owned range`() {
         val useCase = useCase(
             uploadRequestRepository = FakeMediaUploadRequestRepository(
@@ -301,9 +312,13 @@ class CompleteOwnedRangeMediaUploadTest {
     }
 
     private class FakeMediaInspectionPort(
+        private val signatureMatchesContentType: Boolean = true,
         private val durationMs: Long? = null,
     ) : MediaInspectionPort {
         override fun inspect(command: MediaInspectionPort.Command): MediaInspectionPort.Result =
-            MediaInspectionPort.Result(durationMs = durationMs)
+            MediaInspectionPort.Result(
+                signatureMatchesContentType = signatureMatchesContentType,
+                durationMs = durationMs,
+            )
     }
 }

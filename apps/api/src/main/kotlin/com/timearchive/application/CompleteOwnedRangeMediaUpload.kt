@@ -71,7 +71,7 @@ class CompleteOwnedRangeMediaUpload(
                 "uploaded media content type does not match upload request"
             }
 
-            val durationMs = inspectAndValidateDuration(
+            val durationMs = inspectAndValidateMedia(
                 uploadRequest = uploadRequest,
                 ownedRangeDurationSeconds = ownership.range.durationSeconds,
             )
@@ -105,20 +105,26 @@ class CompleteOwnedRangeMediaUpload(
             )
         }
 
-    private fun inspectAndValidateDuration(
+    private fun inspectAndValidateMedia(
         uploadRequest: MediaUploadRequest,
         ownedRangeDurationSeconds: Long,
     ): Long? {
-        if (uploadRequest.mediaType != MediaType.VIDEO) {
-            return null
-        }
-
-        val durationMs = mediaInspectionPort.inspect(
+        val inspection = mediaInspectionPort.inspect(
             MediaInspectionPort.Command(
                 objectKey = uploadRequest.objectKey,
                 contentType = uploadRequest.contentType,
             ),
-        ).durationMs ?: throw IllegalArgumentException("uploaded video duration metadata not found")
+        )
+        require(inspection.signatureMatchesContentType) {
+            "uploaded media file signature does not match content type"
+        }
+
+        if (uploadRequest.mediaType != MediaType.VIDEO) {
+            return null
+        }
+
+        val durationMs = inspection.durationMs
+            ?: throw IllegalArgumentException("uploaded video duration metadata not found")
 
         val maxDurationMs = ownedRangeDurationSeconds * 1000L + durationToleranceMs
         require(durationMs <= maxDurationMs) {

@@ -9,6 +9,7 @@ interface MediaInspectionPort {
     )
 
     data class Result(
+        val signatureMatchesContentType: Boolean,
         val durationMs: Long?,
     )
 }

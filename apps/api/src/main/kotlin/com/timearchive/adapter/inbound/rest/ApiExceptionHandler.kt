@@ -126,6 +126,8 @@ class ApiExceptionHandler {
             message.contains("uploaded media content length does not match upload request") ||
                 message.contains("uploaded media content type does not match upload request") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_MISMATCH", "Uploaded media object does not match upload request")
+            message.contains("uploaded media file signature does not match content type") ->
+                errorResponse(HttpStatus.CONFLICT, "MEDIA_FILE_SIGNATURE_MISMATCH", "Uploaded media file signature does not match content type")
             message.contains("uploaded video duration exceeds owned range duration") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_DURATION_EXCEEDS_OWNED_RANGE", "Uploaded video duration exceeds owned range duration")
             message.contains("uploaded video duration metadata not found") ->
