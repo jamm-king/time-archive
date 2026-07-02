@@ -290,5 +290,7 @@ class AdminMediaModerationTest {
             fileUrl.startsWith("https://storage.example.test/media/")
 
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
+
+        override fun openObject(objectKey: String): java.io.InputStream? = null
     }
 }

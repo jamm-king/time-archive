@@ -105,6 +105,7 @@ class MediaAssetTest {
             approvedFileUrl = approvedFileUrl,
             thumbnailUrl = thumbnailUrl,
             externalLink = externalLink,
+            durationMs = null,
             moderationStatus = moderationStatus,
             createdAt = createdAt,
             updatedAt = updatedAt,

@@ -229,6 +229,7 @@ class JdbcMediaAssetRepositoryIntegrationTest {
             approvedFileUrl = approvedFileUrl,
             thumbnailUrl = null,
             externalLink = null,
+            durationMs = null,
             moderationStatus = moderationStatus,
             createdAt = now,
             updatedAt = now,

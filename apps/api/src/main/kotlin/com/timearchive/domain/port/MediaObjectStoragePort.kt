@@ -1,5 +1,6 @@
 package com.timearchive.domain.port
 
+import java.io.InputStream
 import java.time.Instant
 
 interface MediaObjectStoragePort {
@@ -10,6 +11,8 @@ interface MediaObjectStoragePort {
     fun isManagedFileUrl(fileUrl: String): Boolean
 
     fun findObjectMetadata(objectKey: String): ObjectMetadata?
+
+    fun openObject(objectKey: String): InputStream?
 
     data class Command(
         val objectKey: String,

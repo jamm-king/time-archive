@@ -1,10 +1,12 @@
 package com.timearchive.application
 
 import com.timearchive.domain.model.MediaAsset
+import com.timearchive.domain.model.MediaType
 import com.timearchive.domain.model.MediaUploadRequest
 import com.timearchive.domain.model.MediaUploadRequestStatus
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
+import com.timearchive.domain.port.MediaInspectionPort
 import com.timearchive.domain.port.MediaObjectStoragePort
 import com.timearchive.domain.port.MediaUploadRequestRepository
 import com.timearchive.domain.port.OwnershipRepository
@@ -17,7 +19,9 @@ class CompleteOwnedRangeMediaUpload(
     private val mediaUploadRequestRepository: MediaUploadRequestRepository,
     private val mediaAssetRepository: MediaAssetRepository,
     private val mediaObjectStoragePort: MediaObjectStoragePort,
+    private val mediaInspectionPort: MediaInspectionPort,
     private val clockPort: ClockPort,
+    private val durationToleranceMs: Long = DEFAULT_DURATION_TOLERANCE_MS,
     private val idGenerator: () -> UUID = UUID::randomUUID,
 ) {
     fun complete(command: Command): Result =
@@ -67,6 +71,11 @@ class CompleteOwnedRangeMediaUpload(
                 "uploaded media content type does not match upload request"
             }
 
+            val durationMs = inspectAndValidateDuration(
+                uploadRequest = uploadRequest,
+                ownedRangeDurationSeconds = ownership.range.durationSeconds,
+            )
+
             val mediaAsset = mediaAssetRepository.save(
                 MediaAsset.uploaded(
                     id = idGenerator(),
@@ -74,6 +83,7 @@ class CompleteOwnedRangeMediaUpload(
                     ownerId = uploadRequest.ownerId,
                     mediaType = uploadRequest.mediaType,
                     originalFileUrl = uploadRequest.originalFileUrl,
+                    durationMs = durationMs,
                     now = now,
                 ),
             )
@@ -95,6 +105,28 @@ class CompleteOwnedRangeMediaUpload(
             )
         }
 
+    private fun inspectAndValidateDuration(
+        uploadRequest: MediaUploadRequest,
+        ownedRangeDurationSeconds: Long,
+    ): Long? {
+        if (uploadRequest.mediaType != MediaType.VIDEO) {
+            return null
+        }
+
+        val durationMs = mediaInspectionPort.inspect(
+            MediaInspectionPort.Command(
+                objectKey = uploadRequest.objectKey,
+                contentType = uploadRequest.contentType,
+            ),
+        ).durationMs ?: throw IllegalArgumentException("uploaded video duration metadata not found")
+
+        val maxDurationMs = ownedRangeDurationSeconds * 1000L + durationToleranceMs
+        require(durationMs <= maxDurationMs) {
+            "uploaded video duration exceeds owned range duration"
+        }
+        return durationMs
+    }
+
     data class Command(
         val currentUserId: UUID,
         val ownershipRecordId: UUID,
@@ -106,4 +138,8 @@ class CompleteOwnedRangeMediaUpload(
         val mediaAsset: MediaAsset,
         val alreadyCompleted: Boolean,
     )
+
+    companion object {
+        const val DEFAULT_DURATION_TOLERANCE_MS: Long = 250L
+    }
 }

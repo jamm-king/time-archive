@@ -185,5 +185,7 @@ class CreateOwnedRangeMediaUploadRequestTest {
         override fun isManagedFileUrl(fileUrl: String): Boolean = true
 
         override fun findObjectMetadata(objectKey: String): MediaObjectStoragePort.ObjectMetadata? = null
+
+        override fun openObject(objectKey: String): java.io.InputStream? = null
     }
 }

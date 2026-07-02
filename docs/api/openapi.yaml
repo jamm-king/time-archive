@@ -594,8 +594,11 @@ paths:
       summary: Complete and verify a media upload request
       description: |
         Verifies that the expected object exists in S3-compatible storage and
-        matches the stored upload request metadata. On success, the upload
-        request is marked `COMPLETED` and an `UPLOADED` `MediaAsset` is created.
+        matches the stored upload request metadata. For `VIDEO` uploads, the
+        server parses MP4 container duration metadata and rejects videos longer
+        than the owned range duration plus the configured tolerance. On success,
+        the upload request is marked `COMPLETED` and an `UPLOADED` `MediaAsset`
+        is created.
 
         The endpoint is idempotent for already completed upload requests and
         returns the existing media asset.
@@ -1548,6 +1551,7 @@ components:
         - approvedFileUrl
         - thumbnailUrl
         - externalLink
+        - durationMs
         - moderationStatus
         - publiclyVisible
         - createdAt
@@ -1582,6 +1586,13 @@ components:
             - string
             - "null"
           format: uri
+        durationMs:
+          type:
+            - integer
+            - "null"
+          format: int64
+          minimum: 1
+          description: Parsed media duration in milliseconds. Images and older records may be null.
         moderationStatus:
           $ref: "#/components/schemas/ModerationStatus"
         publiclyVisible:

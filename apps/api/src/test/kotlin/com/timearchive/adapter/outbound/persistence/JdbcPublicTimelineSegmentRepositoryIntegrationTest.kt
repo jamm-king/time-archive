@@ -141,6 +141,7 @@ class JdbcPublicTimelineSegmentRepositoryIntegrationTest {
             approvedFileUrl = approvedFileUrl,
             thumbnailUrl = "https://cdn.example.com/thumb/${UUID.randomUUID()}.png",
             externalLink = "https://example.com",
+            durationMs = null,
             moderationStatus = moderationStatus,
             createdAt = now,
             updatedAt = now,
