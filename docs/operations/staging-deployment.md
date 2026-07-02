@@ -294,6 +294,34 @@ verifies the staging object storage upload path and admin original preview path,
 but it does not prove browser-origin CORS behavior because the object PUT is
 performed by `curl` in the workflow.
 
+## Media Duration Smoke Verification
+
+After deploying the video duration validation change and granting the staging
+admin account an active owned range, the deployed upload completion duration
+policy can be verified without SSH or AWS access.
+
+From GitHub Actions, run:
+
+```text
+Smoke staging media duration
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- Login using the configured staging admin credentials.
+- Lookup of an active owned range, defaulting to `[7000, 7001)`.
+- Upload and completion of a short generated `video/mp4` whose MP4 duration
+  fits inside the owned range.
+- `durationMs` is returned for the completed media asset.
+- Upload of an over-duration generated `video/mp4`.
+- Completion rejection with `MEDIA_DURATION_EXCEEDS_OWNED_RANGE`.
+- The rejected over-duration upload does not create a media asset.
+
+This check mutates staging by uploading two smoke-test objects and creating one
+successful `UPLOADED` media asset. It does not approve, reject, hide, publish,
+or clean up media assets.
+
 ## Presigned Upload CORS Smoke Verification
 
 The deployed staging presigned upload CORS path can be verified without SSH or

@@ -88,7 +88,7 @@ MVP-ready areas after target-environment verification:
 | Presigned upload URLs | Ready | After applying the staging R2 bucket CORS policy, the manual staging presigned upload CORS smoke workflow passed and verified upload request creation, CORS preflight for `PUT` with `content-type`, and actual presigned `PUT` response CORS headers from the deployed Web origin. Repeat after storage bucket, CORS, Web origin, or upload-header changes. |
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
-| Video duration validation | Needs verification | Video uploads must be rejected during completion when parsed MP4 duration exceeds the owned range duration plus tolerance. Verify locally and in staging before public or paid launch. |
+| Video duration validation | Needs verification | Video uploads are rejected during completion when parsed MP4 duration exceeds the owned range duration plus tolerance. Local API tests pass, and a manual staging media duration smoke workflow is available. Run it after staging deployment before marking this Ready. |
 | File signature validation | Blocked for production | Add signature sniffing before trusting content type. |
 | Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
@@ -137,6 +137,7 @@ Required checks before merging a release candidate:
 - Staging admin smoke workflow policy validation.
 - Staging owned range grant script policy validation.
 - Staging media preview smoke workflow policy validation.
+- Staging media duration smoke workflow policy validation.
 - Staging rollback drill policy validation.
 
 The PR #58 CI baseline passed all required checks after Compose startup and

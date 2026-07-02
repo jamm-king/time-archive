@@ -1,0 +1,72 @@
+name: Smoke staging media duration
+run-name: Smoke staging media duration
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_base_url:
+        description: Optional HTTPS staging URL. Defaults to STAGING_PUBLIC_BASE_URL.
+        required: false
+        type: string
+      start_second:
+        description: Existing owned range start second.
+        required: false
+        default: "7000"
+        type: string
+      end_second:
+        description: Existing owned range end second.
+        required: false
+        default: "7001"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-media-duration-smoke
+  cancel-in-progress: false
+
+env:
+  STAGING_PUBLIC_BASE_URL: ${{ vars.STAGING_PUBLIC_BASE_URL }}
+
+jobs:
+  smoke:
+    name: Media duration smoke
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Verify staging media duration
+        shell: bash
+        env:
+          INPUT_PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+          INPUT_START_SECOND: ${{ inputs.start_second }}
+          INPUT_END_SECOND: ${{ inputs.end_second }}
+          STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          base_url="${INPUT_PUBLIC_BASE_URL:-${STAGING_PUBLIC_BASE_URL:-}}"
+          start_second="${INPUT_START_SECOND:-7000}"
+          end_second="${INPUT_END_SECOND:-7001}"
+
+          ./scripts/verify-staging-media-duration-smoke.sh \
+            --base-url "$base_url" \
+            --start-second "$start_second" \
+            --end-second "$end_second"
+
+          {
+            echo "## Staging media duration smoke"
+            echo
+            echo "- Base URL: \`${base_url%/}\`"
+            echo "- Owned range: \`[${start_second}, ${end_second})\`"
+            echo "- Short video upload completion: passed"
+            echo "- Over-duration video rejection: passed"
+            echo "- Rejected media asset creation guard: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
