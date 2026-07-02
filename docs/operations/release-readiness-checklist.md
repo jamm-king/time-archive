@@ -30,8 +30,7 @@ Production blockers:
   application-level Redis rate limiting is implemented.
 - Production observability for application logs, errors, health, and security
   events.
-- File signature validation and a documented malware-scanning path for uploaded
-  media.
+- A documented malware-scanning path for uploaded media.
 
 MVP-ready areas after target-environment verification:
 
@@ -87,7 +86,7 @@ MVP-ready areas after target-environment verification:
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
 | Video duration validation | Ready | Local API tests, OpenAPI validation, and the manual staging media duration smoke workflow passed. The staging smoke verifies short `video/mp4` upload completion with `durationMs`, over-duration completion rejection with `MEDIA_DURATION_EXCEEDS_OWNED_RANGE`, and no media asset creation for the rejected upload. Repeat after upload completion, MP4 parsing, storage, or media API changes. |
-| File signature validation | Needs verification | Upload completion now validates supported media signatures before creating media assets. Local API tests pass, and a manual staging media signature smoke workflow is available. Run the staging workflow after deployment before marking this Ready. |
+| File signature validation | Ready | Upload completion validates supported media signatures before creating media assets. Local API tests pass, and the manual staging media signature smoke workflow passed against the deployed staging public HTTPS hostname. Repeat after upload completion, storage, or media-type validation changes. |
 | Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
 | Approved storage references | Ready | Approval rejects URLs that do not belong to the configured storage base URL. |
