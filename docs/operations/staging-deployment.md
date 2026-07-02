@@ -322,6 +322,13 @@ This check mutates staging by uploading two smoke-test objects and creating one
 successful `UPLOADED` media asset. It does not approve, reject, hide, publish,
 or clean up media assets.
 
+This workflow passed against the deployed staging public HTTPS hostname after
+the video duration validation change was deployed. The result verifies that the
+staging upload completion path accepts an in-range generated MP4, returns
+`durationMs`, rejects an over-duration generated MP4 with
+`MEDIA_DURATION_EXCEEDS_OWNED_RANGE`, and does not create a media asset for the
+rejected upload.
+
 ## Presigned Upload CORS Smoke Verification
 
 The deployed staging presigned upload CORS path can be verified without SSH or

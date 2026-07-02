@@ -32,8 +32,6 @@ Production blockers:
   events.
 - File signature validation and a documented malware-scanning path for uploaded
   media.
-- Video duration validation so approved videos cannot exceed the purchased time
-  range.
 
 MVP-ready areas after target-environment verification:
 
@@ -88,7 +86,7 @@ MVP-ready areas after target-environment verification:
 | Presigned upload URLs | Ready | After applying the staging R2 bucket CORS policy, the manual staging presigned upload CORS smoke workflow passed and verified upload request creation, CORS preflight for `PUT` with `content-type`, and actual presigned `PUT` response CORS headers from the deployed Web origin. Repeat after storage bucket, CORS, Web origin, or upload-header changes. |
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
-| Video duration validation | Needs verification | Video uploads are rejected during completion when parsed MP4 duration exceeds the owned range duration plus tolerance. Local API tests pass, and a manual staging media duration smoke workflow is available. Run it after staging deployment before marking this Ready. |
+| Video duration validation | Ready | Local API tests, OpenAPI validation, and the manual staging media duration smoke workflow passed. The staging smoke verifies short `video/mp4` upload completion with `durationMs`, over-duration completion rejection with `MEDIA_DURATION_EXCEEDS_OWNED_RANGE`, and no media asset creation for the rejected upload. Repeat after upload completion, MP4 parsing, storage, or media API changes. |
 | File signature validation | Blocked for production | Add signature sniffing before trusting content type. |
 | Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
