@@ -146,6 +146,7 @@ After Cloudflare edge changes, run:
 - `Smoke staging security headers`
 - `Smoke staging media preview`
 - `Smoke staging media duration`
+- `Smoke staging media signature`
 - `Smoke staging presigned upload CORS`
 
 Also confirm from the Cloudflare dashboard:
