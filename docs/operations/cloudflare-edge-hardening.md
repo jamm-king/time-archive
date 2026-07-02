@@ -90,6 +90,10 @@ Minimum MVP policy:
 Cloudflare Rate limiting rules should reduce automated abuse before traffic
 reaches the application. They do not replace Redis application rate limiting.
 
+Free plan accounts may have only one Rate limiting rule and may only offer a
+`Block` action with a short fixed period. In that case, prioritize authentication
+abuse before broader API throttling.
+
 Recommended starting policy:
 
 | Surface | Match | Suggested action |
@@ -103,6 +107,34 @@ Recommended starting policy:
 
 Tune thresholds after staging smoke tests and real traffic observations. Keep
 application Redis limits active even when Cloudflare limits are configured.
+
+## Staging Free Plan Configuration
+
+The current staging hostname uses a Free plan-compatible minimum policy:
+
+- Cache Rule: `http.host eq "staging.time-archive.com"` with `Bypass cache`.
+- Rate limiting rule: `POST /api/auth/login` and `POST /api/auth/register` per
+  IP, 10-second period, `Block` action.
+- Custom rule: block suspicious non-application paths such as `.php`, `/wp-`,
+  `/.env`, and `phpmyadmin`.
+- Custom rule: block `/api/internal/payments/fake/*` at the edge.
+
+The suspicious path expression uses `contains` as an operator, not as a
+function:
+
+```text
+(http.host eq "staging.time-archive.com"
+ and (
+   ends_with(lower(http.request.uri.path), ".php")
+   or lower(http.request.uri.path) contains "/wp-"
+   or lower(http.request.uri.path) contains "/.env"
+   or lower(http.request.uri.path) contains "phpmyadmin"
+ ))
+```
+
+Keep unused Custom Rules available for future production or incident-specific
+controls. Avoid admin geo-blocking while GitHub Actions smoke workflows run from
+non-Korean runner IP ranges.
 
 ## Public Health Verification
 
@@ -133,6 +165,9 @@ only after:
 - Cloudflare cache bypass is configured for application/API responses;
 - WAF and edge rate limiting are configured for the public hostname;
 - the public smoke workflows pass after the edge changes.
+
+For staging, the above release gate passed after applying the Free plan policy
+and rerunning the staging smoke workflows.
 
 ## References
 

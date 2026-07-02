@@ -88,8 +88,16 @@ if "CF-Connecting-IP" not in architecture_text:
 match = re.search(r"\| Edge rate limiting and client identity \| ([^|]+) \|", checklist_text)
 if not match:
     raise SystemExit("release readiness checklist is missing edge rate limiting row")
-if "Needs verification" not in match.group(1):
-    raise SystemExit("edge rate limiting row must remain Needs verification until Cloudflare rules are manually verified")
+if match.group(1).strip() != "Ready":
+    raise SystemExit("edge rate limiting row must be Ready after staging Cloudflare edge verification")
+
+cloudflare_match = re.search(r"\| Cloudflare \| ([^|]+) \|([^|]+)\|", checklist_text)
+if not cloudflare_match:
+    raise SystemExit("release readiness checklist is missing Cloudflare row")
+if cloudflare_match.group(1).strip() != "Ready for staging":
+    raise SystemExit("Cloudflare row must be Ready for staging until production policy is verified")
+if "Production still needs" not in cloudflare_match.group(2):
+    raise SystemExit("Cloudflare row must keep an explicit production follow-up")
 
 print("cloudflare edge hardening validation passed")
 PY
