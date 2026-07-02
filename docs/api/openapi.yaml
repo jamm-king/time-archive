@@ -594,11 +594,12 @@ paths:
       summary: Complete and verify a media upload request
       description: |
         Verifies that the expected object exists in S3-compatible storage and
-        matches the stored upload request metadata. For `VIDEO` uploads, the
-        server parses MP4 container duration metadata and rejects videos longer
-        than the owned range duration plus the configured tolerance. On success,
-        the upload request is marked `COMPLETED` and an `UPLOADED` `MediaAsset`
-        is created.
+        matches the stored upload request metadata. The server also validates
+        the uploaded object's file signature against the requested content type.
+        For `VIDEO` uploads, the server parses MP4 container duration metadata
+        and rejects videos longer than the owned range duration plus the
+        configured tolerance. On success, the upload request is marked
+        `COMPLETED` and an `UPLOADED` `MediaAsset` is created.
 
         The endpoint is idempotent for already completed upload requests and
         returns the existing media asset.
@@ -1733,6 +1734,9 @@ components:
         - MEDIA_UPLOAD_REQUEST_NOT_COMPLETABLE
         - MEDIA_UPLOAD_OBJECT_NOT_FOUND
         - MEDIA_UPLOAD_OBJECT_MISMATCH
+        - MEDIA_FILE_SIGNATURE_MISMATCH
+        - MEDIA_DURATION_EXCEEDS_OWNED_RANGE
+        - MEDIA_DURATION_METADATA_NOT_FOUND
         - INVALID_MEDIA_STORAGE_REFERENCE
         - MEDIA_ASSET_NOT_APPROVABLE
         - MEDIA_ASSET_NOT_REJECTABLE
