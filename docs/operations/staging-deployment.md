@@ -329,6 +329,32 @@ staging upload completion path accepts an in-range generated MP4, returns
 `MEDIA_DURATION_EXCEEDS_OWNED_RANGE`, and does not create a media asset for the
 rejected upload.
 
+## Media Signature Smoke Verification
+
+After deploying the file signature validation change and granting the staging
+admin account an active owned range, the deployed upload completion signature
+policy can be verified without SSH or AWS access.
+
+From GitHub Actions, run:
+
+```text
+Smoke staging media signature
+```
+
+The workflow is manual only, runs from `main`, uses the `staging` GitHub
+Environment, and verifies:
+
+- Login using the configured staging admin credentials.
+- Lookup of an active owned range, defaulting to `[7000, 7001)`.
+- Creation of an `image/png` upload request.
+- Presigned PUT upload of deliberately non-PNG bytes.
+- Completion rejection with `MEDIA_FILE_SIGNATURE_MISMATCH`.
+- The rejected upload does not create a media asset.
+
+This check mutates staging by creating an upload request and uploading one
+smoke-test object. It intentionally does not create, approve, reject, hide,
+publish, or clean up a media asset.
+
 ## Presigned Upload CORS Smoke Verification
 
 The deployed staging presigned upload CORS path can be verified without SSH or
