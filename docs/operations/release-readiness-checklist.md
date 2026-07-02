@@ -62,7 +62,7 @@ MVP-ready areas after target-environment verification:
 | Admin bootstrap | Blocked for production | Staging has an operator-controlled SSM admin grant script; production still needs an approved provisioning process and role-change audit path. |
 | Password policy | Ready for MVP | Registration enforces a minimum password length of 8 characters, passwords are stored through BCrypt hashing, and registration tests cover short-password rejection. Password reset remains a post-MVP follow-up. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
-| Edge rate limiting and client identity | Needs verification | Web proxy forwarding for reviewed Cloudflare headers is implemented and the selected trusted client IP header is `CF-Connecting-IP`. Configure `/time-archive/{environment}/rate-limit/client-ip-header`, confirm direct origin access remains unavailable, and add Cloudflare edge rate limits before marking ready. |
+| Edge rate limiting and client identity | Ready | Staging now forwards reviewed Cloudflare headers through the Web proxy, the deployed API runtime uses `CF-Connecting-IP`, Cloudflare Free plan edge rate limiting is configured for auth endpoints, and staging smoke workflows passed after the edge changes. Repeat after Cloudflare routing, rate-limit, or runtime header changes. |
 | Sensitive logging | Ready | After the generated default password logging fix was deployed to staging, API/Web CloudWatch keyword sampling and Logs Insights regex checks found no confirmed sensitive-log matches for passwords, session cookies, CSRF tokens, authorization headers, storage credentials, presigned URLs, or payment payload secrets. Repeat after logging, auth, storage, payment, or deployment changes. |
 | Security headers | Ready | After redeploying staging from the security-header change, the manual `Smoke staging security headers` workflow passed against the public HTTPS hostname and verified HSTS, frame policy, content type sniffing protection, conservative referrer policy, minimal CSP, and browser permission restrictions. Repeat after Web routing, Cloudflare, or header-policy changes. |
 
@@ -162,7 +162,7 @@ Release candidate verification:
 | Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision production-scoped parameters, IAM access, KMS policy, and rotation procedure. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Ready | Cloudflare-managed edge TLS and Tunnel ingress were verified in staging through browser access to the published HTTPS hostname. Production must still verify secure cookies, forwarded protocol behavior, and redirect policy. |
-| Cloudflare | Needs verification | Staging Published Application routing to `web:3000` was verified through Cloudflare Tunnel, and the Cloudflare edge hardening runbook defines cache bypass, WAF, edge rate limits, trusted client IP, and public smoke verification gates. Configure and verify those dashboard policies before marking ready. |
+| Cloudflare | Ready for staging | Staging Published Application routing to `web:3000`, cache bypass, Free plan custom rules, auth endpoint edge rate limiting, trusted client IP runtime configuration, and staging smoke workflows were verified. Production still needs production-hostname Cloudflare policy configuration and verification. |
 | Staging deployment workflow | Ready | Manual SSM Run Command workflow deployed `813c73b1f2def9f64c8e9bde0115a59db4bd210e` from `main` with digest-pinned Redis/cloudflared images, after the deploy-role ECR verification permission was applied. |
 | Application health checks | Ready | Staging API, Web, and Redis containers were healthy; API returned `UP`, Web responded internally, `cloudflared` passed connectivity prechecks, and a manual public smoke workflow is available for the staging hostname. |
 | Rollback | Ready | Staging image rollback and forward recovery were verified on 2026-06-30 using the documented drill. Database rollback remains a separate high-impact recovery procedure. |
@@ -187,8 +187,8 @@ Release candidate verification:
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.
 - No production R2 environment is configured yet.
-- No Cloudflare edge rate limits or deployed trusted-client attribution are
-  configured yet.
+- Production Cloudflare edge limits and deployed trusted-client attribution are
+  not configured yet.
 - Application rate-limit thresholds have not been tuned from production
   traffic.
 

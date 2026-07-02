@@ -103,6 +103,15 @@ verification.
 - 2026-07-01: `C:\Program Files\Git\bin\bash.exe scripts/verify-cloudflare-edge-hardening.sh`
   passed.
 - 2026-07-01: `git diff --check` passed.
+- 2026-07-02: Staging SSM parameter
+  `/time-archive/staging/rate-limit/client-ip-header` was set to
+  `CF-Connecting-IP`, staging was redeployed, and the API container runtime
+  value was verified through SSM Run Command.
+- 2026-07-02: Cloudflare Free plan policies were configured for staging:
+  host-level cache bypass, one auth endpoint rate limiting rule, suspicious path
+  blocking, and fake payment internal endpoint blocking.
+- 2026-07-02: The staging smoke workflows passed after the Cloudflare edge
+  policy changes.
 
 ## Completion Summary
 
@@ -140,18 +149,19 @@ readiness rows remain `Needs verification` until the operator configures the
 runtime `CF-Connecting-IP` parameter, cache bypass, WAF, and edge rate limiting,
 then reruns the public smoke workflows.
 
+On 2026-07-02, the operator configured the staging Cloudflare Free plan policy,
+redeployed staging with `CF-Connecting-IP`, and confirmed the staging smoke
+workflows passed.
+
 ## Known Limitations
 
 - The repository cannot directly verify Cloudflare dashboard WAF/rate-limit/cache
   rule state without adding Cloudflare API credentials and automation.
-- `TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP` must be applied to
-  SSM/runtime parameters before the API uses the forwarded header for anonymous
-  rate-limit identity.
+- Production Cloudflare policy remains separate from staging and must be
+  configured for the production hostname before public launch.
 
 ## Follow-Up Recommendations
 
-- Set `/time-archive/staging/rate-limit/client-ip-header` to `CF-Connecting-IP`
-  and redeploy staging.
-- Configure Cloudflare cache bypass, WAF, and edge rate limiting according to
-  `docs/operations/cloudflare-edge-hardening.md`.
-- Run the listed staging smoke workflows after the edge changes.
+- Repeat the staging smoke workflows after Cloudflare routing, cache, WAF,
+  rate-limit, or runtime header changes.
+- Configure equivalent production Cloudflare controls before public launch.
