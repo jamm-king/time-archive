@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component
 @Component
 @ConditionalOnProperty(prefix = "time-archive.payment.fake", name = ["enabled"], havingValue = "true")
 class FakePaymentAdapter : PaymentPort {
+    override val provider: String = "fake"
+
     override fun createCheckout(request: CheckoutRequest): CheckoutSession =
         CheckoutSession(
-            provider = "fake",
+            provider = provider,
             providerReference = "fake_checkout_${request.reservationId}",
             checkoutUrl = "https://payments.example.test/checkout/${request.reservationId}",
         )

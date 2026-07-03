@@ -1,10 +1,13 @@
 package com.timearchive.application
 
+import com.timearchive.domain.model.CheckoutAttempt
+import com.timearchive.domain.model.CheckoutAttemptStatus
 import com.timearchive.domain.model.CheckoutRequest
 import com.timearchive.domain.model.CheckoutSession
 import com.timearchive.domain.model.PurchaseReservation
 import com.timearchive.domain.model.PurchaseReservationStatus
 import com.timearchive.domain.model.TimeRange
+import com.timearchive.domain.port.CheckoutAttemptRepository
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.PaymentPort
 import com.timearchive.domain.port.PurchaseReservationRepository
@@ -23,21 +26,52 @@ class CreateCheckoutTest {
     fun `creates checkout and marks reservation checkout created`() {
         val reservation = heldReservation()
         val repository = FakePurchaseReservationRepository(reservation)
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository()
         val paymentPort = FakePaymentPort()
-        val useCase = useCase(repository = repository, paymentPort = paymentPort)
+        val useCase = useCase(
+            reservationRepository = repository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            paymentPort = paymentPort,
+        )
 
         val checkout = useCase.create(commandFor(reservation))
 
         assertThat(checkout.provider).isEqualTo("fake")
         assertThat(checkout.providerReference).isEqualTo("checkout-${reservation.id}")
         assertThat(repository.checkoutCreatedIds).containsExactly(reservation.id)
+        assertThat(checkoutAttemptRepository.savedAttempts).hasSize(1)
+        assertThat(checkoutAttemptRepository.providerCreated).containsExactly(checkoutAttemptRepository.savedAttempts.single().id)
         assertThat(paymentPort.requests).hasSize(1)
         assertThat(paymentPort.requests.first().amountCents).isEqualTo(reservation.amountCents)
+        assertThat(paymentPort.requests.first().providerRequestId).isEqualTo(
+            checkoutAttemptRepository.savedAttempts.single().providerRequestId,
+        )
+    }
+
+    @Test
+    fun `returns existing provider checkout without calling payment provider`() {
+        val reservation = reservationWithStatus(PurchaseReservationStatus.CHECKOUT_CREATED)
+        val existingAttempt = checkoutAttemptFor(reservation)
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository(existingAttempt)
+        val paymentPort = FakePaymentPort()
+        val useCase = useCase(
+            reservationRepository = FakePurchaseReservationRepository(reservation),
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            paymentPort = paymentPort,
+        )
+
+        val checkout = useCase.create(commandFor(reservation))
+
+        assertThat(checkout.provider).isEqualTo("fake")
+        assertThat(checkout.providerReference).isEqualTo("provider-order-${reservation.id}")
+        assertThat(checkout.checkoutUrl).isEqualTo("https://payments.example.test/existing/${reservation.id}")
+        assertThat(paymentPort.requests).isEmpty()
+        assertThat(checkoutAttemptRepository.providerCreated).isEmpty()
     }
 
     @Test
     fun `rejects missing reservation`() {
-        val useCase = useCase(repository = FakePurchaseReservationRepository(null))
+        val useCase = useCase(reservationRepository = FakePurchaseReservationRepository(null))
 
         assertThatIllegalStateException()
             .isThrownBy {
@@ -56,7 +90,12 @@ class CreateCheckoutTest {
         val reservation = heldReservation()
         val paymentPort = FakePaymentPort()
         val repository = FakePurchaseReservationRepository(reservation)
-        val useCase = useCase(repository = repository, paymentPort = paymentPort)
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository()
+        val useCase = useCase(
+            reservationRepository = repository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            paymentPort = paymentPort,
+        )
 
         assertThatIllegalArgumentException()
             .isThrownBy {
@@ -71,6 +110,7 @@ class CreateCheckoutTest {
 
         assertThat(paymentPort.requests).isEmpty()
         assertThat(repository.checkoutCreatedIds).isEmpty()
+        assertThat(checkoutAttemptRepository.savedAttempts).isEmpty()
     }
 
     @Test
@@ -81,7 +121,12 @@ class CreateCheckoutTest {
         )
         val paymentPort = FakePaymentPort()
         val repository = FakePurchaseReservationRepository(reservation)
-        val useCase = useCase(repository = repository, paymentPort = paymentPort)
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository()
+        val useCase = useCase(
+            reservationRepository = repository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            paymentPort = paymentPort,
+        )
 
         assertThatIllegalArgumentException()
             .isThrownBy { useCase.create(commandFor(reservation)) }
@@ -89,24 +134,27 @@ class CreateCheckoutTest {
 
         assertThat(paymentPort.requests).isEmpty()
         assertThat(repository.checkoutCreatedIds).isEmpty()
+        assertThat(checkoutAttemptRepository.savedAttempts).isEmpty()
     }
 
     @Test
-    fun `rejects reservation that is already checkout created`() {
-        val reservation = reservationWithStatus(PurchaseReservationStatus.CHECKOUT_CREATED)
-        val useCase = useCase(repository = FakePurchaseReservationRepository(reservation))
+    fun `rejects reservation that is already completed`() {
+        val reservation = reservationWithStatus(PurchaseReservationStatus.COMPLETED)
+        val useCase = useCase(reservationRepository = FakePurchaseReservationRepository(reservation))
 
         assertThatIllegalArgumentException()
             .isThrownBy { useCase.create(commandFor(reservation)) }
-            .withMessage("reservation is not held")
+            .withMessage("reservation is not checkout eligible")
     }
 
     @Test
-    fun `does not mark reservation when payment port fails`() {
+    fun `marks checkout attempt failed when payment port fails`() {
         val reservation = heldReservation()
         val repository = FakePurchaseReservationRepository(reservation)
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository()
         val useCase = useCase(
-            repository = repository,
+            reservationRepository = repository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
             paymentPort = FailingPaymentPort,
         )
 
@@ -114,16 +162,19 @@ class CreateCheckoutTest {
             .isThrownBy { useCase.create(commandFor(reservation)) }
             .withMessage("payment provider unavailable")
 
-        assertThat(repository.checkoutCreatedIds).isEmpty()
+        assertThat(repository.checkoutCreatedIds).containsExactly(reservation.id)
+        assertThat(checkoutAttemptRepository.providerFailed).containsExactly(checkoutAttemptRepository.savedAttempts.single().id)
     }
 
     private fun useCase(
-        repository: PurchaseReservationRepository,
+        reservationRepository: PurchaseReservationRepository,
+        checkoutAttemptRepository: CheckoutAttemptRepository = FakeCheckoutAttemptRepository(),
         paymentPort: PaymentPort = FakePaymentPort(),
     ): CreateCheckout =
         CreateCheckout(
             transactionPort = ImmediateTransactionPort,
-            purchaseReservationRepository = repository,
+            purchaseReservationRepository = reservationRepository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
             paymentPort = paymentPort,
             clockPort = ClockPort { now },
         )
@@ -145,6 +196,20 @@ class CreateCheckoutTest {
         return held.copy(status = status)
     }
 
+    private fun checkoutAttemptFor(reservation: PurchaseReservation): CheckoutAttempt =
+        CheckoutAttempt(
+            id = UUID.randomUUID(),
+            reservationId = reservation.id,
+            buyerId = reservation.buyerId,
+            provider = "fake",
+            providerRequestId = UUID.randomUUID().toString(),
+            providerReference = "provider-order-${reservation.id}",
+            checkoutUrl = "https://payments.example.test/existing/${reservation.id}",
+            status = CheckoutAttemptStatus.PROVIDER_CREATED,
+            createdAt = now,
+            updatedAt = now,
+        )
+
     private fun commandFor(reservation: PurchaseReservation): CreateCheckout.Command =
         CreateCheckout.Command(
             currentUserId = reservation.buyerId,
@@ -153,6 +218,51 @@ class CreateCheckoutTest {
 
     private object ImmediateTransactionPort : TransactionPort {
         override fun <T> execute(block: () -> T): T = block()
+    }
+
+    private class FakeCheckoutAttemptRepository(
+        private var attempt: CheckoutAttempt? = null,
+    ) : CheckoutAttemptRepository {
+        val savedAttempts = mutableListOf<CheckoutAttempt>()
+        val providerCreated = mutableListOf<UUID>()
+        val providerFailed = mutableListOf<UUID>()
+
+        override fun save(attempt: CheckoutAttempt): CheckoutAttempt {
+            this.attempt = attempt
+            savedAttempts.add(attempt)
+            return attempt
+        }
+
+        override fun findByReservationIdForUpdate(reservationId: UUID): CheckoutAttempt? =
+            attempt?.takeIf { it.reservationId == reservationId }
+
+        override fun markProviderCreated(
+            id: UUID,
+            providerReference: String,
+            checkoutUrl: String,
+            now: Instant,
+        ): Int {
+            providerCreated.add(id)
+            attempt = attempt?.copy(
+                providerReference = providerReference,
+                checkoutUrl = checkoutUrl,
+                status = CheckoutAttemptStatus.PROVIDER_CREATED,
+                updatedAt = now,
+            )
+            return 1
+        }
+
+        override fun markProviderFailed(
+            id: UUID,
+            now: Instant,
+        ): Int {
+            providerFailed.add(id)
+            attempt = attempt?.copy(
+                status = CheckoutAttemptStatus.PROVIDER_FAILED,
+                updatedAt = now,
+            )
+            return 1
+        }
     }
 
     private class FakePurchaseReservationRepository(
@@ -183,6 +293,8 @@ class CreateCheckoutTest {
     }
 
     private class FakePaymentPort : PaymentPort {
+        override val provider: String = "fake"
+
         val requests = mutableListOf<CheckoutRequest>()
 
         override fun createCheckout(request: CheckoutRequest): CheckoutSession {
@@ -196,6 +308,8 @@ class CreateCheckoutTest {
     }
 
     private object FailingPaymentPort : PaymentPort {
+        override val provider: String = "fake"
+
         override fun createCheckout(request: CheckoutRequest): CheckoutSession =
             error("payment provider unavailable")
     }
