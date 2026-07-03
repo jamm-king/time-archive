@@ -419,6 +419,12 @@ follow-up; production cleanup that touches R2 objects, ownership records,
 payment records, audit logs, backups, or snapshots remains a reviewed
 operational change.
 
+Database backup, point-in-time recovery, restore drill, Flyway validation, and
+R2 consistency procedures are documented in
+[Database Recovery Runbook](database-recovery-runbook.md). The runbook is the
+operational baseline; production readiness still requires enabling the reviewed
+RDS settings and completing a restore drill.
+
 ## Observability Baseline
 
 CloudWatch baseline:
