@@ -1434,6 +1434,10 @@ function PurchaseCurrentSecondPanel({
       const checkout = await createCheckout(nextReservation.reservationId);
       setReservation(nextReservation);
       setCheckoutUrl(checkout.checkoutUrl);
+      if (checkout.provider === "paypal") {
+        window.location.assign(checkout.checkoutUrl);
+        return;
+      }
       setStatus("reserved");
     } catch (error: unknown) {
       console.error(error);
@@ -1592,7 +1596,7 @@ function PurchaseCurrentSecondPanel({
           ) : null}
         </div>
       ) : null}
-      {status === "reserved" || status === "completing" ? (
+      {(status === "reserved" || status === "completing") && checkoutUrl ? (
         <button
           type="button"
           className="border border-neutral-700 px-4 py-2 text-xs uppercase text-neutral-100 transition hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:text-neutral-600"

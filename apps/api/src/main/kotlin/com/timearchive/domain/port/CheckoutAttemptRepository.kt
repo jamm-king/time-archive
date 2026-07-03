@@ -9,6 +9,8 @@ interface CheckoutAttemptRepository {
 
     fun findByReservationIdForUpdate(reservationId: UUID): CheckoutAttempt?
 
+    fun findByProviderReferenceForUpdate(provider: String, providerReference: String): CheckoutAttempt?
+
     fun markProviderCreated(
         id: UUID,
         providerReference: String,
@@ -18,6 +20,19 @@ interface CheckoutAttemptRepository {
 
     fun markProviderFailed(
         id: UUID,
+        now: Instant,
+    ): Int
+
+    fun markCaptureCompleted(
+        id: UUID,
+        captureRequestId: String,
+        captureReference: String,
+        capturedAt: Instant,
+    ): Int
+
+    fun markCaptureFailed(
+        id: UUID,
+        captureRequestId: String,
         now: Instant,
     ): Int
 }

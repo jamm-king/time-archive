@@ -40,8 +40,8 @@ class PayPalPaymentAdapterTest {
         assertThat(command.reservationId).isEqualTo(reservationId.toString())
         assertThat(command.amountValue).isEqualTo("5.00")
         assertThat(command.currency).isEqualTo("USD")
-        assertThat(command.returnUrl).isEqualTo("https://staging.time-archive.com/api/payments/paypal/return")
-        assertThat(command.cancelUrl).isEqualTo("https://staging.time-archive.com/api/payments/paypal/cancel")
+        assertThat(command.returnUrl).isEqualTo("https://staging.time-archive.com/payments/paypal/return")
+        assertThat(command.cancelUrl).isEqualTo("https://staging.time-archive.com/payments/paypal/cancel")
     }
 
     @Test
@@ -73,8 +73,8 @@ class PayPalPaymentAdapterTest {
             apiBaseUrl = "https://api-m.sandbox.paypal.com",
             clientId = "client-id",
             clientSecret = "client-secret",
-            returnUrl = "https://staging.time-archive.com/api/payments/paypal/return",
-            cancelUrl = "https://staging.time-archive.com/api/payments/paypal/cancel",
+            returnUrl = "https://staging.time-archive.com/payments/paypal/return",
+            cancelUrl = "https://staging.time-archive.com/payments/paypal/cancel",
         )
 
     private class FakePayPalOrderClient : PayPalOrderClient {
@@ -87,5 +87,8 @@ class PayPalPaymentAdapterTest {
                 approvalUrl = "https://www.sandbox.paypal.com/checkoutnow?token=paypal-order-1",
             )
         }
+
+        override fun captureOrder(command: PayPalCaptureOrderCommand): PayPalCaptureResult =
+            error("not used")
     }
 }

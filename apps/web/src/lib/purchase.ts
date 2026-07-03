@@ -35,6 +35,13 @@ export type FakePaymentCompletionResponse = {
   alreadyProcessed: boolean;
 };
 
+export type PayPalCaptureResponse = {
+  orderId: string;
+  captureReference: string;
+  status: string;
+  alreadyCaptured: boolean;
+};
+
 export async function checkAvailability(
   startSecond: number,
   endSecond: number,
@@ -162,6 +169,27 @@ export async function completeFakePrimaryPurchase(
   }
 
   return parseFakePaymentCompletionResponse(await response.json());
+}
+
+export async function capturePayPalOrder(orderId: string): Promise<PayPalCaptureResponse> {
+  const csrfToken = await fetchCsrfToken();
+  const response = await fetch(
+    `/api/payments/paypal/orders/${encodeURIComponent(orderId)}/capture`,
+    {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        "X-XSRF-TOKEN": csrfToken,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return parsePayPalCaptureResponse(await response.json());
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
@@ -303,6 +331,29 @@ function parseFakePaymentCompletionResponse(
     purchaseId,
     ownershipRecordId,
     alreadyProcessed,
+  };
+}
+
+function parsePayPalCaptureResponse(value: unknown): PayPalCaptureResponse {
+  if (!isRecord(value)) {
+    throw new Error("PayPal capture response must be an object");
+  }
+
+  const { orderId, captureReference, status, alreadyCaptured } = value;
+  if (
+    typeof orderId !== "string" ||
+    typeof captureReference !== "string" ||
+    typeof status !== "string" ||
+    typeof alreadyCaptured !== "boolean"
+  ) {
+    throw new Error("PayPal capture response has an invalid shape");
+  }
+
+  return {
+    orderId,
+    captureReference,
+    status,
+    alreadyCaptured,
   };
 }
 

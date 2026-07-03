@@ -101,6 +101,8 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.FORBIDDEN, "ADMIN_ACCESS_DENIED", "Admin access denied")
             message.contains("reservation is not owned by current user") ->
                 errorResponse(HttpStatus.FORBIDDEN, "RESERVATION_ACCESS_DENIED", "Reservation access denied")
+            message.contains("checkout attempt is not owned by current user") ->
+                errorResponse(HttpStatus.FORBIDDEN, "CHECKOUT_ACCESS_DENIED", "Checkout access denied")
             message.contains("time range already has active ownership") ->
                 errorResponse(HttpStatus.CONFLICT, "TIME_RANGE_ALREADY_OWNED", "Time range already has active ownership")
             message.contains("time range already has active reservation") ->
@@ -115,6 +117,10 @@ class ApiExceptionHandler {
                     "PAYMENT_EVENT_ALREADY_PROCESSING",
                     "Payment event is already being processed",
                 )
+            message.contains("checkout attempt is not capturable") ->
+                errorResponse(HttpStatus.CONFLICT, "CHECKOUT_NOT_CAPTURABLE", "Checkout is not capturable")
+            message.contains("paypal capture did not complete") ->
+                errorResponse(HttpStatus.CONFLICT, "PAYMENT_CAPTURE_FAILED", "Payment capture did not complete")
             message.contains("ownership record is not owned by current user") ->
                 errorResponse(HttpStatus.FORBIDDEN, "OWNERSHIP_ACCESS_DENIED", "Ownership access denied")
             message.contains("ownership record is not active") ->
@@ -158,6 +164,8 @@ class ApiExceptionHandler {
                 )
             message.contains("purchase reservation not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Reservation was not found")
+            message.contains("checkout attempt not found") ->
+                errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Checkout attempt was not found")
             message.contains("ownership record not found") ->
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Ownership record was not found")
             message.contains("media upload request not found") ->
@@ -166,7 +174,8 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Media asset was not found")
             message.contains("uploaded media object not found") ->
                 errorResponse(HttpStatus.CONFLICT, "MEDIA_UPLOAD_OBJECT_NOT_FOUND", "Uploaded media object was not found")
-            message.contains("checkout status transition failed") ->
+            message.contains("checkout status transition failed") ||
+                message.contains("payment capture transition failed") ->
                 errorResponse(HttpStatus.CONFLICT, "RESERVATION_NOT_PAYABLE", "Reservation is not payable")
             else ->
                 errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "UNEXPECTED_ERROR", "Unexpected server error")

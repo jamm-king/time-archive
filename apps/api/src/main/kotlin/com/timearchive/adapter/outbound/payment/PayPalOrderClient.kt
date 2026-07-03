@@ -14,6 +14,19 @@ data class PayPalOrderResult(
     val approvalUrl: String,
 )
 
+data class PayPalCaptureOrderCommand(
+    val providerRequestId: String,
+    val orderId: String,
+)
+
+data class PayPalCaptureResult(
+    val orderId: String,
+    val captureId: String,
+    val status: String,
+)
+
 interface PayPalOrderClient {
     fun createOrder(command: PayPalCreateOrderCommand): PayPalOrderResult
+
+    fun captureOrder(command: PayPalCaptureOrderCommand): PayPalCaptureResult
 }
