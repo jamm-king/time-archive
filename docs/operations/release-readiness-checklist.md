@@ -104,7 +104,7 @@ MVP-ready areas after target-environment verification:
 | Staging database user | Needs verification | The staging `timearchive_app` database user exists and login/DDL bootstrap checks passed; verify Flyway migrations and runtime queries during first deployment. |
 | Backups | Blocked for production | Enable automated PostgreSQL backups and point-in-time recovery. |
 | Restore test | Blocked for production | Perform at least one restore drill before public launch. |
-| Data retention policy | Needs verification | Define retention for audit logs, upload requests, sessions, and rejected media. |
+| Data retention policy | Ready for MVP | Retention targets are documented in [Data Retention Policy](data-retention-policy.md). Runtime logs remain 14-day CloudWatch records, sessions and rate-limit keys are ephemeral, financial and ownership records are retained long term, and manual cleanup is accepted until cleanup automation is added. |
 
 ## CI And Verification
 
@@ -190,6 +190,7 @@ Release candidate verification:
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.
 - No production R2 environment is configured yet.
+- No automated data cleanup jobs exist yet.
 - Production Cloudflare edge limits and deployed trusted-client attribution are
   not configured yet.
 - Application rate-limit thresholds have not been tuned from production

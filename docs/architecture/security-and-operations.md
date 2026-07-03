@@ -284,6 +284,12 @@ Recommended controls:
 
 Ownership and payment records should be treated as financial-grade records and should not be physically deleted under normal user flows.
 
+The MVP data retention boundary is defined in
+[Data Retention Policy](../operations/data-retention-policy.md). Runtime logs,
+sessions, rate-limit counters, upload requests, media objects, audit logs,
+ownership records, and payment records have different retention expectations.
+Object storage cleanup must be coordinated with database state.
+
 ## Secrets Management
 
 Required controls:
