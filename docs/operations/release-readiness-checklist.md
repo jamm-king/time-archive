@@ -102,8 +102,8 @@ MVP-ready areas after target-environment verification:
 | Ownership transaction boundaries | Needs verification | Local purchase flows are covered; staging media smoke can use explicit `ADMIN_GRANT` owned ranges while real provider ownership remains a production blocker. |
 | Migration execution | Needs verification | Confirm Flyway migrations run in staging before production. |
 | Staging database user | Needs verification | The staging `timearchive_app` database user exists and login/DDL bootstrap checks passed; verify Flyway migrations and runtime queries during first deployment. |
-| Backups | Blocked for production | Enable automated PostgreSQL backups and point-in-time recovery. |
-| Restore test | Blocked for production | Perform at least one restore drill before public launch. |
+| Backups | Needs verification | Backup policy and production requirements are documented in [Database Recovery Runbook](database-recovery-runbook.md). Enable production RDS automated backups with at least 7 days retention, deletion protection, and final snapshot behavior before marking this Ready. |
+| Restore test | Blocked for production | Restore drill procedure is documented in [Database Recovery Runbook](database-recovery-runbook.md), but at least one staging or isolated restore drill must pass before paid production launch. |
 | Data retention policy | Ready for MVP | Retention targets are documented in [Data Retention Policy](data-retention-policy.md). Runtime logs remain 14-day CloudWatch records, sessions and rate-limit keys are ephemeral, financial and ownership records are retained long term, and manual cleanup is accepted until cleanup automation is added. |
 
 ## CI And Verification
