@@ -125,3 +125,6 @@ staging log groups, retention checks, and request ID search procedure.
   rate-limit storage failures, storage failures, and payment failures.
 - Add error tracking only after the event fields and sensitive-data scrubbing
   policy are reviewed.
+
+See [Observability Minimum](observability-minimum.md) for the paid-production
+error tracking, metrics, and alerting release gate.

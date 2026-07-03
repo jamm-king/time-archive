@@ -449,6 +449,8 @@ Sentry Developer is selected but not yet implemented. When added, use separate
 staging and production environments, immutable release SHAs, source-map upload
 for Web, server exception capture for API, and strict filtering of credentials,
 cookies, CSRF tokens, payment payloads, and presigned URLs.
+The minimum paid-production observability release gate is documented in
+[Observability Minimum](observability-minimum.md).
 
 ## Cost Baseline
 
