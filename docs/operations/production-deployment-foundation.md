@@ -141,3 +141,9 @@ Staging runtime parameter creation and metadata validation are defined in
 [Staging Runtime Parameters](staging-runtime-parameters.md).
 The manual SSM Run Command deployment workflow is defined in
 [Staging Deployment](staging-deployment.md).
+Production runtime parameter requirements are defined in
+[Production Runtime Parameters](production-runtime-parameters.md).
+Production R2 requirements are defined in
+[Production R2 Readiness](production-r2-readiness.md). Storage backend, bucket,
+endpoint, and object-reference base URL changes are governed by
+[Storage Backend Change Procedure](storage-backend-change-procedure.md).
