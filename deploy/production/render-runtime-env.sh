@@ -158,6 +158,12 @@ write_optional_parameter TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS r2/path-style
 write_required_parameter TIME_ARCHIVE_RATE_LIMIT_KEY_SALT rate-limit/key-salt
 write_optional_parameter TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER rate-limit/client-ip-header ''
 write_required_parameter TIME_ARCHIVE_CLOUDFLARE_TUNNEL_TOKEN cloudflare/tunnel-token
+write_optional_parameter TIME_ARCHIVE_PAYMENT_PAYPAL_ENABLED paypal/enabled false
+write_optional_parameter TIME_ARCHIVE_PAYPAL_API_BASE_URL paypal/api-base-url ''
+write_optional_parameter TIME_ARCHIVE_PAYPAL_CLIENT_ID paypal/client-id ''
+write_optional_parameter TIME_ARCHIVE_PAYPAL_CLIENT_SECRET paypal/client-secret ''
+write_optional_parameter TIME_ARCHIVE_PAYPAL_RETURN_URL paypal/return-url ''
+write_optional_parameter TIME_ARCHIVE_PAYPAL_CANCEL_URL paypal/cancel-url ''
 
 if [[ ! -d "$(dirname "$OUTPUT_FILE")" ]]; then
   install -d -m 700 "$(dirname "$OUTPUT_FILE")"

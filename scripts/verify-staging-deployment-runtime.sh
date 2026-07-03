@@ -154,6 +154,9 @@ for key in (
     if not api.get(key):
         raise SystemExit(f"rendered staging API environment is missing {key}")
 
+if api.get("TIME_ARCHIVE_PAYMENT_PAYPAL_ENABLED") != "false":
+    raise SystemExit("staging PayPal must remain disabled in the fixture")
+
 if services["api"].get("ports") or services["web"].get("ports") or services["redis"].get("ports"):
     raise SystemExit("staging deployment must not publish host ports")
 
