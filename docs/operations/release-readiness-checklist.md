@@ -74,8 +74,8 @@ MVP-ready areas after target-environment verification:
 | Fake webhook endpoint | Ready | Disabled by default and registered only when `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`; never enable it in production. |
 | PayPal integration design | Ready | The real-payment flow, runtime parameters, webhook boundary, idempotency model, verification plan, and rollback expectations are documented in [PayPal Integration Design](paypal-integration-design.md). |
 | PayPal checkout foundation | Needs verification | Checkout attempts are persisted and PayPal checkout can be enabled by runtime configuration, but Sandbox order creation still needs staging verification. |
-| Provider webhook verification | Blocked for production | Implement the PayPal webhook with provider signature verification, replay protection, idempotency, and auditability before collecting money. |
-| Checkout redirect flow | Needs verification | PayPal approval return and server-side capture are implemented without granting ownership. Staging Sandbox browser verification is still required, and production remains blocked until the webhook finalizes ownership. |
+| Provider webhook verification | Needs verification | PayPal webhook signature verification and `PAYMENT.CAPTURE.COMPLETED` finalization are implemented in code. Configure the PayPal webhook ID and verify with Sandbox before collecting money. |
+| Checkout redirect flow | Needs verification | PayPal approval return and server-side capture are implemented without granting ownership. Ownership is finalized only after the verified PayPal webhook. |
 | Payment idempotency | Needs verification | Re-run checkout retry, capture retry, duplicate webhook, amount mismatch, and currency mismatch scenarios against the real PayPal integration. |
 
 ## Storage And Media

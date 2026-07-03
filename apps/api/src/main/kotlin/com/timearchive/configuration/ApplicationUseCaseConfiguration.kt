@@ -3,6 +3,7 @@ package com.timearchive.configuration
 import com.timearchive.application.ApproveMediaAsset
 import com.timearchive.application.AuthenticateUser
 import com.timearchive.application.CapturePayPalOrder
+import com.timearchive.application.CompletePayPalWebhook
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.application.CompleteOwnedRangeMediaUpload
 import com.timearchive.application.CreateCheckout
@@ -38,6 +39,8 @@ import com.timearchive.domain.port.TransactionPort
 import com.timearchive.domain.port.UserAccountRepository
 import com.timearchive.domain.model.UserAccount
 import com.timearchive.adapter.outbound.payment.PayPalOrderClient
+import com.timearchive.adapter.outbound.payment.PayPalWebhookVerifierClient
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.beans.factory.annotation.Value
@@ -143,6 +146,26 @@ class ApplicationUseCaseConfiguration {
             purchaseReservationRepository = purchaseReservationRepository,
             paypalOrderClient = paypalOrderClient,
             clockPort = clockPort,
+        )
+
+    @Bean
+    fun completePayPalWebhook(
+        objectMapper: ObjectMapper,
+        transactionPort: TransactionPort,
+        checkoutAttemptRepository: CheckoutAttemptRepository,
+        purchaseReservationRepository: PurchaseReservationRepository,
+        paypalWebhookVerifierClient: PayPalWebhookVerifierClient,
+        completePrimaryPurchase: CompletePrimaryPurchase,
+        payPalPaymentProperties: PayPalPaymentProperties,
+    ): CompletePayPalWebhook =
+        CompletePayPalWebhook(
+            objectMapper = objectMapper,
+            transactionPort = transactionPort,
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            purchaseReservationRepository = purchaseReservationRepository,
+            paypalWebhookVerifierClient = paypalWebhookVerifierClient,
+            completePrimaryPurchase = completePrimaryPurchase,
+            properties = payPalPaymentProperties,
         )
 
     @Bean

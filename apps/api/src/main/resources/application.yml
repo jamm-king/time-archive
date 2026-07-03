@@ -37,6 +37,7 @@ time-archive:
       client-secret: ${TIME_ARCHIVE_PAYPAL_CLIENT_SECRET:}
       return-url: ${TIME_ARCHIVE_PAYPAL_RETURN_URL:}
       cancel-url: ${TIME_ARCHIVE_PAYPAL_CANCEL_URL:}
+      webhook-id: ${TIME_ARCHIVE_PAYPAL_WEBHOOK_ID:}
   rate-limit:
     enabled: ${TIME_ARCHIVE_RATE_LIMIT_ENABLED:true}
     client-ip-header: ${TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER:}

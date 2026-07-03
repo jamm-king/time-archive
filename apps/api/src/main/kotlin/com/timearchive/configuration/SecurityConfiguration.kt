@@ -41,6 +41,7 @@ class SecurityConfiguration {
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .ignoringRequestMatchers(
                         "/api/internal/payments/fake/webhooks/primary-purchase-completed",
+                        "/api/payments/paypal/webhooks",
                     )
             }
             .cors(Customizer.withDefaults())

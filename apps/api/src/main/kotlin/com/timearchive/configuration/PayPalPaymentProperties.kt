@@ -10,4 +10,5 @@ data class PayPalPaymentProperties(
     val clientSecret: String = "",
     val returnUrl: String = "",
     val cancelUrl: String = "",
+    val webhookId: String = "",
 )

@@ -64,10 +64,10 @@ Required parameters:
 | `client-secret` | `SecureString` | PayPal OAuth secret. |
 | `return-url` | `String` | Public HTTPS return URL for approved orders. |
 | `cancel-url` | `String` | Public HTTPS cancel URL for cancelled approvals. |
+| `webhook-id` | `SecureString` | PayPal webhook ID used for signature verification. |
 
-The webhook implementation will add `webhook-id` before provider webhooks are
-enabled. Currency remains server-computed from the reservation and is not a
-separate PayPal runtime selector in the checkout foundation.
+Currency remains server-computed from the reservation and is not a separate
+PayPal runtime selector.
 
 Do not overload `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED` or any fake payment
 configuration for PayPal. Fake payment must stay disabled in staging and
@@ -153,10 +153,11 @@ PayPal webhook handling is the only real-payment path that can grant ownership:
     in one transaction.
 ```
 
-The first supported completed-payment event should represent a completed PayPal
-capture for the primary-purchase order. Other verified events can be recorded or
-ignored according to the implementation, but ignored verified events should not
-trigger provider retries indefinitely.
+The first supported completed-payment event is `PAYMENT.CAPTURE.COMPLETED` for
+the primary-purchase order. The API verifies the PayPal signature through
+PayPal's webhook verification API before reading payload values for
+finalization. Other verified events are acknowledged without side effects so
+they do not trigger provider retries indefinitely.
 
 Unverified events should return a non-success response and must not write
 purchase, ownership, or processed payment records.
@@ -196,7 +197,7 @@ payloads unless a future compliance review approves it.
 ## Security Requirements
 
 - PayPal client secret must be an SSM `SecureString` value. The webhook ID must
-  also be an SSM `SecureString` value when webhook verification is added.
+  also be an SSM `SecureString` value.
 - The API must verify PayPal webhook signatures independently of Cloudflare.
 - Cloudflare rules may reduce abuse, but they are not a substitute for webhook
   verification.

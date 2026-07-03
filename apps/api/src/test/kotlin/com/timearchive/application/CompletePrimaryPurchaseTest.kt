@@ -103,6 +103,31 @@ class CompletePrimaryPurchaseTest {
     }
 
     @Test
+    fun `finalizes expired reservation when provider payment completed before expiration`() {
+        val reservation = heldReservation(
+            createdAt = now.minusSeconds(1_200),
+            expiresAt = now.minusSeconds(600),
+        ).copy(status = PurchaseReservationStatus.CHECKOUT_CREATED)
+        val purchaseRepository = FakePurchaseRepository()
+        val ownershipRepository = FakeOwnershipRepository()
+        val useCase = useCase(
+            reservationRepository = FakePurchaseReservationRepository(reservation = reservation),
+            purchaseRepository = purchaseRepository,
+            ownershipRepository = ownershipRepository,
+        )
+
+        val result = useCase.complete(
+            command(reservationId = reservation.id).copy(
+                paymentCompletedAt = reservation.expiresAt.minusSeconds(1),
+            ),
+        )
+
+        assertThat(result.alreadyProcessed).isFalse()
+        assertThat(purchaseRepository.saved).hasSize(1)
+        assertThat(ownershipRepository.saved).hasSize(1)
+    }
+
+    @Test
     fun `rejects ownership overlap before finalization`() {
         val reservation = heldReservation()
         val useCase = useCase(
