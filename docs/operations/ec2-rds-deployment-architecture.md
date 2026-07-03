@@ -406,12 +406,18 @@ Before a paid launch:
 - Perform one restore drill into an isolated database.
 - Verify Flyway against the restored database.
 - Document RTO and RPO measured by the drill.
-- Define retention for sessions, upload requests, rejected media, and audit
-  logs.
+- Apply the documented retention policy for sessions, upload requests,
+  rejected media, and audit logs.
 
 R2 object backup and retention policy is separate from RDS backup. Database
 rows and R2 objects form one consistency boundary; restoring only one side can
 produce broken references.
+
+The current retention policy is documented in
+[Data Retention Policy](data-retention-policy.md). Cleanup automation is a
+follow-up; production cleanup that touches R2 objects, ownership records,
+payment records, audit logs, backups, or snapshots remains a reviewed
+operational change.
 
 ## Observability Baseline
 
