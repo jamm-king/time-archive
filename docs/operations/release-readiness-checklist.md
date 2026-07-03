@@ -30,7 +30,8 @@ Production blockers:
   application-level Redis rate limiting is implemented.
 - Production observability for application logs, errors, health, and security
   events.
-- A documented malware-scanning path for uploaded media.
+- Media safety operating process acceptance for limited launch, or automatic
+  malware scanning before broader public scale.
 
 MVP-ready areas after target-environment verification:
 
@@ -87,7 +88,7 @@ MVP-ready areas after target-environment verification:
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
 | Video duration validation | Ready | Local API tests, OpenAPI validation, and the manual staging media duration smoke workflow passed. The staging smoke verifies short `video/mp4` upload completion with `durationMs`, over-duration completion rejection with `MEDIA_DURATION_EXCEEDS_OWNED_RANGE`, and no media asset creation for the rejected upload. Repeat after upload completion, MP4 parsing, storage, or media API changes. |
 | File signature validation | Ready | Upload completion validates supported media signatures before creating media assets. Local API tests pass, and the manual staging media signature smoke workflow passed against the deployed staging public HTTPS hostname. Repeat after upload completion, storage, or media-type validation changes. |
-| Malware scanning | Blocked for production | Add scanning or a documented media safety process before public launch. |
+| Media safety and malware scanning | Needs verification | The limited-launch media safety policy is documented in [Media Safety Policy](media-safety-policy.md). Automatic scanning is deferred, but admin approval remains the publication gate. Project-owner acceptance of this residual risk is required before marking this Ready. |
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
 | Approved storage references | Ready | Approval rejects URLs that do not belong to the configured storage base URL. |
 | Public playback URLs | Ready | Public timeline returns short-lived presigned GET URLs and `Cache-Control: no-store`. |
@@ -184,7 +185,7 @@ Release candidate verification:
 - No real payment provider is integrated.
 - No password reset flow exists.
 - No email verification exists.
-- No media scanning or transcoding exists.
+- No automatic media scanning or transcoding exists.
 - No user-facing support or dispute workflow exists.
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.

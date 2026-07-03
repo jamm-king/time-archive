@@ -114,18 +114,21 @@ Recommended MVP media policy:
 
 Current media persistence stores URLs and moderation state. Upload completion
 verifies ownership, upload request expiration, object existence, expected
-content length, and expected content type before creating a media asset. File
-signature inspection, malware scanning, transcoding, and thumbnail generation
-remain required before production publication.
+content length, expected content type, supported file signatures, and MP4
+duration before creating a media asset. Malware scanning, transcoding, and
+thumbnail generation remain separate media safety controls.
 
 Owned range media APIs derive current-user identity from the authenticated
 server-side session and must reject client-provided owner identity claims. The
 metadata-only media creation API does not prove that the referenced file exists,
 belongs to the caller, or passed file signature and content safety checks.
 
-Upload request APIs issue short-lived S3-compatible presigned upload URLs and store server-generated object keys in `media_upload_requests`. Local development uses MinIO through the same S3-compatible storage port that can later target Cloudflare R2. Upload request creation still does not prove that the object was uploaded correctly; a completion step must verify the object key, expected content length, expected content type, ownership, expiration, and actual file signature before a `MediaAsset` is created or moved into moderation.
+Upload request APIs issue short-lived S3-compatible presigned upload URLs and store server-generated object keys in `media_upload_requests`. Local development uses MinIO through the same S3-compatible storage port that can later target Cloudflare R2. Upload request creation still does not prove that the object was uploaded correctly; a completion step verifies the object key, expected content length, expected content type, ownership, expiration, actual file signature, and video duration before a `MediaAsset` is created or moved into moderation.
 
-The initial upload completion implementation verifies ownership, expiration, object existence, expected content length, and expected content type before creating an `UPLOADED` `MediaAsset`. It does not yet inspect file signatures, scan malware, transcode video, or generate thumbnails, so moderation and processing must still treat uploaded media as untrusted.
+The initial upload completion implementation does not scan malware, transcode
+video, or generate thumbnails, so moderation and processing must still treat
+uploaded media as untrusted. The limited-launch operating boundary is defined
+in [Media Safety Policy](../operations/media-safety-policy.md).
 
 Admin original-media preview uses short-lived presigned download URLs generated
 after server-side admin authorization. This keeps original uploads private while

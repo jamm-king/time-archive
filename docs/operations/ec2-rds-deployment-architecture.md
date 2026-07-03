@@ -477,8 +477,9 @@ The following work must be completed before the first staging deployment:
 - Replace environment-based initial admin bootstrap with operator-controlled
   provisioning.
 - Implement PayPal before enabling real payments.
-- Implement media signature validation and the approved malware-scanning path
-  before public media publication.
+- Accept the documented limited-launch media safety policy or implement the
+  approved automatic malware-scanning path before public media publication at
+  broader scale.
 
 The repository-side Compose, host bootstrap, SSM runtime renderer, deployment,
 health verification, and static deployment policy are documented in
