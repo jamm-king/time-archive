@@ -30,6 +30,13 @@ time-archive:
   payment:
     fake:
       enabled: ${TIME_ARCHIVE_PAYMENT_FAKE_ENABLED:false}
+    paypal:
+      enabled: ${TIME_ARCHIVE_PAYMENT_PAYPAL_ENABLED:false}
+      api-base-url: ${TIME_ARCHIVE_PAYPAL_API_BASE_URL:}
+      client-id: ${TIME_ARCHIVE_PAYPAL_CLIENT_ID:}
+      client-secret: ${TIME_ARCHIVE_PAYPAL_CLIENT_SECRET:}
+      return-url: ${TIME_ARCHIVE_PAYPAL_RETURN_URL:}
+      cancel-url: ${TIME_ARCHIVE_PAYPAL_CANCEL_URL:}
   rate-limit:
     enabled: ${TIME_ARCHIVE_RATE_LIMIT_ENABLED:true}
     client-ip-header: ${TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER:}

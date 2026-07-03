@@ -223,7 +223,9 @@ if not isinstance(actual_payload, list):
     raise SystemExit("AWS SSM metadata response must be a list")
 
 actual = {item.get("Name"): item.get("Type") for item in actual_payload}
-optional = {"/time-archive/staging/rate-limit/client-ip-header"}
+optional = {
+    "/time-archive/staging/rate-limit/client-ip-header",
+}
 missing = sorted(set(expected) - optional - set(actual))
 wrong_type = sorted(
     name for name, expected_type in expected.items()

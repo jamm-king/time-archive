@@ -19,6 +19,7 @@ import com.timearchive.application.RejectMediaAsset
 import com.timearchive.application.RegisterUser
 import com.timearchive.application.ReserveTimeRange
 import com.timearchive.domain.port.AuditLogPort
+import com.timearchive.domain.port.CheckoutAttemptRepository
 import com.timearchive.domain.port.ClockPort
 import com.timearchive.domain.port.MediaAssetRepository
 import com.timearchive.domain.port.MediaInspectionPort
@@ -114,12 +115,14 @@ class ApplicationUseCaseConfiguration {
     fun createCheckout(
         transactionPort: TransactionPort,
         purchaseReservationRepository: PurchaseReservationRepository,
+        checkoutAttemptRepository: CheckoutAttemptRepository,
         paymentPort: PaymentPort,
         clockPort: ClockPort,
     ): CreateCheckout =
         CreateCheckout(
             transactionPort = transactionPort,
             purchaseReservationRepository = purchaseReservationRepository,
+            checkoutAttemptRepository = checkoutAttemptRepository,
             paymentPort = paymentPort,
             clockPort = clockPort,
         )

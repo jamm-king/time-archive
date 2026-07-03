@@ -4,6 +4,8 @@ import java.util.UUID
 
 data class CheckoutRequest(
     val reservationId: UUID,
+    val checkoutAttemptId: UUID,
+    val providerRequestId: String,
     val buyerId: UUID,
     val range: TimeRange,
     val amountCents: Long,

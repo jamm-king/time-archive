@@ -110,6 +110,7 @@ sensitive_prefixes = (
     "TIME_ARCHIVE_DATABASE_",
     "TIME_ARCHIVE_STORAGE_S3_",
     "TIME_ARCHIVE_RATE_LIMIT_KEY_SALT",
+    "TIME_ARCHIVE_PAYPAL_",
 )
 for name in ("web", "redis", "cloudflared"):
     environment = services[name].get("environment", {})

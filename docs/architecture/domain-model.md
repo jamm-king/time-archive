@@ -136,6 +136,34 @@ Checkout sessions are provider-neutral responses returned by `PaymentPort`.
 
 The checkout URL is a redirect target only. It must not be treated as payment confirmation.
 
+### CheckoutAttempt
+
+Checkout attempts persist the provider-facing checkout creation boundary for a
+reservation.
+
+- `id`
+- `reservationId`
+- `buyerId`
+- `provider`
+- `providerRequestId`
+- `providerReference`
+- `checkoutUrl`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+Suggested statuses:
+
+- `PENDING_PROVIDER`
+- `PROVIDER_CREATED`
+- `PROVIDER_FAILED`
+- `CANCELLED`
+
+The first PayPal checkout foundation uses one checkout attempt per reservation.
+Provider order creation retries reuse the same `providerRequestId`, which maps
+to PayPal's idempotent `PayPal-Request-Id` header. Checkout attempt creation
+does not grant ownership and does not prove payment completion.
+
 ### Purchase
 
 - `id`

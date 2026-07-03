@@ -58,14 +58,16 @@ Required parameters:
 
 | Name | Type | Notes |
 | --- | --- | --- |
-| `environment` | `String` | `sandbox` for staging, `live` for production. |
+| `enabled` | `String` | `false` until the environment is ready for PayPal checkout. |
 | `api-base-url` | `String` | Approved PayPal API base URL for the selected environment. Confirm from PayPal documentation during implementation. |
 | `client-id` | `SecureString` | Treat as sensitive operational configuration even if PayPal exposes it in some client flows. |
 | `client-secret` | `SecureString` | PayPal OAuth secret. |
-| `webhook-id` | `SecureString` | Identifier used for webhook signature verification. |
-| `currency` | `String` | Initial value: `USD`. |
 | `return-url` | `String` | Public HTTPS return URL for approved orders. |
 | `cancel-url` | `String` | Public HTTPS cancel URL for cancelled approvals. |
+
+The webhook implementation will add `webhook-id` before provider webhooks are
+enabled. Currency remains server-computed from the reservation and is not a
+separate PayPal runtime selector in the checkout foundation.
 
 Do not overload `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED` or any fake payment
 configuration for PayPal. Fake payment must stay disabled in staging and
@@ -184,7 +186,8 @@ payloads unless a future compliance review approves it.
 
 ## Security Requirements
 
-- PayPal client secret and webhook ID must be SSM `SecureString` values.
+- PayPal client secret must be an SSM `SecureString` value. The webhook ID must
+  also be an SSM `SecureString` value when webhook verification is added.
 - The API must verify PayPal webhook signatures independently of Cloudflare.
 - Cloudflare rules may reduce abuse, but they are not a substitute for webhook
   verification.
@@ -282,4 +285,3 @@ The payment release gate can move from blocked only after:
 - sensitive logging checks pass after PayPal traffic;
 - production SSM parameter metadata validation includes PayPal parameters;
 - the project owner approves the first live payment verification procedure.
-

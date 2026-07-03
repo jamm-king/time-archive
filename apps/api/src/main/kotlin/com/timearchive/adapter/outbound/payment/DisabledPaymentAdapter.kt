@@ -13,7 +13,15 @@ import org.springframework.stereotype.Component
     havingValue = "false",
     matchIfMissing = true,
 )
+@ConditionalOnProperty(
+    prefix = "time-archive.payment.paypal",
+    name = ["enabled"],
+    havingValue = "false",
+    matchIfMissing = true,
+)
 class DisabledPaymentAdapter : PaymentPort {
+    override val provider: String = "disabled"
+
     override fun createCheckout(request: CheckoutRequest): CheckoutSession =
         error("payment provider is unavailable")
 }
