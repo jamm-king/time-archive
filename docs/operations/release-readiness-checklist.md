@@ -175,10 +175,10 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Application logs | Ready | API request correlation and safe request completion logging are implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified, and staging verification confirmed the request ID smoke workflow succeeds and the request ID is searchable in `/time-archive/staging/api`. Repeat after request-correlation, logging, or deployment logging changes. |
-| Error tracking | Blocked for production | Add an error tracking or alerting path for API and web failures. |
-| Metrics | Needs verification | Track request rate, error rate, latency, DB health, storage errors, and payment webhook failures. |
+| Error tracking | Needs verification | Minimum error-tracking requirements are documented in [Observability Minimum](observability-minimum.md). Integrate Sentry for API/Web errors with sensitive-data filtering, or explicitly accept CloudWatch-only risk before paid production. |
+| Metrics | Needs verification | Minimum metrics are documented in [Observability Minimum](observability-minimum.md). Verify infrastructure, deployment, API/Web, storage, and PayPal webhook signals before paid production. |
 | Audit logs | Ready | Admin approval, rejection, and hiding append audit records in the moderation transaction. |
-| Alerts | Blocked for production | Add alerts for health check failure, payment failures, upload failures, DB saturation, and storage errors. |
+| Alerts | Needs verification | Minimum alert surfaces are documented in [Observability Minimum](observability-minimum.md). Create and test production alert delivery for health, deployment, RDS, storage, and PayPal webhook failures before marking this Ready. |
 
 ## Known MVP Limitations
 
@@ -204,6 +204,7 @@ Production runtime readiness is split across focused runbooks:
 - [Production R2 Readiness](production-r2-readiness.md)
 - [Storage Backend Change Procedure](storage-backend-change-procedure.md)
 - [Database Recovery Runbook](database-recovery-runbook.md)
+- [Observability Minimum](observability-minimum.md)
 
 Local R2 verification remains documented in
 [Cloudflare R2 Storage Setup](r2-storage-setup.md).
