@@ -46,9 +46,18 @@ deployment roles must not read decrypted application secrets.
 | `/time-archive/production/rate-limit/key-salt` | `SecureString` | Random production-only HMAC salt. |
 | `/time-archive/production/rate-limit/client-ip-header` | `String` | `CF-Connecting-IP` only after Cloudflare Tunnel is confirmed as the only public ingress. |
 | `/time-archive/production/cloudflare/tunnel-token` | `SecureString` | Production Cloudflare Tunnel token. |
+| `/time-archive/production/paypal/environment` | `String` | `live` for production. |
+| `/time-archive/production/paypal/api-base-url` | `String` | Approved PayPal API base URL for the live environment. |
+| `/time-archive/production/paypal/client-id` | `SecureString` | Production PayPal client ID. |
+| `/time-archive/production/paypal/client-secret` | `SecureString` | Production PayPal client secret. |
+| `/time-archive/production/paypal/webhook-id` | `SecureString` | Production PayPal webhook ID used for signature verification. |
+| `/time-archive/production/paypal/currency` | `String` | Initial production currency, expected to be `USD`. |
+| `/time-archive/production/paypal/return-url` | `String` | Public HTTPS PayPal approval return URL. |
+| `/time-archive/production/paypal/cancel-url` | `String` | Public HTTPS PayPal cancellation return URL. |
 
-PayPal parameters will be added by the PayPal integration task. Do not overload
-the current fake payment parameters for production.
+The PayPal integration contract is documented in
+[PayPal Integration Design](paypal-integration-design.md). Do not overload the
+current fake payment parameters for production.
 
 ## Value Shapes
 
@@ -63,6 +72,8 @@ TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT=https://{cloudflare-account-id}.r
 TIME_ARCHIVE_STORAGE_S3_REGION=auto
 TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS=true
 TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP
+TIME_ARCHIVE_PAYPAL_ENVIRONMENT=live
+TIME_ARCHIVE_PAYPAL_CURRENCY=USD
 ```
 
 Generate a production rate-limit salt on a trusted workstation:
@@ -98,6 +109,8 @@ Before production deployment, verify without decrypting values:
 - staging and production bucket names differ;
 - staging and production Cloudflare Tunnel tokens differ;
 - staging and production rate-limit salts differ;
+- staging and production PayPal applications, client secrets, webhook IDs, and
+  callback URLs differ;
 - production database URL points to the production RDS endpoint;
 - production log group prefix is `/time-archive/production`.
 

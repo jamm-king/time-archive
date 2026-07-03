@@ -72,9 +72,10 @@ MVP-ready areas after target-environment verification:
 | --- | --- | --- |
 | Local fake payment flow | Ready | Keep only for local and CI verification. |
 | Fake webhook endpoint | Ready | Disabled by default and registered only when `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`; never enable it in production. |
-| Provider webhook verification | Blocked for production | Add a real provider webhook with signature verification, replay protection, idempotency, and auditability. |
-| Checkout redirect flow | Blocked for production | Replace fake checkout with real provider checkout before collecting money. |
-| Payment idempotency | Needs verification | Re-run duplicate webhook and retry scenarios against the real provider integration. |
+| PayPal integration design | Ready | The real-payment flow, runtime parameters, webhook boundary, idempotency model, verification plan, and rollback expectations are documented in [PayPal Integration Design](paypal-integration-design.md). |
+| Provider webhook verification | Blocked for production | Implement the PayPal webhook with provider signature verification, replay protection, idempotency, and auditability before collecting money. |
+| Checkout redirect flow | Blocked for production | Replace fake checkout with real PayPal checkout, approval return, and server-side capture before collecting money. Browser return must not grant ownership. |
+| Payment idempotency | Needs verification | Re-run checkout retry, capture retry, duplicate webhook, amount mismatch, and currency mismatch scenarios against the real PayPal integration. |
 
 ## Storage And Media
 
@@ -205,6 +206,7 @@ Production runtime readiness is split across focused runbooks:
 - [Storage Backend Change Procedure](storage-backend-change-procedure.md)
 - [Database Recovery Runbook](database-recovery-runbook.md)
 - [Observability Minimum](observability-minimum.md)
+- [PayPal Integration Design](paypal-integration-design.md)
 
 Local R2 verification remains documented in
 [Cloudflare R2 Storage Setup](r2-storage-setup.md).
