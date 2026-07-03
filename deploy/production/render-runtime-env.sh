@@ -164,6 +164,7 @@ write_optional_parameter TIME_ARCHIVE_PAYPAL_CLIENT_ID paypal/client-id ''
 write_optional_parameter TIME_ARCHIVE_PAYPAL_CLIENT_SECRET paypal/client-secret ''
 write_optional_parameter TIME_ARCHIVE_PAYPAL_RETURN_URL paypal/return-url ''
 write_optional_parameter TIME_ARCHIVE_PAYPAL_CANCEL_URL paypal/cancel-url ''
+write_optional_parameter TIME_ARCHIVE_PAYPAL_WEBHOOK_ID paypal/webhook-id ''
 
 if [[ ! -d "$(dirname "$OUTPUT_FILE")" ]]; then
   install -d -m 700 "$(dirname "$OUTPUT_FILE")"

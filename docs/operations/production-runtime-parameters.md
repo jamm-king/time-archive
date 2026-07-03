@@ -52,10 +52,10 @@ deployment roles must not read decrypted application secrets.
 | `/time-archive/production/paypal/client-secret` | `SecureString` | Production PayPal client secret. |
 | `/time-archive/production/paypal/return-url` | `String` | Public HTTPS PayPal approval return URL. |
 | `/time-archive/production/paypal/cancel-url` | `String` | Public HTTPS PayPal cancellation return URL. |
+| `/time-archive/production/paypal/webhook-id` | `SecureString` | Production PayPal webhook ID used for provider signature verification. |
 
-`/time-archive/production/paypal/webhook-id` will become required when the
-PayPal webhook implementation is added. Production payment collection must not
-start before that parameter exists and webhook signature verification passes.
+Production payment collection must not start before the PayPal webhook ID exists
+and webhook signature verification passes.
 
 The PayPal integration contract is documented in
 [PayPal Integration Design](paypal-integration-design.md). Do not overload the
@@ -78,6 +78,7 @@ TIME_ARCHIVE_PAYMENT_PAYPAL_ENABLED=false
 TIME_ARCHIVE_PAYPAL_API_BASE_URL=https://api-m.paypal.com
 TIME_ARCHIVE_PAYPAL_RETURN_URL=https://time-archive.com/payments/paypal/return
 TIME_ARCHIVE_PAYPAL_CANCEL_URL=https://time-archive.com/payments/paypal/cancel
+TIME_ARCHIVE_PAYPAL_WEBHOOK_ID=<paypal-live-webhook-id>
 ```
 
 Generate a production rate-limit salt on a trusted workstation:

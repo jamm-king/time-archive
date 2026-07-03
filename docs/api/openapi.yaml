@@ -995,6 +995,87 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/payments/paypal/webhooks:
+    post:
+      tags:
+        - Payment
+      operationId: receivePayPalWebhook
+      summary: Receive and verify PayPal webhook
+      description: |
+        Receives PayPal webhook events, verifies the PayPal signature using the
+        configured webhook ID, and finalizes primary purchases for verified
+        `PAYMENT.CAPTURE.COMPLETED` events.
+
+        Unsupported verified events are acknowledged without side effects.
+        Unverified events are rejected and must not create purchase or ownership
+        records.
+      parameters:
+        - name: PAYPAL-TRANSMISSION-ID
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: PAYPAL-TRANSMISSION-TIME
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: PAYPAL-CERT-URL
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uri
+        - name: PAYPAL-AUTH-ALGO
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: PAYPAL-TRANSMISSION-SIG
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Verified PayPal event was completed or acknowledged.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayPalWebhookResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          description: Referenced reservation or checkout attempt was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Local payment state does not match the PayPal event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "503":
+          description: PayPal verification client is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
 components:
   securitySchemes:
     SessionCookie:
@@ -1768,6 +1849,38 @@ components:
       properties:
         purchaseId:
           type: string
+          format: uuid
+        ownershipRecordId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        alreadyProcessed:
+          type: boolean
+    PayPalWebhookResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - eventType
+        - status
+        - purchaseId
+        - ownershipRecordId
+        - alreadyProcessed
+      properties:
+        eventType:
+          type: string
+          minLength: 1
+          examples:
+            - PAYMENT.CAPTURE.COMPLETED
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - IGNORED
+        purchaseId:
+          type:
+            - string
+            - "null"
           format: uuid
         ownershipRecordId:
           type:

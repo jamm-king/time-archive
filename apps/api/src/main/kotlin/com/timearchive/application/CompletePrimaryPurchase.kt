@@ -62,7 +62,9 @@ class CompletePrimaryPurchase(
             val reservation = purchaseReservationRepository.findByIdForUpdate(command.reservationId)
                 ?: error("purchase reservation not found")
 
-            require(!reservation.isExpiredAt(now)) { "reservation is expired" }
+            require(!reservation.isExpiredAt(now) || command.wasPaidBefore(reservation.expiresAt)) {
+                "reservation is expired"
+            }
             require(
                 reservation.status == PurchaseReservationStatus.HELD ||
                     reservation.status == PurchaseReservationStatus.CHECKOUT_CREATED,
@@ -205,7 +207,11 @@ class CompletePrimaryPurchase(
         val reservationId: UUID,
         val paymentReference: String,
         val requestId: String?,
-    )
+        val paymentCompletedAt: java.time.Instant? = null,
+    ) {
+        fun wasPaidBefore(expiresAt: java.time.Instant): Boolean =
+            paymentCompletedAt?.let { it <= expiresAt } ?: false
+    }
 
     data class Result(
         val purchaseId: UUID,
