@@ -82,7 +82,7 @@ MVP-ready areas after target-environment verification:
 | --- | --- | --- |
 | Local MinIO flow | Ready | Verified by local upload, public timeline, and admin preview scripts. |
 | Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
-| Production Cloudflare R2 | Blocked for production | Provision a separate production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback from staging. |
+| Production Cloudflare R2 | Needs verification | Production R2 requirements are documented in [Production R2 Readiness](production-r2-readiness.md). Provision a dedicated production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback against production before marking this Ready. |
 | Presigned upload URLs | Ready | After applying the staging R2 bucket CORS policy, the manual staging presigned upload CORS smoke workflow passed and verified upload request creation, CORS preflight for `PUT` with `content-type`, and actual presigned `PUT` response CORS headers from the deployed Web origin. Repeat after storage bucket, CORS, Web origin, or upload-header changes. |
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
@@ -92,7 +92,7 @@ MVP-ready areas after target-environment verification:
 | Transcoding and thumbnail generation | Deferred | MVP can use original approved objects, but production should generate safe derived media. |
 | Approved storage references | Ready | Approval rejects URLs that do not belong to the configured storage base URL. |
 | Public playback URLs | Ready | Public timeline returns short-lived presigned GET URLs and `Cache-Control: no-store`. |
-| Storage backend changes | Blocked for production | Do not change bucket, storage backend, or storage base URL without an object migration, database update, verification, and rollback plan. |
+| Storage backend changes | Ready for MVP | [Storage Backend Change Procedure](storage-backend-change-procedure.md) defines bucket, endpoint, and object-reference base URL changes as high-impact operational changes requiring migration, verification, rollback, and explicit approval. |
 
 ## Database And Data Integrity
 
@@ -162,7 +162,7 @@ Release candidate verification:
 | Docker images | Needs verification | ARM64 builds pass CI and staging images publish to ECR; review ECR scan findings, attestations, and digest-qualified deployment references before deployment. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
 | Staging secret injection | Needs verification | The staging SSM runtime contract and metadata validator are implemented; provision real parameters and verify metadata before deployment. |
-| Production secret injection | Blocked for production | The SSM runtime renderer and staging/production parameter contracts are implemented; provision production-scoped parameters, IAM access, KMS policy, and rotation procedure. |
+| Production secret injection | Needs verification | Production parameter contract and safety boundaries are documented in [Production Runtime Parameters](production-runtime-parameters.md). Provision production-scoped parameters, IAM access, KMS policy, and runtime rendering verification before marking this Ready. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Ready | Cloudflare-managed edge TLS and Tunnel ingress were verified in staging through browser access to the published HTTPS hostname. Production must still verify secure cookies, forwarded protocol behavior, and redirect policy. |
 | Cloudflare | Ready for staging | Staging Published Application routing to `web:3000`, cache bypass, Free plan custom rules, auth endpoint edge rate limiting, trusted client IP runtime configuration, and staging smoke workflows were verified. Production still needs production-hostname Cloudflare policy configuration and verification. |
@@ -196,41 +196,17 @@ Release candidate verification:
 - Application rate-limit thresholds have not been tuned from production
   traffic.
 
-## Production R2 Readiness Checklist
+## Production Runtime Readiness References
 
-The local R2 integration path is ready: configuration is externalized, a local
-verification bucket is isolated from production, and an R2-backed media upload
-has passed. The following gates apply before connecting staging or production
-R2 resources:
+Production runtime readiness is split across focused runbooks:
 
-- Keep the existing local verification bucket isolated from every deployed
-  environment.
-- Provision a dedicated production media bucket with the approved access
-  policy.
-- Create least-privilege access keys per environment and per bucket.
-- Configure S3-compatible endpoint and region-compatible settings.
-- Set `TIME_ARCHIVE_STORAGE_S3_ENDPOINT`.
-  Example endpoint:
-  `https://replace-with-account-id.r2.cloudflarestorage.com`.
-- Set `TIME_ARCHIVE_STORAGE_S3_PRESIGNED_URL_ENDPOINT`.
-  Example endpoint:
-  `https://replace-with-account-id.r2.cloudflarestorage.com`.
-- Set `TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL` to the configured storage base
-  URL used for managed object references in that environment.
-- Set `TIME_ARCHIVE_STORAGE_S3_BUCKET`.
-- Confirm local, staging, and production deployments do not share the same
-  bucket unless explicitly approved as a high-impact operational decision.
-- Treat `TIME_ARCHIVE_STORAGE_S3_BUCKET` and
-  `TIME_ARCHIVE_STORAGE_S3_PUBLIC_BASE_URL` as data compatibility boundaries.
-  Changing either value against an existing database requires a storage
-  migration plan.
-- Set access key and secret through secret management.
-- Verify presigned PUT from the deployed browser origin.
-- Verify presigned GET for admin preview.
-- Verify presigned GET for public playback.
-- Confirm API responses carrying presigned URLs are not cached by shared caches.
+- [Production Runtime Parameters](production-runtime-parameters.md)
+- [Production R2 Readiness](production-r2-readiness.md)
+- [Storage Backend Change Procedure](storage-backend-change-procedure.md)
+- [Database Recovery Runbook](database-recovery-runbook.md)
 
-See [Cloudflare R2 Storage Setup](r2-storage-setup.md) for local verification.
+Local R2 verification remains documented in
+[Cloudflare R2 Storage Setup](r2-storage-setup.md).
 
 ## Go Or No-Go Rule
 
