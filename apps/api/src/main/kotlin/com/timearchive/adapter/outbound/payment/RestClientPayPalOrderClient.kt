@@ -37,6 +37,26 @@ class RestClientPayPalOrderClient(
         )
     }
 
+    override fun captureOrder(command: PayPalCaptureOrderCommand): PayPalCaptureResult {
+        val accessToken = requestAccessToken()
+        val response = restClient.post()
+            .uri("/v2/checkout/orders/{orderId}/capture", command.orderId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            .header("PayPal-Request-Id", command.providerRequestId)
+            .body(emptyMap<String, String>())
+            .retrieve()
+            .body(PayPalCaptureOrderResponse::class.java)
+            ?: error("paypal capture order returned an empty response")
+
+        return PayPalCaptureResult(
+            orderId = response.id ?: command.orderId,
+            captureId = response.captureId()
+                ?: error("paypal capture order response did not include capture id"),
+            status = response.status ?: "UNKNOWN",
+        )
+    }
+
     private fun requestAccessToken(): String {
         val body = LinkedMultiValueMap<String, String>()
         body.add("grant_type", "client_credentials")
@@ -135,5 +155,32 @@ class RestClientPayPalOrderClient(
         val href: String? = null,
         val rel: String? = null,
         val method: String? = null,
+    )
+
+    data class PayPalCaptureOrderResponse(
+        val id: String? = null,
+        val status: String? = null,
+        @com.fasterxml.jackson.annotation.JsonProperty("purchase_units")
+        val purchaseUnits: List<PayPalCapturedPurchaseUnit> = emptyList(),
+    ) {
+        fun captureId(): String? =
+            purchaseUnits
+                .asSequence()
+                .flatMap { it.payments?.captures.orEmpty().asSequence() }
+                .firstOrNull { !it.id.isNullOrBlank() }
+                ?.id
+    }
+
+    data class PayPalCapturedPurchaseUnit(
+        val payments: PayPalCapturedPayments? = null,
+    )
+
+    data class PayPalCapturedPayments(
+        val captures: List<PayPalCapture> = emptyList(),
+    )
+
+    data class PayPalCapture(
+        val id: String? = null,
+        val status: String? = null,
     )
 }

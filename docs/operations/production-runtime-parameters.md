@@ -76,6 +76,8 @@ TIME_ARCHIVE_STORAGE_S3_PATH_STYLE_ACCESS=true
 TIME_ARCHIVE_RATE_LIMIT_CLIENT_IP_HEADER=CF-Connecting-IP
 TIME_ARCHIVE_PAYMENT_PAYPAL_ENABLED=false
 TIME_ARCHIVE_PAYPAL_API_BASE_URL=https://api-m.paypal.com
+TIME_ARCHIVE_PAYPAL_RETURN_URL=https://time-archive.com/payments/paypal/return
+TIME_ARCHIVE_PAYPAL_CANCEL_URL=https://time-archive.com/payments/paypal/cancel
 ```
 
 Generate a production rate-limit salt on a trusted workstation:

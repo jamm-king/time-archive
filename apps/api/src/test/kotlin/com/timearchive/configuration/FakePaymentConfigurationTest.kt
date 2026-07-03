@@ -3,9 +3,11 @@ package com.timearchive.configuration
 import com.timearchive.adapter.inbound.rest.PaymentWebhookController
 import com.timearchive.adapter.outbound.payment.DisabledPaymentAdapter
 import com.timearchive.adapter.outbound.payment.FakePaymentAdapter
+import com.timearchive.adapter.outbound.payment.PayPalCaptureOrderCommand
+import com.timearchive.adapter.outbound.payment.PayPalCaptureResult
+import com.timearchive.adapter.outbound.payment.PayPalCreateOrderCommand
 import com.timearchive.adapter.outbound.payment.PayPalOrderClient
 import com.timearchive.adapter.outbound.payment.PayPalOrderResult
-import com.timearchive.adapter.outbound.payment.PayPalCreateOrderCommand
 import com.timearchive.adapter.outbound.payment.PayPalPaymentAdapter
 import com.timearchive.application.CompletePrimaryPurchase
 import com.timearchive.domain.port.PaymentPort
@@ -103,6 +105,9 @@ class FakePaymentConfigurationTest {
         fun paypalOrderClient(): PayPalOrderClient =
             object : PayPalOrderClient {
                 override fun createOrder(command: PayPalCreateOrderCommand): PayPalOrderResult =
+                    error("not used")
+
+                override fun captureOrder(command: PayPalCaptureOrderCommand): PayPalCaptureResult =
                     error("not used")
             }
     }

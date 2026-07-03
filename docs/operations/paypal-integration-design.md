@@ -103,11 +103,18 @@ Server-side rules:
 
 ## Approval Return And Capture Flow
 
-PayPal buyer approval is not payment completion. After PayPal redirects the
-browser back to Time Archive:
+PayPal buyer approval is not payment completion. PayPal return and cancel URLs
+must point to Web pages, not API mutation endpoints:
 
 ```text
-1. Browser calls the Time Archive return endpoint with the PayPal order token.
+https://{public-host}/payments/paypal/return
+https://{public-host}/payments/paypal/cancel
+```
+
+After PayPal redirects the browser back to Time Archive:
+
+```text
+1. Browser opens the Time Archive return page with the PayPal order token.
 2. API verifies the authenticated user owns the reservation or checkout attempt.
 3. API validates the checkout attempt is still payable.
 4. API calls PayPal to capture the approved order.
@@ -116,6 +123,8 @@ browser back to Time Archive:
    ownership.
 ```
 
+The return page calls `POST /api/payments/paypal/orders/{orderId}/capture`
+through the same-origin Web proxy with the normal session and CSRF boundary.
 The capture response may be useful for user feedback, but it must not create
 ownership by itself. The source of truth remains the verified PayPal webhook.
 

@@ -417,6 +417,69 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/payments/paypal/orders/{orderId}/capture:
+    post:
+      tags:
+        - Payment
+      operationId: capturePayPalOrder
+      summary: Capture an approved PayPal order
+      description: |
+        Captures a PayPal order after the authenticated buyer returns from
+        PayPal approval. Capture records provider state only and transitions
+        the checkout attempt to `CAPTURED_PENDING_WEBHOOK`.
+
+        This endpoint does not grant ownership. Ownership is finalized only by
+        a later verified provider webhook.
+      security:
+        - SessionCookie: []
+          CsrfHeader: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: PayPal order ID from the approval return token.
+      responses:
+        "200":
+          description: PayPal order capture was recorded or previously recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayPalCaptureResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Checkout attempt does not belong to the current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Checkout attempt was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Checkout attempt is expired, not payable, or capture failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "503":
+          description: Payment provider is unavailable or the rate-limit service is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/owned-ranges/{ownershipRecordId}/media:
     post:
       tags:
@@ -1251,6 +1314,31 @@ components:
           format: uri
           examples:
             - https://payments.example.test/checkout/00000000-0000-0000-0000-000000000010
+    PayPalCaptureResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - orderId
+        - captureReference
+        - status
+        - alreadyCaptured
+      properties:
+        orderId:
+          type: string
+          minLength: 1
+          examples:
+            - 5O190127TN364715T
+        captureReference:
+          type: string
+          minLength: 1
+          examples:
+            - 3C679366HH908993F
+        status:
+          type: string
+          enum:
+            - CAPTURED_PENDING_WEBHOOK
+        alreadyCaptured:
+          type: boolean
     AvailabilityResponse:
       type: object
       additionalProperties: false

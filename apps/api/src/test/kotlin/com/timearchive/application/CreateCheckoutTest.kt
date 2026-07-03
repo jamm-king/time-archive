@@ -205,6 +205,9 @@ class CreateCheckoutTest {
             providerRequestId = UUID.randomUUID().toString(),
             providerReference = "provider-order-${reservation.id}",
             checkoutUrl = "https://payments.example.test/existing/${reservation.id}",
+            captureRequestId = null,
+            captureReference = null,
+            capturedAt = null,
             status = CheckoutAttemptStatus.PROVIDER_CREATED,
             createdAt = now,
             updatedAt = now,
@@ -236,6 +239,12 @@ class CreateCheckoutTest {
         override fun findByReservationIdForUpdate(reservationId: UUID): CheckoutAttempt? =
             attempt?.takeIf { it.reservationId == reservationId }
 
+        override fun findByProviderReferenceForUpdate(
+            provider: String,
+            providerReference: String,
+        ): CheckoutAttempt? =
+            attempt?.takeIf { it.provider == provider && it.providerReference == providerReference }
+
         override fun markProviderCreated(
             id: UUID,
             providerReference: String,
@@ -263,6 +272,19 @@ class CreateCheckoutTest {
             )
             return 1
         }
+
+        override fun markCaptureCompleted(
+            id: UUID,
+            captureRequestId: String,
+            captureReference: String,
+            capturedAt: Instant,
+        ): Int = 0
+
+        override fun markCaptureFailed(
+            id: UUID,
+            captureRequestId: String,
+            now: Instant,
+        ): Int = 0
     }
 
     private class FakePurchaseReservationRepository(
