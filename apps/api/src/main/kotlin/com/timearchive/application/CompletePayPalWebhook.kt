@@ -15,6 +15,7 @@ import java.security.MessageDigest
 import java.time.Instant
 import java.util.HexFormat
 import java.util.UUID
+import org.slf4j.LoggerFactory
 
 class CompletePayPalWebhook(
     private val objectMapper: ObjectMapper,
@@ -26,38 +27,46 @@ class CompletePayPalWebhook(
     private val properties: PayPalPaymentProperties,
 ) {
     fun complete(command: Command): Result {
-        require(properties.webhookId.isNotBlank()) { "paypal webhook id must not be blank" }
         val event = objectMapper.readTree(command.rawBody)
-        verifySignature(command, event)
+        try {
+            require(properties.webhookId.isNotBlank()) { "paypal webhook id must not be blank" }
+            verifySignature(command, event)
 
-        val eventType = event.requiredText("event_type")
-        if (eventType != PAYMENT_CAPTURE_COMPLETED) {
-            return Result.ignored(eventType)
-        }
+            val eventType = event.requiredText("event_type")
+            if (eventType != PAYMENT_CAPTURE_COMPLETED) {
+                return Result.ignored(eventType)
+            }
 
-        val completedCapture = event.toCompletedCapture()
-        validateLocalRecords(completedCapture)
+            val completedCapture = event.toCompletedCapture()
+            validateLocalRecords(completedCapture)
 
-        val completion = completePrimaryPurchase.complete(
-            CompletePrimaryPurchase.Command(
-                provider = "paypal",
-                providerEventId = event.requiredText("id"),
+            val completion = completePrimaryPurchase.complete(
+                CompletePrimaryPurchase.Command(
+                    provider = "paypal",
+                    providerEventId = event.requiredText("id"),
+                    eventType = eventType,
+                    payloadHash = sha256(command.rawBody),
+                    reservationId = completedCapture.reservationId,
+                    paymentReference = completedCapture.captureId,
+                    requestId = command.requestId,
+                    paymentCompletedAt = completedCapture.completedAt,
+                ),
+            )
+
+            return Result(
                 eventType = eventType,
-                payloadHash = sha256(command.rawBody),
-                reservationId = completedCapture.reservationId,
-                paymentReference = completedCapture.captureId,
-                requestId = command.requestId,
-                paymentCompletedAt = completedCapture.completedAt,
-            ),
-        )
-
-        return Result(
-            eventType = eventType,
-            status = "COMPLETED",
-            purchaseId = completion.purchaseId,
-            ownershipRecordId = completion.ownershipRecordId,
-            alreadyProcessed = completion.alreadyProcessed,
-        )
+                status = "COMPLETED",
+                purchaseId = completion.purchaseId,
+                ownershipRecordId = completion.ownershipRecordId,
+                alreadyProcessed = completion.alreadyProcessed,
+            )
+        } catch (exception: IllegalArgumentException) {
+            logRejectedWebhook(command, event, exception)
+            throw exception
+        } catch (exception: IllegalStateException) {
+            logRejectedWebhook(command, event, exception)
+            throw exception
+        }
     }
 
     private fun verifySignature(command: Command, event: JsonNode) {
@@ -184,7 +193,42 @@ class CompletePayPalWebhook(
             MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)),
         )
 
+    private fun logRejectedWebhook(
+        command: Command,
+        event: JsonNode,
+        exception: RuntimeException,
+    ) {
+        logger.warn(
+            "paypal webhook rejected requestId={} providerEventId={} eventType={} paypalWebhookReason={}",
+            command.requestId ?: "-",
+            event.path("id").textValue() ?: "-",
+            event.path("event_type").textValue() ?: "-",
+            exception.toPayPalWebhookReason(),
+        )
+    }
+
+    private fun RuntimeException.toPayPalWebhookReason(): String {
+        val message = message.orEmpty()
+        return when {
+            message.contains("paypal webhook id must not be blank") -> "WEBHOOK_ID_MISSING"
+            message.contains("paypal webhook signature verification failed") -> "SIGNATURE_VERIFICATION_FAILED"
+            message.contains("paypal webhook") && message.contains("is required") -> "MISSING_FIELD"
+            message.contains("paypal capture completion time is required") -> "MISSING_COMPLETION_TIME"
+            message.contains("paypal capture is not completed") -> "CAPTURE_NOT_COMPLETED"
+            message.contains("purchase reservation not found") -> "RESERVATION_NOT_FOUND"
+            message.contains("checkout attempt not found") -> "CHECKOUT_ATTEMPT_NOT_FOUND"
+            message.contains("paypal checkout attempt provider mismatch") -> "CHECKOUT_PROVIDER_MISMATCH"
+            message.contains("paypal checkout attempt is not captured") -> "CHECKOUT_NOT_CAPTURED"
+            message.contains("paypal capture reference mismatch") -> "CAPTURE_REFERENCE_MISMATCH"
+            message.contains("paypal order reference mismatch") -> "ORDER_REFERENCE_MISMATCH"
+            message.contains("paypal capture amount mismatch") -> "AMOUNT_MISMATCH"
+            message.contains("paypal capture currency mismatch") -> "CURRENCY_MISMATCH"
+            else -> "UNKNOWN"
+        }
+    }
+
     companion object {
         const val PAYMENT_CAPTURE_COMPLETED: String = "PAYMENT.CAPTURE.COMPLETED"
+        private val logger = LoggerFactory.getLogger(CompletePayPalWebhook::class.java)
     }
 }
