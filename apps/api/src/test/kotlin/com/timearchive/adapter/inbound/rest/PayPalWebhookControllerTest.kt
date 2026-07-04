@@ -70,7 +70,44 @@ class PayPalWebhookControllerTest {
         }
             .andExpect {
                 status { isBadRequest() }
-                jsonPath("$.code") { value("INVALID_REQUEST") }
+                jsonPath("$.code") { value("PAYPAL_WEBHOOK_INVALID") }
             }
     }
+
+    @Test
+    fun `maps invalid paypal webhook failure`() {
+        every {
+            completePayPalWebhook.complete(any())
+        } throws IllegalArgumentException("paypal webhook signature verification failed")
+
+        postWebhook()
+            .andExpect {
+                status { isBadRequest() }
+                jsonPath("$.code") { value("PAYPAL_WEBHOOK_INVALID") }
+            }
+    }
+
+    @Test
+    fun `maps paypal webhook local state mismatch`() {
+        every {
+            completePayPalWebhook.complete(any())
+        } throws IllegalArgumentException("paypal capture reference mismatch")
+
+        postWebhook()
+            .andExpect {
+                status { isConflict() }
+                jsonPath("$.code") { value("PAYPAL_WEBHOOK_STATE_MISMATCH") }
+            }
+    }
+
+    private fun postWebhook() =
+        mockMvc.post("/api/payments/paypal/webhooks") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"id":"WH-1","event_type":"PAYMENT.CAPTURE.COMPLETED"}"""
+            header("PAYPAL-TRANSMISSION-ID", "transmission-1")
+            header("PAYPAL-TRANSMISSION-TIME", "2026-07-03T00:00:00Z")
+            header("PAYPAL-CERT-URL", "https://api-m.sandbox.paypal.com/certs/cert.pem")
+            header("PAYPAL-AUTH-ALGO", "SHA256withRSA")
+            header("PAYPAL-TRANSMISSION-SIG", "signature")
+        }
 }

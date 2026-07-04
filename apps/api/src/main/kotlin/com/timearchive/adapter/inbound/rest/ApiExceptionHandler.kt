@@ -121,6 +121,24 @@ class ApiExceptionHandler {
                 errorResponse(HttpStatus.CONFLICT, "CHECKOUT_NOT_CAPTURABLE", "Checkout is not capturable")
             message.contains("paypal capture did not complete") ->
                 errorResponse(HttpStatus.CONFLICT, "PAYMENT_CAPTURE_FAILED", "Payment capture did not complete")
+            message.contains("paypal webhook header is missing") ||
+                message.contains("paypal webhook id must not be blank") ||
+                message.contains("paypal webhook signature verification failed") ||
+                (message.contains("paypal webhook") && message.contains("is required")) ||
+                message.contains("paypal capture completion time is required") ||
+                message.contains("paypal capture is not completed") ->
+                errorResponse(HttpStatus.BAD_REQUEST, "PAYPAL_WEBHOOK_INVALID", "PayPal webhook is invalid")
+            message.contains("paypal checkout attempt provider mismatch") ||
+                message.contains("paypal checkout attempt is not captured") ||
+                message.contains("paypal capture reference mismatch") ||
+                message.contains("paypal order reference mismatch") ||
+                message.contains("paypal capture amount mismatch") ||
+                message.contains("paypal capture currency mismatch") ->
+                errorResponse(
+                    HttpStatus.CONFLICT,
+                    "PAYPAL_WEBHOOK_STATE_MISMATCH",
+                    "PayPal webhook does not match local payment state",
+                )
             message.contains("ownership record is not owned by current user") ->
                 errorResponse(HttpStatus.FORBIDDEN, "OWNERSHIP_ACCESS_DENIED", "Ownership access denied")
             message.contains("ownership record is not active") ->
