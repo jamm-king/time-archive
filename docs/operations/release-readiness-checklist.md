@@ -111,7 +111,7 @@ MVP-ready areas after target-environment verification:
 | Ownership transaction boundaries | Ready for staging | Local purchase flows are covered, and staging PayPal Sandbox webhook processing completed `purchase_reservations`, `payment_events`, `purchases`, and `ownership_records` in the expected final states. Recheck after payment completion or ownership transaction changes. |
 | Migration execution | Ready for staging | Staging deployments run Flyway through the migration profile before starting the API. Production migration execution still requires production deployment verification and rollback planning. |
 | Staging database user | Ready | The staging `timearchive_app` database user exists, login/DDL bootstrap checks passed, and deployed runtime queries have been verified through staging smoke and PayPal purchase flows. |
-| Backups | Needs verification | Backup policy and production requirements are documented in [Database Recovery Runbook](database-recovery-runbook.md). Enable production RDS automated backups with at least 7 days retention, deletion protection, and final snapshot behavior before marking this Ready. |
+| Backups | Needs verification | Backup policy and production requirements are documented in [Database Recovery Runbook](database-recovery-runbook.md). The production CloudFormation foundation requires 7-day backup retention, deletion protection, retained automated backups, and snapshot policies, but this remains unverified until the production stack is created and inspected. |
 | Restore test | Blocked for production | Restore drill procedure is documented in [Database Recovery Runbook](database-recovery-runbook.md), but at least one staging or isolated restore drill must pass before paid production launch. |
 | Data retention policy | Ready for MVP | Retention targets are documented in [Data Retention Policy](data-retention-policy.md). Runtime logs remain 14-day CloudWatch records, sessions and rate-limit keys are ephemeral, financial and ownership records are retained long term, and manual cleanup is accepted until cleanup automation is added. |
 
@@ -135,6 +135,8 @@ Required checks before merging a release candidate:
 - Production deployment policy and Linux ARM64 image builds.
 - Staging CloudFormation schema and architecture-policy validation.
 - Production CloudFormation schema and architecture-policy validation.
+- Production provisioning input and read-only command policy validation.
+- Production database user bootstrap script syntax validation.
 - Staging provisioning input and read-only command policy validation.
 - Staging image-publication workflow policy validation.
 - Staging deployment workflow policy validation.
@@ -167,6 +169,7 @@ Release candidate verification:
 | --- | --- | --- |
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. The production CloudFormation foundation mirrors staging with production-isolated resources and stronger RDS backup/deletion-protection defaults. |
 | Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. |
+| Production infrastructure as code | Needs verification | Production CloudFormation foundation, provisioning preflight, and DB bootstrap runbooks are prepared. Create and review a production change set, then execute it only after explicit approval before marking this Ready. |
 | Staging provisioning preflight | Ready | Non-root SSO, real operator inputs, GitHub OIDC metadata, SSM SecureString metadata, RDS offering, and target-account template validation passed in `ap-northeast-2`; no change set has been created. |
 | Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
 | Docker images | Needs verification | ARM64 builds pass CI and staging images publish to ECR; review ECR scan findings, attestations, and digest-qualified deployment references before deployment. |
@@ -212,6 +215,8 @@ Release candidate verification:
 Production runtime readiness is split across focused runbooks:
 
 - [Production Runtime Parameters](production-runtime-parameters.md)
+- [Production Provisioning Runbook](production-provisioning-runbook.md)
+- [Production Database User](production-database-user.md)
 - [Production R2 Readiness](production-r2-readiness.md)
 - [Storage Backend Change Procedure](storage-backend-change-procedure.md)
 - [Database Recovery Runbook](database-recovery-runbook.md)

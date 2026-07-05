@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "DatabaseEngineVersion",
+    "ParameterValue": "18.0"
+  },
+  {
+    "ParameterKey": "DockerComposeVersion",
+    "ParameterValue": "v2.40.3"
+  },
+  {
+    "ParameterKey": "DockerComposeSha256",
+    "ParameterValue": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+    "ParameterKey": "GitHubOidcProviderArn",
+    "ParameterValue": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+  },
+  {
+    "ParameterKey": "AlertEmail",
+    "ParameterValue": "alerts@example.com"
+  }
+]
