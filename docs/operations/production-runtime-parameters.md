@@ -124,6 +124,26 @@ Before production deployment, verify without decrypting values:
 The deployment renderer performs value-level validation on the EC2 host by
 reading the allowed path with decryption and writing a mode `0600` runtime file.
 
+Validate the committed production fixture and renderer contract locally:
+
+```bash
+./scripts/verify-production-runtime-parameters.sh
+```
+
+After production parameters are provisioned, validate live SSM metadata without
+decryption:
+
+```bash
+./scripts/verify-production-runtime-parameters.sh \
+  --check-aws \
+  --expected-account-id 231851555445 \
+  --profile time-archive-staging-admin
+```
+
+Use the production-capable operator profile approved for the account. The
+script uses `ssm describe-parameters` only; it does not decrypt or print
+parameter values.
+
 ## Rollback
 
 If a parameter value is wrong, overwrite only the affected parameter and rerun
