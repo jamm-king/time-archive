@@ -43,10 +43,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const rawBody = await request.arrayBuffer();
   const upstreamResponse = await fetch(upstreamUrl, {
     method: "POST",
     headers,
-    body: await request.text(),
+    body: rawBody,
     cache: "no-store",
   });
   const responseBody = allowsResponseBody(upstreamResponse.status)

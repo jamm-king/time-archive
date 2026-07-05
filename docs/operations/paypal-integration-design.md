@@ -153,6 +153,19 @@ PayPal webhook handling is the only real-payment path that can grant ownership:
     in one transaction.
 ```
 
+The Cloudflare Tunnel route for the exact webhook path must target the API
+container directly:
+
+```text
+/api/payments/paypal/webhooks -> http://api:8080
+```
+
+General browser and same-origin API traffic may continue to target Web first,
+but PayPal webhooks should not depend on a Next.js proxy hop. This keeps the
+provider delivery headers and payload as close as possible to the API
+verification boundary. The Web proxy route may remain as a fallback, but it is
+not the preferred staging or production ingress path for PayPal webhooks.
+
 The first supported completed-payment event is `PAYMENT.CAPTURE.COMPLETED` for
 the primary-purchase order. The API verifies the PayPal signature through
 PayPal's webhook verification API before reading payload values for
