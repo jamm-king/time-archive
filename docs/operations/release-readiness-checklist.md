@@ -3,7 +3,7 @@
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 
-Current baseline: `main` after PR #64 on 2026-06-24.
+Current baseline: `main` after PR #117 on 2026-07-05.
 
 Status legend:
 
@@ -15,12 +15,17 @@ Status legend:
 
 ## Release Decision Summary
 
-Time Archive is close to a local MVP, but it is not production-ready until the
-blockers below are resolved.
+Time Archive has passed the core staging MVP backend flows, including PayPal
+Sandbox checkout, capture, signature-verified webhook processing, and ownership
+finalization. It is not ready for paid production until the blockers below are
+resolved.
 
 Production blockers:
 
-- Real payment provider integration and signature-verified provider webhooks.
+- PayPal return-page confirmation UX so users can see that a paid purchase has
+  completed after the verified provider webhook grants ownership.
+- Production PayPal live application, credentials, webhook, first live-payment
+  drill, and rollback/refund operating procedure.
 - Production object storage configuration, preferably Cloudflare R2, using
   managed secrets and private buckets.
 - Production database backups, restore testing, and migration procedure.
@@ -29,7 +34,7 @@ Production blockers:
 - Cloudflare edge abuse controls and deployed trusted-client attribution;
   application-level Redis rate limiting is implemented.
 - Production observability for application logs, errors, health, and security
-  events.
+  events, including PayPal webhook failure alerts.
 - Media safety operating process acceptance for limited launch, or automatic
   malware scanning before broader public scale.
 
@@ -51,6 +56,8 @@ MVP-ready areas after target-environment verification:
   committed runtime secret fallbacks.
 - Local Cloudflare R2 configuration and R2-backed media upload verification
   using resources isolated from production.
+- Staging PayPal Sandbox checkout, capture, webhook signature verification,
+  payment event processing, purchase completion, and active ownership creation.
 
 ## Security
 
@@ -73,10 +80,12 @@ MVP-ready areas after target-environment verification:
 | Local fake payment flow | Ready | Keep only for local and CI verification. |
 | Fake webhook endpoint | Ready | Disabled by default and registered only when `TIME_ARCHIVE_PAYMENT_FAKE_ENABLED=true`; never enable it in production. |
 | PayPal integration design | Ready | The real-payment flow, runtime parameters, webhook boundary, idempotency model, verification plan, and rollback expectations are documented in [PayPal Integration Design](paypal-integration-design.md). |
-| PayPal checkout foundation | Needs verification | Checkout attempts are persisted and PayPal checkout can be enabled by runtime configuration, but Sandbox order creation still needs staging verification. |
-| Provider webhook verification | Needs verification | PayPal webhook signature verification and `PAYMENT.CAPTURE.COMPLETED` finalization are implemented in code. Configure the PayPal webhook ID and verify with Sandbox before collecting money. |
-| Checkout redirect flow | Needs verification | PayPal approval return and server-side capture are implemented without granting ownership. Ownership is finalized only after the verified PayPal webhook. |
-| Payment idempotency | Needs verification | Re-run checkout retry, capture retry, duplicate webhook, amount mismatch, and currency mismatch scenarios against the real PayPal integration. |
+| PayPal checkout foundation | Ready for staging | Staging PayPal Sandbox order approval and server-side capture passed after runtime SSM PayPal parameters were provisioned and the API was redeployed. Repeat after PayPal adapter, runtime parameter, or deployment changes. |
+| Provider webhook verification | Ready for staging | Staging PayPal Sandbox `PAYMENT.CAPTURE.COMPLETED` webhooks verified with PayPal signature verification `SUCCESS`, API webhook `200`, `payment_events.PROCESSED`, `purchases.OWNERSHIP_GRANTED`, and active ownership records. The PayPal Sandbox application is isolated from other projects. |
+| Checkout redirect flow | Needs UX follow-up | PayPal approval return and server-side capture work, and ownership is finalized only after the verified PayPal webhook. The Web return page still needs polling/status UX so users do not remain on `Waiting for provider confirmation` after ownership is granted. |
+| PayPal return confirmation UX | Blocked for paid production | Add a server-side status read API and Web polling/success/delayed/failure states for the PayPal return page before collecting real money. |
+| Payment idempotency | Needs verification | Re-run checkout retry, capture retry, duplicate webhook resend, amount mismatch, and currency mismatch scenarios against the real PayPal integration. The successful staging webhook path proves the happy path only. |
+| Production PayPal live setup | Blocked for production | Provision a dedicated production PayPal live app, live webhook URL, production SSM parameters, first live low-value payment drill, refund/rollback procedure, and production Dashboard reconciliation before enabling paid production traffic. |
 
 ## Storage And Media
 
@@ -101,9 +110,9 @@ MVP-ready areas after target-environment verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Canonical timeline constraint | Ready | Keep one fixed 86,400-second archive. |
-| Ownership transaction boundaries | Needs verification | Local purchase flows are covered; staging media smoke can use explicit `ADMIN_GRANT` owned ranges while real provider ownership remains a production blocker. |
-| Migration execution | Needs verification | Confirm Flyway migrations run in staging before production. |
-| Staging database user | Needs verification | The staging `timearchive_app` database user exists and login/DDL bootstrap checks passed; verify Flyway migrations and runtime queries during first deployment. |
+| Ownership transaction boundaries | Ready for staging | Local purchase flows are covered, and staging PayPal Sandbox webhook processing completed `purchase_reservations`, `payment_events`, `purchases`, and `ownership_records` in the expected final states. Recheck after payment completion or ownership transaction changes. |
+| Migration execution | Ready for staging | Staging deployments run Flyway through the migration profile before starting the API. Production migration execution still requires production deployment verification and rollback planning. |
+| Staging database user | Ready | The staging `timearchive_app` database user exists, login/DDL bootstrap checks passed, and deployed runtime queries have been verified through staging smoke and PayPal purchase flows. |
 | Backups | Needs verification | Backup policy and production requirements are documented in [Database Recovery Runbook](database-recovery-runbook.md). Enable production RDS automated backups with at least 7 days retention, deletion protection, and final snapshot behavior before marking this Ready. |
 | Restore test | Blocked for production | Restore drill procedure is documented in [Database Recovery Runbook](database-recovery-runbook.md), but at least one staging or isolated restore drill must pass before paid production launch. |
 | Data retention policy | Ready for MVP | Retention targets are documented in [Data Retention Policy](data-retention-policy.md). Runtime logs remain 14-day CloudWatch records, sessions and rate-limit keys are ephemeral, financial and ownership records are retained long term, and manual cleanup is accepted until cleanup automation is added. |
@@ -163,12 +172,12 @@ Release candidate verification:
 | Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
 | Docker images | Needs verification | ARM64 builds pass CI and staging images publish to ECR; review ECR scan findings, attestations, and digest-qualified deployment references before deployment. |
 | Local environment variables | Ready | Local and R2 values use explicit ignored env files created from committed placeholder templates. |
-| Staging secret injection | Needs verification | The staging SSM runtime contract and metadata validator are implemented; provision real parameters and verify metadata before deployment. |
+| Staging secret injection | Ready | Staging SSM runtime parameters are provisioned and rendered into the deployed containers. PayPal Sandbox client credentials and webhook ID were rotated to a Time Archive-specific Sandbox app and verified after redeployment without printing secret values. |
 | Production secret injection | Needs verification | Production parameter contract and safety boundaries are documented in [Production Runtime Parameters](production-runtime-parameters.md). Provision production-scoped parameters, IAM access, KMS policy, and runtime rendering verification before marking this Ready. |
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Ready | Cloudflare-managed edge TLS and Tunnel ingress were verified in staging through browser access to the published HTTPS hostname. Production must still verify secure cookies, forwarded protocol behavior, and redirect policy. |
-| Cloudflare | Ready for staging | Staging Published Application routing to `web:3000`, cache bypass, Free plan custom rules, auth endpoint edge rate limiting, trusted client IP runtime configuration, and staging smoke workflows were verified. Production still needs production-hostname Cloudflare policy configuration and verification. |
-| Staging deployment workflow | Ready | Manual SSM Run Command workflow deployed `813c73b1f2def9f64c8e9bde0115a59db4bd210e` from `main` with digest-pinned Redis/cloudflared images, after the deploy-role ECR verification permission was applied. |
+| Cloudflare | Ready for staging | Staging Published Application routing to `web:3000`, exact PayPal webhook path routing to `api:8080`, cache bypass, Free plan custom rules, auth endpoint edge rate limiting, trusted client IP runtime configuration, and staging smoke workflows were verified. Production still needs production-hostname Cloudflare policy configuration and verification. |
+| Staging deployment workflow | Ready | Manual SSM Run Command workflow deploys immutable API/Web image SHAs from `main` with digest-pinned Redis/cloudflared images. The workflow has been reused for PayPal runtime parameter rotation and verification. |
 | Application health checks | Ready | Staging API, Web, and Redis containers were healthy; API returned `UP`, Web responded internally, `cloudflared` passed connectivity prechecks, and a manual public smoke workflow is available for the staging hostname. |
 | Rollback | Ready | Staging image rollback and forward recovery were verified on 2026-06-30 using the documented drill. Database rollback remains a separate high-impact recovery procedure. |
 
@@ -176,7 +185,7 @@ Release candidate verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Application logs | Ready | API request correlation and safe request completion logging are implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified, and staging verification confirmed the request ID smoke workflow succeeds and the request ID is searchable in `/time-archive/staging/api`. Repeat after request-correlation, logging, or deployment logging changes. |
+| Application logs | Ready | API request correlation and safe request completion logging are implemented with `X-Request-Id`; CloudWatch log groups and retention are statically verified; staging request ID search passed; PayPal webhook verification logs now expose safe event id/type, verification status, and masked transmission metadata without logging secrets or raw payloads. Repeat after request-correlation, logging, payment, or deployment logging changes. |
 | Error tracking | Needs verification | Minimum error-tracking requirements are documented in [Observability Minimum](observability-minimum.md). Integrate Sentry for API/Web errors with sensitive-data filtering, or explicitly accept CloudWatch-only risk before paid production. |
 | Metrics | Needs verification | Minimum metrics are documented in [Observability Minimum](observability-minimum.md). Verify infrastructure, deployment, API/Web, storage, and PayPal webhook signals before paid production. |
 | Audit logs | Ready | Admin approval, rejection, and hiding append audit records in the moderation transaction. |
@@ -184,17 +193,20 @@ Release candidate verification:
 
 ## Known MVP Limitations
 
-- No real payment provider is integrated.
+- PayPal Sandbox is integrated and verified in staging; production PayPal live
+  remains unverified.
+- PayPal return confirmation UX does not yet poll ownership completion after
+  capture.
 - No password reset flow exists.
 - No email verification exists.
 - No automatic media scanning or transcoding exists.
 - No user-facing support or dispute workflow exists.
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.
-- No production R2 environment is configured yet.
+- No production R2 environment is verified yet.
 - No automated data cleanup jobs exist yet.
-- Production Cloudflare edge limits and deployed trusted-client attribution are
-  not configured yet.
+- Production Cloudflare edge limits, PayPal webhook route, and trusted-client
+  attribution are not configured yet.
 - Application rate-limit thresholds have not been tuned from production
   traffic.
 
@@ -217,10 +229,13 @@ Local R2 verification remains documented in
 For a private demo, the system can be released when all CI checks are green and
 all local verification scripts pass in a clean environment.
 
-The current `main` baseline meets the automated private-demo gate as of PR #61.
-A demo release should still repeat the manual verification steps above from the
-exact release candidate.
+The current `main` baseline has passed the core staging backend payment path as
+of PR #117, but a demo release should still repeat the manual verification
+steps above from the exact release candidate.
 
 For any public or paid launch, every `Blocked` item in this checklist must be
 resolved or explicitly accepted by the project owner with a documented rollback
-and incident response plan.
+and incident response plan. Real-money launch also requires PayPal return
+confirmation UX, production PayPal live verification, production runtime
+parameter verification, restore-drill completion, alert delivery verification,
+and media safety residual-risk acceptance or scanning.
