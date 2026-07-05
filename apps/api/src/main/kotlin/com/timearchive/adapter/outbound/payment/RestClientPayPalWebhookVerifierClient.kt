@@ -1,18 +1,24 @@
 package com.timearchive.adapter.outbound.payment
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.timearchive.configuration.PayPalPaymentProperties
+import java.net.URI
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
+import org.springframework.web.client.RestClientResponseException
+import org.slf4j.LoggerFactory
 
 @Component
 @ConditionalOnProperty(prefix = "time-archive.payment.paypal", name = ["enabled"], havingValue = "true")
 class RestClientPayPalWebhookVerifierClient(
     restClientBuilder: RestClient.Builder,
+    private val objectMapper: ObjectMapper,
     private val properties: PayPalPaymentProperties,
 ) : PayPalWebhookVerifierClient {
     private val restClient: RestClient = restClientBuilder
@@ -26,26 +32,35 @@ class RestClientPayPalWebhookVerifierClient(
     }
 
     override fun verify(command: PayPalWebhookVerificationCommand): Boolean {
-        val response = restClient.post()
-            .uri("/v1/notifications/verify-webhook-signature")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer ${requestAccessToken()}")
-            .body(
-                PayPalVerifyWebhookSignatureRequest(
-                    authAlgo = command.authAlgo,
-                    certUrl = command.certUrl,
-                    transmissionId = command.transmissionId,
-                    transmissionSig = command.transmissionSig,
-                    transmissionTime = command.transmissionTime,
-                    webhookId = command.webhookId,
-                    webhookEvent = command.webhookEvent,
-                ),
-            )
-            .retrieve()
-            .body(PayPalVerifyWebhookSignatureResponse::class.java)
-            ?: error("paypal webhook verification response was empty")
+        return try {
+            val response = restClient.post()
+                .uri("/v1/notifications/verify-webhook-signature")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer ${requestAccessToken()}")
+                .body(
+                    objectMapper.writeValueAsString(
+                        PayPalVerifyWebhookSignatureRequest(
+                            authAlgo = command.authAlgo,
+                            certUrl = command.certUrl,
+                            transmissionId = command.transmissionId,
+                            transmissionSig = command.transmissionSig,
+                            transmissionTime = command.transmissionTime,
+                            webhookId = command.webhookId,
+                            webhookEvent = command.webhookEvent.requireJsonNode(),
+                        ),
+                    ),
+                )
+                .retrieve()
+                .body(PayPalVerifyWebhookSignatureResponse::class.java)
+                ?: error("paypal webhook verification response was empty")
 
-        return response.verificationStatus == "SUCCESS"
+            val verified = response.verificationStatus == "SUCCESS"
+            logVerificationResult(command, response.verificationStatus, verified)
+            verified
+        } catch (exception: RestClientResponseException) {
+            logVerificationHttpFailure(command, exception)
+            false
+        }
     }
 
     private fun requestAccessToken(): String {
@@ -83,11 +98,87 @@ class RestClientPayPalWebhookVerifierClient(
         @JsonProperty("webhook_id")
         val webhookId: String,
         @JsonProperty("webhook_event")
-        val webhookEvent: Any,
+        val webhookEvent: JsonNode,
     )
 
     data class PayPalVerifyWebhookSignatureResponse(
         @JsonProperty("verification_status")
         val verificationStatus: String? = null,
     )
+
+    private fun logVerificationResult(
+        command: PayPalWebhookVerificationCommand,
+        verificationStatus: String?,
+        verified: Boolean,
+    ) {
+        val logMessage = "paypal webhook verification completed eventId={} eventType={} verified={} " +
+            "verificationStatus={} authAlgo={} certHost={} transmissionId={}"
+        if (verified) {
+            logger.info(
+                logMessage,
+                command.webhookEvent.safeEventId(),
+                command.webhookEvent.safeEventType(),
+                verified,
+                verificationStatus ?: "-",
+                command.authAlgo,
+                command.certUrl.safeHost(),
+                command.transmissionId.mask(),
+            )
+        } else {
+            logger.warn(
+                logMessage,
+                command.webhookEvent.safeEventId(),
+                command.webhookEvent.safeEventType(),
+                verified,
+                verificationStatus ?: "-",
+                command.authAlgo,
+                command.certUrl.safeHost(),
+                command.transmissionId.mask(),
+            )
+        }
+    }
+
+    private fun logVerificationHttpFailure(
+        command: PayPalWebhookVerificationCommand,
+        exception: RestClientResponseException,
+    ) {
+        logger.warn(
+            "paypal webhook verification http failure eventId={} eventType={} httpStatus={} authAlgo={} certHost={} transmissionId={}",
+            command.webhookEvent.safeEventId(),
+            command.webhookEvent.safeEventType(),
+            exception.statusCode.value(),
+            command.authAlgo,
+            command.certUrl.safeHost(),
+            command.transmissionId.mask(),
+        )
+    }
+
+    private fun Any.safeEventId(): String =
+        asJsonNode()?.path("id")?.textValue()?.takeIf(String::isNotBlank) ?: "-"
+
+    private fun Any.safeEventType(): String =
+        asJsonNode()?.path("event_type")?.textValue()?.takeIf(String::isNotBlank) ?: "-"
+
+    private fun Any.asJsonNode(): JsonNode? =
+        this as? JsonNode
+
+    private fun Any.requireJsonNode(): JsonNode =
+        asJsonNode() ?: error("paypal webhook event must be a json node")
+
+    private fun String.safeHost(): String =
+        runCatching { URI(this).host }
+            .getOrNull()
+            ?.takeIf(String::isNotBlank)
+            ?: "-"
+
+    private fun String.mask(): String =
+        when {
+            isBlank() -> "-"
+            length <= 8 -> "*".repeat(length)
+            else -> "${take(4)}...${takeLast(4)}"
+        }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(RestClientPayPalWebhookVerifierClient::class.java)
+    }
 }
