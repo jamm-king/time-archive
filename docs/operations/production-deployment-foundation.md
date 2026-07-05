@@ -13,6 +13,9 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 
 | File | Responsibility |
 | --- | --- |
+| `infra/cloudformation/production.yml` | Production AWS resource and IAM definition. |
+| `infra/cloudformation/production.parameters.example.json` | Non-secret production CloudFormation placeholder inputs. |
+| `scripts/verify-production-cloudformation.sh` | Production CloudFormation schema, architecture-policy, and policy self-test entry point. |
 | `deploy/production/docker-compose.yml` | Production service topology and runtime security defaults. |
 | `deploy/production/runtime.env.example` | Shell-compatible placeholder contract used by static validation. |
 | `deploy/production/ssm-parameters.example.json` | Non-secret SSM response fixture for renderer tests. |
@@ -117,6 +120,44 @@ docker buildx build --platform linux/arm64 -f apps/api/Dockerfile apps/api
 docker buildx build --platform linux/arm64 -f apps/web/Dockerfile apps/web
 ```
 
+## Production CloudFormation Foundation
+
+The production CloudFormation foundation mirrors the reviewed staging topology:
+
+- one VPC and Internet Gateway;
+- one public outbound-only application subnet;
+- two private RDS subnets in distinct Availability Zones;
+- one ARM64 Amazon Linux 2023 EC2 host without inbound security-group rules;
+- one private Single-AZ PostgreSQL RDS instance;
+- immutable ECR repositories for API and Web images;
+- CloudWatch log groups, host metrics, and basic alarms;
+- an EC2 instance role, a GitHub image-publisher role, and a GitHub production
+  deployment role;
+- an SNS alert topic with optional email subscription.
+
+Production uses isolated names, CIDR ranges, SSM paths, IAM policy names,
+GitHub environment trust, log groups, and RDS resources. It must not share the
+staging VPC, RDS instance, runtime SSM path, Cloudflare Tunnel token, R2 bucket,
+or PayPal credentials.
+
+Production RDS intentionally strengthens the staging defaults:
+
+- backup retention is at least 7 days;
+- deletion protection is enabled;
+- automated backups are retained on deletion;
+- CloudFormation deletion and replacement policies create snapshots.
+
+The production database master password is read from this prerequisite
+bootstrap-only SSM SecureString:
+
+```text
+/time-archive/bootstrap/production/database/master-password
+```
+
+That bootstrap path is outside the application runtime
+`/time-archive/production/*` read boundary. Do not inject the RDS master
+credential into the application container.
+
 ## Provisioning Boundary
 
 Do not run production deployment until a separately approved infrastructure
@@ -130,8 +171,16 @@ change has created and reviewed:
 - Cloudflare Tunnel, DNS, TLS, and edge controls.
 - Isolated staging and production R2 buckets and access keys.
 
-Creating these resources can incur cost and change external state, so it is
-outside this repository-only foundation task.
+Creating these resources can incur cost and change external state. The first
+production infrastructure operation must create a CloudFormation change set for
+review, not execute a stack directly. Review the exact resources, replacements,
+IAM policies, public IPv4 assignment, RDS settings, estimated cost, deletion
+protection, and snapshot behavior before execution.
+
+Executing the production change set requires explicit project-owner approval.
+The same approval boundary applies to production stack deletion because
+deletion can create final snapshots and remove ECR repositories, log groups,
+alarms, IAM roles, and the production host.
 
 The selected HTTPS boundary and staging verification requirements are defined
 in [Cloudflare Tunnel HTTPS](cloudflare-tunnel-https.md).

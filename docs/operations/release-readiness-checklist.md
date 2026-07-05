@@ -134,6 +134,7 @@ Required checks before merging a release candidate:
 - Local web smoke check.
 - Production deployment policy and Linux ARM64 image builds.
 - Staging CloudFormation schema and architecture-policy validation.
+- Production CloudFormation schema and architecture-policy validation.
 - Staging provisioning input and read-only command policy validation.
 - Staging image-publication workflow policy validation.
 - Staging deployment workflow policy validation.
@@ -164,7 +165,7 @@ Release candidate verification:
 
 | Area | Status | Release Gate |
 | --- | --- | --- |
-| Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. |
+| Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. The production CloudFormation foundation mirrors staging with production-isolated resources and stronger RDS backup/deletion-protection defaults. |
 | Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. |
 | Staging provisioning preflight | Ready | Non-root SSO, real operator inputs, GitHub OIDC metadata, SSM SecureString metadata, RDS offering, and target-account template validation passed in `ap-northeast-2`; no change set has been created. |
 | Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
