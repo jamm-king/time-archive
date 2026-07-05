@@ -151,6 +151,44 @@ class CapturePayPalOrderTest {
         assertThat(checkoutAttemptRepository.attempt?.captureRequestId).isEqualTo("capture-${attempt.id}")
     }
 
+    @Test
+    fun `retries capture after previous capture failure with same idempotency key`() {
+        val reservation = checkoutCreatedReservation()
+        val attempt = providerCreatedAttempt(reservation).copy(
+            status = CheckoutAttemptStatus.CAPTURE_FAILED,
+            captureRequestId = "capture-${UUID.randomUUID()}",
+        )
+        val checkoutAttemptRepository = FakeCheckoutAttemptRepository(attempt)
+        val paypalOrderClient = FakePayPalOrderClient(
+            captureResult = PayPalCaptureResult(
+                orderId = "paypal-order-1",
+                captureId = "paypal-capture-2",
+                status = "COMPLETED",
+            ),
+        )
+        val useCase = useCase(
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            purchaseReservationRepository = FakePurchaseReservationRepository(reservation),
+            paypalOrderClient = paypalOrderClient,
+        )
+
+        val result = useCase.capture(
+            CapturePayPalOrder.Command(
+                currentUserId = reservation.buyerId,
+                orderId = "paypal-order-1",
+            ),
+        )
+
+        assertThat(result.captureReference).isEqualTo("paypal-capture-2")
+        assertThat(result.alreadyCaptured).isFalse()
+        assertThat(paypalOrderClient.captureCommands.single().providerRequestId)
+            .isEqualTo(attempt.captureRequestId)
+        assertThat(checkoutAttemptRepository.attempt?.status)
+            .isEqualTo(CheckoutAttemptStatus.CAPTURED_PENDING_WEBHOOK)
+        assertThat(checkoutAttemptRepository.attempt?.captureReference)
+            .isEqualTo("paypal-capture-2")
+    }
+
     private fun useCase(
         checkoutAttemptRepository: CheckoutAttemptRepository = FakeCheckoutAttemptRepository(),
         purchaseReservationRepository: PurchaseReservationRepository =

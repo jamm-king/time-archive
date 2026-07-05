@@ -87,6 +87,84 @@ class CompletePayPalWebhookTest {
             .withMessage("paypal capture reference mismatch")
     }
 
+    @Test
+    fun `preserves duplicate webhook idempotency result`() {
+        val purchaseId = UUID.fromString("00000000-0000-0000-0000-000000000201")
+        val ownershipRecordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
+        val completePrimaryPurchase = mockk<CompletePrimaryPurchase>()
+        every { completePrimaryPurchase.complete(any()) } returns CompletePrimaryPurchase.Result(
+            purchaseId = purchaseId,
+            ownershipRecordId = ownershipRecordId,
+            alreadyProcessed = true,
+        )
+        val useCase = useCase(completePrimaryPurchase = completePrimaryPurchase)
+
+        val result = useCase.complete(command(completedCaptureBody()))
+
+        assertThat(result.status).isEqualTo("COMPLETED")
+        assertThat(result.purchaseId).isEqualTo(purchaseId)
+        assertThat(result.ownershipRecordId).isEqualTo(ownershipRecordId)
+        assertThat(result.alreadyProcessed).isTrue()
+    }
+
+    @Test
+    fun `rejects order reference mismatch`() {
+        val useCase = useCase()
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.complete(command(completedCaptureBody(orderId = "OTHER-ORDER")))
+            }
+            .withMessage("paypal order reference mismatch")
+    }
+
+    @Test
+    fun `rejects amount mismatch`() {
+        val useCase = useCase()
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.complete(command(completedCaptureBody(amountValue = "3.00")))
+            }
+            .withMessage("paypal capture amount mismatch")
+    }
+
+    @Test
+    fun `rejects currency mismatch`() {
+        val useCase = useCase()
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.complete(command(completedCaptureBody(currency = "EUR")))
+            }
+            .withMessage("paypal capture currency mismatch")
+    }
+
+    @Test
+    fun `rejects non-completed capture status`() {
+        val useCase = useCase()
+
+        assertThatIllegalArgumentException()
+            .isThrownBy {
+                useCase.complete(command(completedCaptureBody(captureStatus = "PENDING")))
+            }
+            .withMessage("paypal capture is not completed")
+    }
+
+    @Test
+    fun `rejects webhook before local capture is recorded`() {
+        val attempt = checkoutAttempt().copy(
+            status = CheckoutAttemptStatus.PROVIDER_CREATED,
+            captureReference = null,
+            capturedAt = null,
+        )
+        val useCase = useCase(checkoutAttemptRepository = FakeCheckoutAttemptRepository(attempt))
+
+        assertThatIllegalArgumentException()
+            .isThrownBy { useCase.complete(command(completedCaptureBody())) }
+            .withMessage("paypal checkout attempt is not captured")
+    }
+
     private fun useCase(
         reservation: PurchaseReservation = reservation(),
         checkoutAttemptRepository: CheckoutAttemptRepository = FakeCheckoutAttemptRepository(checkoutAttempt()),
@@ -131,23 +209,28 @@ class CompletePayPalWebhookTest {
             requestId = "request-1",
         )
 
-    private fun completedCaptureBody(): String =
+    private fun completedCaptureBody(
+        captureStatus: String = "COMPLETED",
+        amountValue: String = "2.00",
+        currency: String = "USD",
+        orderId: String = "ORDER-1",
+    ): String =
         """
         {
           "id": "WH-1",
           "event_type": "PAYMENT.CAPTURE.COMPLETED",
           "resource": {
             "id": "CAPTURE-1",
-            "status": "COMPLETED",
+            "status": "$captureStatus",
             "custom_id": "$reservationId",
             "update_time": "2026-07-03T00:01:00Z",
             "amount": {
-              "currency_code": "USD",
-              "value": "2.00"
+              "currency_code": "$currency",
+              "value": "$amountValue"
             },
             "supplementary_data": {
               "related_ids": {
-                "order_id": "ORDER-1"
+                "order_id": "$orderId"
               }
             }
           }
