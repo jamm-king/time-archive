@@ -62,6 +62,30 @@ class JdbcPurchaseReservationRepository(
         return reservation
     }
 
+    override fun findById(id: UUID): PurchaseReservation? {
+        val parameters = MapSqlParameterSource()
+            .addValue("id", id)
+
+        return jdbcTemplate.query(
+            """
+            select
+                id,
+                buyer_id,
+                start_second,
+                end_second,
+                amount_cents,
+                currency,
+                status,
+                expires_at,
+                created_at,
+                updated_at
+            from purchase_reservations
+            where id = :id
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toPurchaseReservation() }.firstOrNull()
+    }
+
     override fun findByIdForUpdate(id: UUID): PurchaseReservation? {
         val parameters = MapSqlParameterSource()
             .addValue("id", id)

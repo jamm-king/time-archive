@@ -98,6 +98,38 @@ class JdbcCheckoutAttemptRepository(
         ) { rs, _ -> rs.toCheckoutAttempt() }.firstOrNull()
     }
 
+    override fun findByProviderReference(
+        provider: String,
+        providerReference: String,
+    ): CheckoutAttempt? {
+        val parameters = MapSqlParameterSource()
+            .addValue("provider", provider)
+            .addValue("providerReference", providerReference)
+
+        return jdbcTemplate.query(
+            """
+            select
+                id,
+                reservation_id,
+                buyer_id,
+                provider,
+                provider_request_id,
+                provider_reference,
+                checkout_url,
+                capture_request_id,
+                capture_reference,
+                captured_at,
+                status,
+                created_at,
+                updated_at
+            from checkout_attempts
+            where provider = :provider
+              and provider_reference = :providerReference
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toCheckoutAttempt() }.firstOrNull()
+    }
+
     override fun findByProviderReferenceForUpdate(
         provider: String,
         providerReference: String,

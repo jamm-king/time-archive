@@ -22,8 +22,9 @@ resolved.
 
 Production blockers:
 
-- PayPal return-page confirmation UX so users can see that a paid purchase has
-  completed after the verified provider webhook grants ownership.
+- Staging verification for the PayPal return-page confirmation UX so users can
+  see that a paid purchase has completed after the verified provider webhook
+  grants ownership.
 - Production PayPal live application, credentials, webhook, first live-payment
   drill, and rollback/refund operating procedure.
 - Production object storage configuration, preferably Cloudflare R2, using
@@ -82,8 +83,8 @@ MVP-ready areas after target-environment verification:
 | PayPal integration design | Ready | The real-payment flow, runtime parameters, webhook boundary, idempotency model, verification plan, and rollback expectations are documented in [PayPal Integration Design](paypal-integration-design.md). |
 | PayPal checkout foundation | Ready for staging | Staging PayPal Sandbox order approval and server-side capture passed after runtime SSM PayPal parameters were provisioned and the API was redeployed. Repeat after PayPal adapter, runtime parameter, or deployment changes. |
 | Provider webhook verification | Ready for staging | Staging PayPal Sandbox `PAYMENT.CAPTURE.COMPLETED` webhooks verified with PayPal signature verification `SUCCESS`, API webhook `200`, `payment_events.PROCESSED`, `purchases.OWNERSHIP_GRANTED`, and active ownership records. The PayPal Sandbox application is isolated from other projects. |
-| Checkout redirect flow | Needs UX follow-up | PayPal approval return and server-side capture work, and ownership is finalized only after the verified PayPal webhook. The Web return page still needs polling/status UX so users do not remain on `Waiting for provider confirmation` after ownership is granted. |
-| PayPal return confirmation UX | Blocked for paid production | Add a server-side status read API and Web polling/success/delayed/failure states for the PayPal return page before collecting real money. |
+| Checkout redirect flow | Needs staging verification | PayPal approval return and server-side capture work, ownership is finalized only after the verified PayPal webhook, and the Web return page now polls a server-side status endpoint. Redeploy and verify the return page reaches success after webhook finalization before marking Ready. |
+| PayPal return confirmation UX | Needs staging verification | Server-side status read API and Web polling/success/delayed/failure states are implemented. Verify against a fresh PayPal Sandbox purchase after deployment before collecting real money. |
 | Payment idempotency | Needs verification | Re-run checkout retry, capture retry, duplicate webhook resend, amount mismatch, and currency mismatch scenarios against the real PayPal integration. The successful staging webhook path proves the happy path only. |
 | Production PayPal live setup | Blocked for production | Provision a dedicated production PayPal live app, live webhook URL, production SSM parameters, first live low-value payment drill, refund/rollback procedure, and production Dashboard reconciliation before enabling paid production traffic. |
 
@@ -195,8 +196,8 @@ Release candidate verification:
 
 - PayPal Sandbox is integrated and verified in staging; production PayPal live
   remains unverified.
-- PayPal return confirmation UX does not yet poll ownership completion after
-  capture.
+- PayPal return confirmation UX polling is implemented but still needs staging
+  verification after deployment.
 - No password reset flow exists.
 - No email verification exists.
 - No automatic media scanning or transcoding exists.
@@ -236,6 +237,6 @@ steps above from the exact release candidate.
 For any public or paid launch, every `Blocked` item in this checklist must be
 resolved or explicitly accepted by the project owner with a documented rollback
 and incident response plan. Real-money launch also requires PayPal return
-confirmation UX, production PayPal live verification, production runtime
+confirmation UX staging verification, production PayPal live verification, production runtime
 parameter verification, restore-drill completion, alert delivery verification,
 and media safety residual-risk acceptance or scanning.

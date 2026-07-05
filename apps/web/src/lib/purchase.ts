@@ -42,6 +42,21 @@ export type PayPalCaptureResponse = {
   alreadyCaptured: boolean;
 };
 
+export type PayPalOrderConfirmationStatusResponse = {
+  orderId: string;
+  reservationId: string;
+  purchaseId: string | null;
+  ownershipRecordId: string | null;
+  status:
+    | "CAPTURE_NOT_STARTED"
+    | "CAPTURE_PENDING_WEBHOOK"
+    | "OWNERSHIP_GRANTED"
+    | "CAPTURE_FAILED"
+    | "EXPIRED"
+    | "FAILED";
+  terminal: boolean;
+};
+
 export async function checkAvailability(
   startSecond: number,
   endSecond: number,
@@ -190,6 +205,27 @@ export async function capturePayPalOrder(orderId: string): Promise<PayPalCapture
   }
 
   return parsePayPalCaptureResponse(await response.json());
+}
+
+export async function getPayPalOrderConfirmationStatus(
+  orderId: string,
+): Promise<PayPalOrderConfirmationStatusResponse> {
+  const response = await fetch(
+    `/api/payments/paypal/orders/${encodeURIComponent(orderId)}/confirmation-status`,
+    {
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return parsePayPalOrderConfirmationStatusResponse(await response.json());
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
@@ -355,6 +391,55 @@ function parsePayPalCaptureResponse(value: unknown): PayPalCaptureResponse {
     status,
     alreadyCaptured,
   };
+}
+
+function parsePayPalOrderConfirmationStatusResponse(
+  value: unknown,
+): PayPalOrderConfirmationStatusResponse {
+  if (!isRecord(value)) {
+    throw new Error("PayPal order confirmation status response must be an object");
+  }
+
+  const {
+    orderId,
+    reservationId,
+    purchaseId,
+    ownershipRecordId,
+    status,
+    terminal,
+  } = value;
+  if (
+    typeof orderId !== "string" ||
+    typeof reservationId !== "string" ||
+    !(typeof purchaseId === "string" || purchaseId === null) ||
+    !(typeof ownershipRecordId === "string" || ownershipRecordId === null) ||
+    !isPayPalOrderConfirmationStatus(status) ||
+    typeof terminal !== "boolean"
+  ) {
+    throw new Error("PayPal order confirmation status response has an invalid shape");
+  }
+
+  return {
+    orderId,
+    reservationId,
+    purchaseId,
+    ownershipRecordId,
+    status,
+    terminal,
+  };
+}
+
+function isPayPalOrderConfirmationStatus(
+  value: unknown,
+): value is PayPalOrderConfirmationStatusResponse["status"] {
+  return (
+    value === "CAPTURE_NOT_STARTED" ||
+    value === "CAPTURE_PENDING_WEBHOOK" ||
+    value === "OWNERSHIP_GRANTED" ||
+    value === "CAPTURE_FAILED" ||
+    value === "EXPIRED" ||
+    value === "FAILED"
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
