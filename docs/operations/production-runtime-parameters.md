@@ -91,6 +91,67 @@ openssl rand -base64 48
 
 Do not reuse the staging salt.
 
+## Create Or Update Parameters
+
+Copy the committed local-input template to the ignored local path:
+
+```bash
+cp deploy/production/runtime-parameters.local.example.json \
+  deploy/production/runtime-parameters.local.json
+```
+
+Edit only `deploy/production/runtime-parameters.local.json` and replace every
+placeholder with the real production value. The real local file is ignored by
+Git and must never be pasted into PRs, issues, shell output, screenshots, or
+logs. Confirm that before entering secrets:
+
+```bash
+git check-ignore deploy/production/runtime-parameters.local.json
+```
+
+Validate the local file without contacting AWS:
+
+```bash
+./scripts/put-production-runtime-parameters.sh \
+  --validate-only \
+  --expected-account-id <production-aws-account-id>
+```
+
+Then validate the AWS account and print only the names and types that would be
+written:
+
+```bash
+./scripts/put-production-runtime-parameters.sh \
+  --dry-run \
+  --expected-account-id <production-aws-account-id> \
+  --profile <production-operator-profile> \
+  --region ap-northeast-2
+```
+
+After explicit operator approval, create or overwrite the AWS parameters:
+
+```bash
+./scripts/put-production-runtime-parameters.sh \
+  --expected-account-id <production-aws-account-id> \
+  --profile <production-operator-profile> \
+  --region ap-northeast-2
+```
+
+The script validates the input against
+`deploy/production/ssm-parameters.example.json`, checks the AWS account, and
+writes each non-empty parameter with `ssm put-parameter --overwrite`. The
+optional empty `rate-limit/client-ip-header` value is intentionally omitted
+until Cloudflare Tunnel is confirmed as the only public ingress and trusted
+client IP forwarding has been verified. The script logs only parameter names
+and types, never values.
+
+During initial provisioning, keep
+`/time-archive/production/paypal/enabled=false`. Enabling PayPal Live for paid
+traffic is a separate launch step after the first low-value live payment drill,
+webhook verification, refund/rollback procedure, and dashboard reconciliation
+pass. At that point only, rerun the writer with `--allow-paypal-enabled` after
+explicit approval.
+
 ## Database User Policy
 
 The current deployment renderer supports one database username and password.
@@ -143,6 +204,11 @@ decryption:
 Use the production-capable operator profile approved for the account. The
 script uses `ssm describe-parameters` only; it does not decrypt or print
 parameter values.
+
+If live metadata validation passes, perform the deployment-side runtime
+rendering verification on the production EC2 host before enabling paid traffic.
+The renderer is the first step allowed to decrypt values, and it writes only the
+local runtime environment file with restricted permissions.
 
 ## Rollback
 

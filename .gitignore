@@ -33,6 +33,7 @@ logs/
 !.env.*.example
 infra/cloudformation/staging.parameters.local.json
 deploy/staging/runtime-parameters.local.json
+deploy/production/runtime-parameters.local.json
 application-local.yml
 application-local.yaml
 application-secret.yml
