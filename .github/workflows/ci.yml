@@ -34,6 +34,12 @@ jobs:
       - name: Verify production CloudFormation
         run: ./scripts/verify-production-cloudformation.sh
 
+      - name: Verify production provisioning preflight
+        run: ./scripts/verify-production-provisioning-preflight.sh
+
+      - name: Verify production database user bootstrap syntax
+        run: bash -n ./scripts/bootstrap-production-db-user.sh
+
       - name: Verify staging provisioning preflight
         run: ./scripts/verify-staging-provisioning-preflight.sh
 

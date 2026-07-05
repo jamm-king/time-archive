@@ -16,6 +16,8 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `infra/cloudformation/production.yml` | Production AWS resource and IAM definition. |
 | `infra/cloudformation/production.parameters.example.json` | Non-secret production CloudFormation placeholder inputs. |
 | `scripts/verify-production-cloudformation.sh` | Production CloudFormation schema, architecture-policy, and policy self-test entry point. |
+| `scripts/verify-production-provisioning-inputs.sh` | Production operator input and optional read-only AWS preflight validation. |
+| `scripts/bootstrap-production-db-user.sh` | Approval-gated production database application user bootstrap. |
 | `deploy/production/docker-compose.yml` | Production service topology and runtime security defaults. |
 | `deploy/production/runtime.env.example` | Shell-compatible placeholder contract used by static validation. |
 | `deploy/production/ssm-parameters.example.json` | Non-secret SSM response fixture for renderer tests. |
@@ -192,6 +194,10 @@ The manual SSM Run Command deployment workflow is defined in
 [Staging Deployment](staging-deployment.md).
 Production runtime parameter requirements are defined in
 [Production Runtime Parameters](production-runtime-parameters.md).
+Production change-set review and execution boundaries are defined in
+[Production Provisioning Runbook](production-provisioning-runbook.md).
+Production database user bootstrap is defined in
+[Production Database User](production-database-user.md).
 Production R2 requirements are defined in
 [Production R2 Readiness](production-r2-readiness.md). Storage backend, bucket,
 endpoint, and object-reference base URL changes are governed by
