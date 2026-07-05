@@ -91,6 +91,20 @@ routes browser HTTPS traffic to the private Docker Compose service:
 https://staging.time-archive.com -> http://web:3000
 ```
 
+PayPal webhooks must use a more specific Published Application path route that
+is ordered before the general Web route:
+
+```text
+https://staging.time-archive.com/api/payments/paypal/webhooks -> http://api:8080
+https://staging.time-archive.com -> http://web:3000
+```
+
+Use the exact path above. Do not route all `/api/*` traffic directly to API
+because browser-origin API requests intentionally pass through Web for the
+same-origin proxy boundary. After applying the path route, resend or trigger a
+PayPal Sandbox webhook and confirm the API logs do not contain
+`paypalWebhookReason=SIGNATURE_VERIFICATION_FAILED`.
+
 ## Failure And Rollback
 
 `deploy.sh` stops on image pull, migration, service startup, or health-check

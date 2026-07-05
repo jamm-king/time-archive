@@ -19,7 +19,8 @@ Browser
 Cloudflare edge
   -> encrypted outbound Cloudflare Tunnel connection
 cloudflared container
-  -> http://web:3000 on the private Docker network
+  -> http://web:3000 on the private Docker network for browser traffic
+  -> http://api:8080 on the private Docker network for PayPal webhooks
 Next.js Web
   -> http://api:8080 on the private Docker network
 Spring Boot API
@@ -44,7 +45,12 @@ for each configured application hostname. Before traffic is enabled:
 - The domain must be active in the intended Cloudflare account.
 - Staging and production must use distinct hostnames and Tunnel credentials.
 - The hostname must route to the environment-specific named Tunnel.
-- The Tunnel public hostname must target `http://web:3000`.
+- The Tunnel public hostname must target `http://web:3000` for general
+  application traffic.
+- The exact PayPal webhook path must target `http://api:8080` directly:
+  `/api/payments/paypal/webhooks`.
+- The PayPal webhook route must be ordered before the general Web route so the
+  exact path does not fall through to Next.js.
 - The edge certificate must be active and cover the exact hostname.
 - HTTP requests must redirect to HTTPS at Cloudflare.
 
@@ -73,7 +79,10 @@ Required application controls:
   policy.
 - Spring honors the trusted forwarded protocol so HTTPS requests do not cause
   insecure redirects or incorrect cookie behavior.
-- Web proxies API requests only to the private API service.
+- Web proxies browser-origin API requests only to the private API service.
+- PayPal webhook requests should bypass Web and reach the API directly through
+  the Tunnel path route. The Web webhook proxy exists only as a fallback for
+  deployments where the direct path route has not been applied yet.
 - Direct origin access remains impossible before any Cloudflare client-address
   header is trusted.
 - The Web proxy overwrites, rather than appends, the trusted client-address
@@ -110,9 +119,11 @@ Before production configuration:
 7. Verify direct requests cannot bypass Cloudflare to reach Web or API.
 8. Verify the configured client address cannot be spoofed before enabling it
    for rate limiting.
-9. Verify a PayPal Sandbox webhook reaches the callback and still requires a
-   valid provider signature.
-10. Stop `cloudflared` and confirm monitoring detects public unavailability.
+9. Verify the Cloudflare Tunnel route sends
+   `/api/payments/paypal/webhooks` directly to `http://api:8080`.
+10. Verify a PayPal Sandbox webhook reaches the callback and still requires a
+    valid provider signature.
+11. Stop `cloudflared` and confirm monitoring detects public unavailability.
 
 ## Failure And Rollback
 
