@@ -1,0 +1,109 @@
+{
+  "Parameters": [
+    {
+      "Name": "/time-archive/production/aws/region",
+      "Type": "String",
+      "Value": "ap-northeast-2"
+    },
+    {
+      "Name": "/time-archive/production/cloudwatch/log-group-prefix",
+      "Type": "String",
+      "Value": "/time-archive/production"
+    },
+    {
+      "Name": "/time-archive/production/database/url",
+      "Type": "String",
+      "Value": "jdbc:postgresql://replace-with-private-production-rds-endpoint:5432/time_archive?sslmode=require"
+    },
+    {
+      "Name": "/time-archive/production/database/username",
+      "Type": "SecureString",
+      "Value": "replace-with-production-database-user"
+    },
+    {
+      "Name": "/time-archive/production/database/password",
+      "Type": "SecureString",
+      "Value": "replace-with-production-database-password"
+    },
+    {
+      "Name": "/time-archive/production/r2/endpoint",
+      "Type": "String",
+      "Value": "https://replace-with-account-id.r2.cloudflarestorage.com"
+    },
+    {
+      "Name": "/time-archive/production/r2/presigned-url-endpoint",
+      "Type": "String",
+      "Value": "https://replace-with-account-id.r2.cloudflarestorage.com"
+    },
+    {
+      "Name": "/time-archive/production/r2/public-base-url",
+      "Type": "String",
+      "Value": "https://replace-with-production-private-canonical-storage-base"
+    },
+    {
+      "Name": "/time-archive/production/r2/bucket",
+      "Type": "String",
+      "Value": "replace-with-production-r2-bucket"
+    },
+    {
+      "Name": "/time-archive/production/r2/access-key",
+      "Type": "SecureString",
+      "Value": "replace-with-production-r2-access-key"
+    },
+    {
+      "Name": "/time-archive/production/r2/secret-key",
+      "Type": "SecureString",
+      "Value": "replace-with-production-r2-secret-key"
+    },
+    {
+      "Name": "/time-archive/production/rate-limit/key-salt",
+      "Type": "SecureString",
+      "Value": "replace-with-random-production-hmac-key"
+    },
+    {
+      "Name": "/time-archive/production/rate-limit/client-ip-header",
+      "Type": "String",
+      "Value": ""
+    },
+    {
+      "Name": "/time-archive/production/cloudflare/tunnel-token",
+      "Type": "SecureString",
+      "Value": "replace-with-production-cloudflare-tunnel-token"
+    },
+    {
+      "Name": "/time-archive/production/paypal/enabled",
+      "Type": "String",
+      "Value": "false"
+    },
+    {
+      "Name": "/time-archive/production/paypal/api-base-url",
+      "Type": "String",
+      "Value": "https://api-m.paypal.com"
+    },
+    {
+      "Name": "/time-archive/production/paypal/client-id",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-client-id"
+    },
+    {
+      "Name": "/time-archive/production/paypal/client-secret",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-client-secret"
+    },
+    {
+      "Name": "/time-archive/production/paypal/return-url",
+      "Type": "String",
+      "Value": "https://time-archive.com/payments/paypal/return"
+    },
+    {
+      "Name": "/time-archive/production/paypal/cancel-url",
+      "Type": "String",
+      "Value": "https://time-archive.com/payments/paypal/cancel"
+    },
+    {
+      "Name": "/time-archive/production/paypal/webhook-id",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-webhook-id"
+    }
+  ]
+}
