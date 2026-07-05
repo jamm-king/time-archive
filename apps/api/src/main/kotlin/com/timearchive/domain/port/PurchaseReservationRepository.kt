@@ -8,6 +8,8 @@ import java.util.UUID
 interface PurchaseReservationRepository {
     fun save(reservation: PurchaseReservation): PurchaseReservation
 
+    fun findById(id: UUID): PurchaseReservation? = findByIdForUpdate(id)
+
     fun findByIdForUpdate(id: UUID): PurchaseReservation?
 
     fun findActiveOverlapping(range: TimeRange): List<PurchaseReservation>

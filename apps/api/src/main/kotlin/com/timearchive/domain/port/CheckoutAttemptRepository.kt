@@ -9,6 +9,9 @@ interface CheckoutAttemptRepository {
 
     fun findByReservationIdForUpdate(reservationId: UUID): CheckoutAttempt?
 
+    fun findByProviderReference(provider: String, providerReference: String): CheckoutAttempt? =
+        findByProviderReferenceForUpdate(provider, providerReference)
+
     fun findByProviderReferenceForUpdate(provider: String, providerReference: String): CheckoutAttempt?
 
     fun markProviderCreated(

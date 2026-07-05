@@ -12,6 +12,7 @@ import com.timearchive.application.CreateOwnedRangeMediaAsset
 import com.timearchive.application.CreateOwnedRangeMediaUploadRequest
 import com.timearchive.application.CheckAvailability
 import com.timearchive.application.GetCurrentUser
+import com.timearchive.application.GetPayPalOrderConfirmationStatus
 import com.timearchive.application.HideMediaAsset
 import com.timearchive.application.ListCurrentUserOwnedRanges
 import com.timearchive.application.ListMediaModerationQueue
@@ -145,6 +146,22 @@ class ApplicationUseCaseConfiguration {
             checkoutAttemptRepository = checkoutAttemptRepository,
             purchaseReservationRepository = purchaseReservationRepository,
             paypalOrderClient = paypalOrderClient,
+            clockPort = clockPort,
+        )
+
+    @Bean
+    fun getPayPalOrderConfirmationStatus(
+        checkoutAttemptRepository: CheckoutAttemptRepository,
+        purchaseReservationRepository: PurchaseReservationRepository,
+        purchaseRepository: PurchaseRepository,
+        ownershipRepository: OwnershipRepository,
+        clockPort: ClockPort,
+    ): GetPayPalOrderConfirmationStatus =
+        GetPayPalOrderConfirmationStatus(
+            checkoutAttemptRepository = checkoutAttemptRepository,
+            purchaseReservationRepository = purchaseReservationRepository,
+            purchaseRepository = purchaseRepository,
+            ownershipRepository = ownershipRepository,
             clockPort = clockPort,
         )
 

@@ -98,6 +98,21 @@ class JdbcOwnershipRepository(
         ) { rs, _ -> rs.toOwnershipRecord() }
     }
 
+    override fun findActiveBySourcePurchaseId(sourcePurchaseId: UUID): OwnershipRecord? {
+        val parameters = MapSqlParameterSource()
+            .addValue("sourcePurchaseId", sourcePurchaseId)
+
+        return jdbcTemplate.query(
+            """
+            $selectSql
+            where source_purchase_id = :sourcePurchaseId
+              and status = 'ACTIVE'
+              and valid_until is null
+            """.trimIndent(),
+            parameters,
+        ) { rs, _ -> rs.toOwnershipRecord() }.firstOrNull()
+    }
+
     override fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord> {
         val parameters = MapSqlParameterSource()
             .addValue("startSecond", range.startSecond)

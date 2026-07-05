@@ -480,6 +480,55 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "500":
           $ref: "#/components/responses/UnexpectedError"
+  /api/payments/paypal/orders/{orderId}/confirmation-status:
+    get:
+      tags:
+        - Payment
+      operationId: getPayPalOrderConfirmationStatus
+      summary: Read PayPal order confirmation status
+      description: |
+        Reads the authenticated buyer's PayPal checkout status after approval
+        return and capture.
+
+        This endpoint is informational only. It never grants ownership.
+        Ownership is finalized only by a verified provider webhook.
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: PayPal order ID from the approval return token.
+      responses:
+        "200":
+          description: PayPal order confirmation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayPalOrderConfirmationStatusResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Checkout attempt does not belong to the current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Checkout attempt or reservation was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+        "500":
+          $ref: "#/components/responses/UnexpectedError"
   /api/owned-ranges/{ownershipRecordId}/media:
     post:
       tags:
@@ -1419,6 +1468,46 @@ components:
           enum:
             - CAPTURED_PENDING_WEBHOOK
         alreadyCaptured:
+          type: boolean
+    PayPalOrderConfirmationStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - orderId
+        - reservationId
+        - purchaseId
+        - ownershipRecordId
+        - status
+        - terminal
+      properties:
+        orderId:
+          type: string
+          minLength: 1
+          examples:
+            - 5O190127TN364715T
+        reservationId:
+          type: string
+          format: uuid
+        purchaseId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        ownershipRecordId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        status:
+          type: string
+          enum:
+            - CAPTURE_NOT_STARTED
+            - CAPTURE_PENDING_WEBHOOK
+            - OWNERSHIP_GRANTED
+            - CAPTURE_FAILED
+            - EXPIRED
+            - FAILED
+        terminal:
           type: boolean
     AvailabilityResponse:
       type: object

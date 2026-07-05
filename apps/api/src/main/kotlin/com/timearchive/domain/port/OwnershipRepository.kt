@@ -11,5 +11,7 @@ interface OwnershipRepository {
 
     fun findActiveByOwnerId(ownerId: UUID): List<OwnershipRecord>
 
+    fun findActiveBySourcePurchaseId(sourcePurchaseId: UUID): OwnershipRecord? = null
+
     fun findActiveOverlapping(range: TimeRange): List<OwnershipRecord>
 }
