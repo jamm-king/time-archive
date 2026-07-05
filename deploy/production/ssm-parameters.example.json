@@ -69,6 +69,41 @@
       "Name": "/time-archive/production/cloudflare/tunnel-token",
       "Type": "SecureString",
       "Value": "replace-with-cloudflare-tunnel-token"
+    },
+    {
+      "Name": "/time-archive/production/paypal/enabled",
+      "Type": "String",
+      "Value": "false"
+    },
+    {
+      "Name": "/time-archive/production/paypal/api-base-url",
+      "Type": "String",
+      "Value": "https://api-m.paypal.com"
+    },
+    {
+      "Name": "/time-archive/production/paypal/client-id",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-client-id"
+    },
+    {
+      "Name": "/time-archive/production/paypal/client-secret",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-client-secret"
+    },
+    {
+      "Name": "/time-archive/production/paypal/return-url",
+      "Type": "String",
+      "Value": "https://time-archive.com/payments/paypal/return"
+    },
+    {
+      "Name": "/time-archive/production/paypal/cancel-url",
+      "Type": "String",
+      "Value": "https://time-archive.com/payments/paypal/cancel"
+    },
+    {
+      "Name": "/time-archive/production/paypal/webhook-id",
+      "Type": "SecureString",
+      "Value": "replace-with-production-paypal-live-webhook-id"
     }
   ]
 }

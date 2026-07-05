@@ -58,8 +58,10 @@ Production payment collection must not start before the PayPal webhook ID exists
 and webhook signature verification passes.
 
 The PayPal integration contract is documented in
-[PayPal Integration Design](paypal-integration-design.md). Do not overload the
-current fake payment parameters for production.
+[PayPal Integration Design](paypal-integration-design.md), and the launch
+procedure is documented in
+[Production PayPal Live Setup](production-paypal-live-setup.md). Do not
+overload the current fake payment parameters for production.
 
 ## Value Shapes
 

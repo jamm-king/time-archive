@@ -83,7 +83,7 @@ MVP-ready areas after target-environment verification:
 | Checkout redirect flow | Ready for staging | PayPal approval return, server-side capture, verified webhook ownership finalization, and the polling return page were redeployed and manually verified in staging. Repeat after checkout, capture, webhook, or return-page changes. |
 | PayPal return confirmation UX | Ready for staging | Server-side status read API and Web polling/success/delayed/failure states were verified in staging after redeployment. The browser return remains informational only; ownership is still granted only after verified webhook processing. |
 | Payment idempotency | Ready for staging | Backend PayPal tests cover capture retry after failure, already-captured retry, duplicate webhook `alreadyProcessed` propagation, non-completed capture rejection, and capture/order/amount/currency mismatch rejection. The [PayPal Staging Idempotency Drill](paypal-staging-idempotency-drill.md) passed for resent Sandbox event `WH-7HU60164371570724-75J73461KN145691Y`: CloudWatch showed verified webhook handling and HTTP `200`, `payment_events` remained one `PROCESSED` row, and the latest PayPal purchase/ownership records remained single active records. Repeat after PayPal webhook, payment finalization, or deployment routing changes. |
-| Production PayPal live setup | Blocked for production | Provision a dedicated production PayPal live app, live webhook URL, production SSM parameters, first live low-value payment drill, refund/rollback procedure, and production Dashboard reconciliation before enabling paid production traffic. |
+| Production PayPal live setup | Blocked for production | Follow [Production PayPal Live Setup](production-paypal-live-setup.md): provision a dedicated production PayPal Live app, live webhook URL, production SSM parameters, first live low-value payment drill, refund/rollback procedure, and production Dashboard reconciliation before enabling paid production traffic. |
 
 ## Storage And Media
 
@@ -217,6 +217,7 @@ Production runtime readiness is split across focused runbooks:
 - [Observability Minimum](observability-minimum.md)
 - [PayPal Integration Design](paypal-integration-design.md)
 - [PayPal Staging Idempotency Drill](paypal-staging-idempotency-drill.md)
+- [Production PayPal Live Setup](production-paypal-live-setup.md)
 
 Local R2 verification remains documented in
 [Cloudflare R2 Storage Setup](r2-storage-setup.md).
