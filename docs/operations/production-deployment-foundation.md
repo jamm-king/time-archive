@@ -20,6 +20,7 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `scripts/bootstrap-production-db-user.sh` | Approval-gated production database application user bootstrap. |
 | `.github/workflows/publish-production-images.yml` | Manual production API/Web ARM64 image publication workflow. |
 | `.github/workflows/deploy-production.yml` | Manual production deployment workflow through SSM Run Command and the GitHub `production` environment. |
+| `docs/operations/production-first-deploy-runbook.md` | First production image publication, deployment, routing, smoke, and failure-handling runbook. |
 | `deploy/production/docker-compose.yml` | Production service topology and runtime security defaults. |
 | `deploy/production/runtime.env.example` | Shell-compatible placeholder contract used by static validation. |
 | `deploy/production/ssm-parameters.example.json` | Non-secret SSM response fixture for renderer tests. |
@@ -219,6 +220,8 @@ The manual SSM Run Command deployment workflow is defined in
 [Staging Deployment](staging-deployment.md).
 Production runtime parameter requirements are defined in
 [Production Runtime Parameters](production-runtime-parameters.md).
+First production image publication and deployment execution is defined in
+[Production First Deploy Runbook](production-first-deploy-runbook.md).
 Production change-set review and execution boundaries are defined in
 [Production Provisioning Runbook](production-provisioning-runbook.md).
 Production database user bootstrap is defined in
