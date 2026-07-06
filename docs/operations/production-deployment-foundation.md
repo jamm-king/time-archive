@@ -18,6 +18,8 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `scripts/verify-production-cloudformation.sh` | Production CloudFormation schema, architecture-policy, and policy self-test entry point. |
 | `scripts/verify-production-provisioning-inputs.sh` | Production operator input and optional read-only AWS preflight validation. |
 | `scripts/bootstrap-production-db-user.sh` | Approval-gated production database application user bootstrap. |
+| `.github/workflows/publish-production-images.yml` | Manual production API/Web ARM64 image publication workflow. |
+| `.github/workflows/deploy-production.yml` | Manual production deployment workflow through SSM Run Command and the GitHub `production` environment. |
 | `deploy/production/docker-compose.yml` | Production service topology and runtime security defaults. |
 | `deploy/production/runtime.env.example` | Shell-compatible placeholder contract used by static validation. |
 | `deploy/production/ssm-parameters.example.json` | Non-secret SSM response fixture for renderer tests. |
@@ -28,6 +30,8 @@ isolated AWS, Cloudflare, R2, database, and SSM resources.
 | `deploy/production/deploy.sh` | Pulls immutable images, runs Flyway, starts services, and verifies health. |
 | `deploy/production/verify-deployment.sh` | Checks private service health and optional public endpoints. |
 | `scripts/verify-production-deployment.sh` | Validates shell syntax, Compose policy, fail-fast secrets, and SSM rendering. |
+| `scripts/verify-production-image-publish-workflow.sh` | Validates the production image publication workflow policy. |
+| `scripts/verify-production-deploy-workflow.sh` | Validates the production deployment workflow policy. |
 | `scripts/verify-staging-deployment-runtime.sh` | Validates the staging SSM contract and Compose rendering without contacting AWS. |
 | `scripts/verify-staging-runtime-parameters.sh` | Validates the staging parameter fixture and optionally verifies live SSM metadata without decryption. |
 
@@ -54,9 +58,28 @@ All container logs use the CloudWatch `awslogs` driver.
 - CI builds both application Dockerfiles for `linux/arm64` because the selected
   EC2 instance is Graviton-based.
 
-The ECR repositories must enable tag immutability when provisioned. The image
-push and deployment workflow is intentionally deferred until ECR, GitHub OIDC,
-and environment approval rules exist.
+The ECR repositories must enable tag immutability when provisioned. Production
+image publication is available through the manual `Publish production images`
+workflow. The workflow uses GitHub OIDC, assumes
+`AWS_PRODUCTION_IMAGE_PUBLISH_ROLE_ARN`, publishes only full Git SHA tags to
+the production API/Web repositories, emits provenance and SBOM attestations, and
+fails on partial immutable publication.
+
+The production deployment workflow is available but must be run only after
+explicit operator approval. It uses the GitHub `production` environment,
+assumes `AWS_PRODUCTION_DEPLOY_ROLE_ARN`, verifies immutable production image
+tags, sends the deployment bundle to `PRODUCTION_INSTANCE_ID` through SSM Run
+Command, and runs `deploy.sh production`.
+
+Required repository variables:
+
+```text
+AWS_ACCOUNT_ID
+AWS_REGION
+AWS_PRODUCTION_IMAGE_PUBLISH_ROLE_ARN
+AWS_PRODUCTION_DEPLOY_ROLE_ARN
+PRODUCTION_INSTANCE_ID
+```
 
 ## SSM Parameter Contract
 
@@ -107,6 +130,8 @@ From Git Bash or Linux:
 
 ```bash
 ./scripts/verify-production-deployment.sh
+./scripts/verify-production-image-publish-workflow.sh
+./scripts/verify-production-deploy-workflow.sh
 ./scripts/verify-staging-deployment-runtime.sh
 ./scripts/verify-staging-runtime-parameters.sh
 ```
