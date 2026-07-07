@@ -76,6 +76,9 @@ jobs:
       - name: Verify production admin role grant script
         run: ./scripts/verify-production-admin-role-grant.sh
 
+      - name: Verify production admin smoke workflow
+        run: ./scripts/verify-production-admin-smoke-workflow.sh
+
       - name: Verify staging admin smoke workflow
         run: ./scripts/verify-staging-admin-smoke-workflow.sh
 

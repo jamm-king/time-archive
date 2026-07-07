@@ -1,0 +1,53 @@
+name: Smoke production admin
+run-name: Smoke production admin
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_base_url:
+        description: Optional HTTPS production URL. Defaults to PRODUCTION_PUBLIC_BASE_URL.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-admin-smoke
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_PUBLIC_BASE_URL: ${{ vars.PRODUCTION_PUBLIC_BASE_URL }}
+
+jobs:
+  smoke:
+    name: Admin smoke
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Verify production admin authorization
+        shell: bash
+        env:
+          INPUT_PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+          PRODUCTION_ADMIN_EMAIL: ${{ secrets.PRODUCTION_ADMIN_EMAIL }}
+          PRODUCTION_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          base_url="${INPUT_PUBLIC_BASE_URL:-${PRODUCTION_PUBLIC_BASE_URL:-}}"
+          ./scripts/verify-production-admin-smoke.sh --base-url "$base_url"
+
+          {
+            echo "## Production admin smoke"
+            echo
+            echo "- Base URL: \`${base_url%/}\`"
+            echo "- Unauthenticated rejection: passed"
+            echo "- Regular user rejection: passed"
+            echo "- Admin moderation list: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
