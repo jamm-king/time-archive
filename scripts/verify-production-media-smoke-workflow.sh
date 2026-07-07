@@ -146,6 +146,8 @@ def validate(workflow, script_text):
         "PRODUCTION_ADMIN_EMAIL",
         "PRODUCTION_ADMIN_PASSWORD",
         "production-media-smoke.png",
+        "export START_SECOND",
+        "export END_SECOND",
         "cmp -s",
     ):
         if required not in script_text:

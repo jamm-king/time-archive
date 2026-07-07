@@ -167,3 +167,25 @@ the exact owner email and range.
 - Run `Smoke production media` against `https://time-archive.com`.
 - After it passes, update the release readiness checklist with the SSM command
   ID and workflow result.
+
+## Follow-Up Fix: Production Media Smoke Environment Export
+
+Date: 2026-07-07
+
+The first production media smoke run reached upload, completion, admin preview,
+and approval, then failed during public timeline assertion because the embedded
+Python block expected `START_SECOND` and `END_SECOND` in the environment.
+
+Fix:
+
+- Export `START_SECOND` and `END_SECOND` after CLI/env input validation.
+- Require those exports in the production media smoke workflow policy verifier.
+
+Verification:
+
+- `bash -n scripts/verify-production-media-smoke.sh scripts/verify-production-media-smoke-workflow.sh`
+  through Git Bash: passed.
+- `git diff --check`: passed.
+- `./scripts/verify-production-media-smoke-workflow.sh`: not run locally
+  because the local Python environment does not provide `PyYAML`.
+- Re-run `Smoke production media` after this fix is merged.
