@@ -227,6 +227,24 @@ Minimum first-deploy smoke checks:
 
 Do not run a live PayPal payment before this minimum smoke set passes.
 
+The following manual GitHub Actions workflows automate this minimum set:
+
+| Workflow | Purpose |
+| --- | --- |
+| `Smoke production public` | Verifies the Web root and public timeline through the production HTTPS hostname. |
+| `Smoke production security headers` | Verifies security headers on the Web root and public API proxy path. |
+| `Smoke production auth` | Registers a disposable `production-auth-smoke-` user and verifies CSRF rejection, secure session cookies, logout, login, and `/api/me`. |
+
+They default to the repository variable `PRODUCTION_PUBLIC_BASE_URL`. The value
+should be:
+
+```text
+https://time-archive.com
+```
+
+The same value may be supplied through each workflow's optional
+`public_base_url` input.
+
 ## Phase 7: Production R2 Verification
 
 After public Web and auth checks pass, verify production R2:
