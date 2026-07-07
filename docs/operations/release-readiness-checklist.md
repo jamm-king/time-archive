@@ -64,7 +64,7 @@ MVP-ready areas after target-environment verification:
 | Session authentication | Ready | Staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie attributes. Production auth smoke workflow passed against `https://time-archive.com` after first deployment. |
 | CSRF protection | Ready | Staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks remain excluded from browser-facing deployed environments. Production auth smoke workflow also verified missing-CSRF mutation rejection after first deployment. Repeat after auth or payment callback changes. |
 | Admin authorization | Ready | Staging admin smoke workflow verifies unauthenticated rejection, non-admin rejection, and admin moderation-list access. Repeat before production and extend if new admin actions are added. |
-| Admin bootstrap | Blocked for production | Staging has an operator-controlled SSM admin grant script; production still needs an approved provisioning process and role-change audit path. |
+| Admin bootstrap | Needs verification | Production now has an operator-controlled SSM admin grant runbook and policy-verified script. Execute the approved production grant, record the SSM command ID, and verify admin-only access before marking this Ready. |
 | Password policy | Ready for MVP | Registration enforces a minimum password length of 8 characters, passwords are stored through BCrypt hashing, and registration tests cover short-password rejection. Password reset remains a post-MVP follow-up. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Ready | Staging now forwards reviewed Cloudflare headers through the Web proxy, the deployed API runtime uses `CF-Connecting-IP`, Cloudflare Free plan edge rate limiting is configured for auth endpoints, and staging smoke workflows passed after the edge changes. Repeat after Cloudflare routing, rate-limit, or runtime header changes. |
@@ -144,6 +144,7 @@ Required checks before merging a release candidate:
 - Staging request ID smoke workflow policy validation.
 - Staging auth smoke workflow policy validation.
 - Staging admin role grant script policy validation.
+- Production admin role grant script policy validation.
 - Staging admin smoke workflow policy validation.
 - Staging owned range grant script policy validation.
 - Staging media preview smoke workflow policy validation.
@@ -218,6 +219,7 @@ Production runtime readiness is split across focused runbooks:
 - [Production Runtime Parameters](production-runtime-parameters.md)
 - [Production Provisioning Runbook](production-provisioning-runbook.md)
 - [Production Database User](production-database-user.md)
+- [Production Admin Provisioning](production-admin-provisioning.md)
 - [Production R2 Readiness](production-r2-readiness.md)
 - [Storage Backend Change Procedure](storage-backend-change-procedure.md)
 - [Database Recovery Runbook](database-recovery-runbook.md)
