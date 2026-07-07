@@ -252,6 +252,8 @@ production admin user through [Production Admin Provisioning](production-admin-p
 then verify production R2:
 
 - `Smoke production admin` passes against `https://time-archive.com`;
+- a controlled production smoke ownership range is prepared through
+  `grant-production-owned-range.sh` with an operations record;
 - bucket is `time-archive-production`;
 - bucket is not publicly listable or anonymously readable;
 - CORS allows only `https://time-archive.com`;
@@ -262,6 +264,10 @@ then verify production R2:
 - admin preview creates a short-lived presigned URL;
 - approved media appears in public timeline with short-lived playback URL;
 - hidden or rejected media does not appear in public timeline.
+
+The manual `Smoke production media` workflow covers upload, preview, approval,
+and public playback. Hidden/rejected exclusion remains a separate follow-up
+unless it is explicitly verified in the same release window.
 
 ## Phase 8: PayPal Live Drill
 

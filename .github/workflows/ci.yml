@@ -85,8 +85,14 @@ jobs:
       - name: Verify staging owned range grant script
         run: ./scripts/verify-staging-owned-range-grant.sh
 
+      - name: Verify production owned range grant script
+        run: ./scripts/verify-production-owned-range-grant.sh
+
       - name: Verify staging media preview smoke workflow
         run: ./scripts/verify-staging-media-preview-smoke-workflow.sh
+
+      - name: Verify production media smoke workflow
+        run: ./scripts/verify-production-media-smoke-workflow.sh
 
       - name: Verify staging media duration smoke workflow
         run: ./scripts/verify-staging-media-duration-smoke-workflow.sh

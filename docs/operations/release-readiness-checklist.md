@@ -64,7 +64,7 @@ MVP-ready areas after target-environment verification:
 | Session authentication | Ready | Staging auth smoke workflow verifies registration, login, logout, `/api/me`, and deployed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie attributes. Production auth smoke workflow passed against `https://time-archive.com` after first deployment. |
 | CSRF protection | Ready | Staging auth smoke workflow verifies mutation rejection without `X-XSRF-TOKEN`; fake provider callbacks remain excluded from browser-facing deployed environments. Production auth smoke workflow also verified missing-CSRF mutation rejection after first deployment. Repeat after auth or payment callback changes. |
 | Admin authorization | Ready | Staging admin smoke workflow verifies unauthenticated rejection, non-admin rejection, and admin moderation-list access. Repeat before production and extend if new admin actions are added. |
-| Admin bootstrap | Needs verification | Production now has an operator-controlled SSM admin grant runbook and policy-verified script. The first production admin grant was executed through SSM command `c41ae26b-ed6d-4bf4-93de-9ec6237e2023` and manual admin moderation access was confirmed. Run the production admin smoke workflow before marking this Ready. |
+| Admin bootstrap | Ready | Production has an operator-controlled SSM admin grant runbook and policy-verified script. The first production admin grant was executed through SSM command `c41ae26b-ed6d-4bf4-93de-9ec6237e2023`, manual admin moderation access was confirmed, and the production admin smoke workflow passed. |
 | Password policy | Ready for MVP | Registration enforces a minimum password length of 8 characters, passwords are stored through BCrypt hashing, and registration tests cover short-password rejection. Password reset remains a post-MVP follow-up. |
 | Application rate limiting | Ready | Redis-backed limits cover auth, public reads, purchase, media mutation, and admin routes with atomic counters and fail-closed behavior. |
 | Edge rate limiting and client identity | Ready | Staging now forwards reviewed Cloudflare headers through the Web proxy, the deployed API runtime uses `CF-Connecting-IP`, Cloudflare Free plan edge rate limiting is configured for auth endpoints, and staging smoke workflows passed after the edge changes. Repeat after Cloudflare routing, rate-limit, or runtime header changes. |
@@ -91,7 +91,7 @@ MVP-ready areas after target-environment verification:
 | --- | --- | --- |
 | Local MinIO flow | Ready | Verified by local upload, public timeline, and admin preview scripts. |
 | Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
-| Production Cloudflare R2 | Needs verification | Production R2 requirements are documented in [Production R2 Readiness](production-r2-readiness.md). Provision a dedicated production bucket and least-privilege credentials, then verify CORS, private access, upload, preview, and playback against production before marking this Ready. |
+| Production Cloudflare R2 | Needs verification | Production R2 requirements are documented in [Production R2 Readiness](production-r2-readiness.md). Production media smoke workflow and controlled owned-range grant tooling are prepared; run the approved production range grant, then verify upload, preview, approval, and playback against production before marking this Ready. |
 | Presigned upload URLs | Ready | After applying the staging R2 bucket CORS policy, the manual staging presigned upload CORS smoke workflow passed and verified upload request creation, CORS preflight for `PUT` with `content-type`, and actual presigned `PUT` response CORS headers from the deployed Web origin. Repeat after storage bucket, CORS, Web origin, or upload-header changes. |
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
@@ -148,7 +148,9 @@ Required checks before merging a release candidate:
 - Production admin smoke workflow policy validation.
 - Staging admin smoke workflow policy validation.
 - Staging owned range grant script policy validation.
+- Production owned range grant script policy validation.
 - Staging media preview smoke workflow policy validation.
+- Production media smoke workflow policy validation.
 - Staging media duration smoke workflow policy validation.
 - Staging media signature smoke workflow policy validation.
 - Staging rollback drill policy validation.

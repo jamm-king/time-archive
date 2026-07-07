@@ -103,6 +103,78 @@ Before paid production launch, verify:
 9. SSM metadata shows R2 credentials as `SecureString`.
 10. No production logs contain R2 credentials or presigned URLs.
 
+## Controlled Smoke Range
+
+The production media smoke workflow requires an existing active ownership range
+for the configured media owner account. Prepare that range with the audited SSM
+grant script only after explicit approval for the exact target email and range.
+
+Dry run:
+
+```bash
+./scripts/grant-production-owned-range.sh \
+  --expected-account-id 231851555445 \
+  --profile time-archive-staging-admin \
+  --email owner@example.com \
+  --start-second 7000 \
+  --end-second 7001 \
+  --dry-run
+```
+
+After review and approval:
+
+```bash
+./scripts/grant-production-owned-range.sh \
+  --expected-account-id 231851555445 \
+  --profile time-archive-staging-admin \
+  --email owner@example.com \
+  --start-second 7000 \
+  --end-second 7001
+```
+
+The script:
+
+- targets the `time-archive-production` CloudFormation stack;
+- verifies the runtime parameter path is `/time-archive/production/`;
+- reads production application database credentials from SSM on EC2;
+- verifies the database username is `timearchive_prod_app`;
+- creates only `ADMIN_GRANT` ownership records;
+- rejects ranges that overlap active ownership;
+- does not touch purchase or payment tables;
+- does not print database credentials.
+
+Record the target email, range, SSM command ID, and result in the operations
+record. Do not record credentials, cookies, CSRF tokens, R2 keys, presigned URLs,
+or private payer information.
+
+## Production Media Smoke Workflow
+
+After the controlled range exists, run the manual GitHub Actions workflow:
+
+```text
+Smoke production media
+```
+
+It uses the `production` GitHub Environment and requires:
+
+- `PRODUCTION_MEDIA_OWNER_EMAIL`
+- `PRODUCTION_MEDIA_OWNER_PASSWORD`
+- `PRODUCTION_ADMIN_EMAIL`
+- `PRODUCTION_ADMIN_PASSWORD`
+
+The workflow verifies:
+
+- owner login and owned range lookup;
+- presigned upload request creation;
+- R2 `PUT` through the presigned upload URL;
+- upload completion with storage metadata validation;
+- admin moderation-list visibility;
+- admin original preview URL creation and byte-for-byte preview download;
+- pre-approval public timeline exclusion;
+- admin approval using the stored object reference;
+- public timeline inclusion through a short-lived presigned playback URL;
+- byte-for-byte public playback download.
+
 ## Rollback
 
 If production R2 verification fails before launch, do not approve production
