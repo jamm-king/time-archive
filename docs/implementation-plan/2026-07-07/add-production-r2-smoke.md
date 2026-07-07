@@ -189,3 +189,29 @@ Verification:
 - `./scripts/verify-production-media-smoke-workflow.sh`: not run locally
   because the local Python environment does not provide `PyYAML`.
 - Re-run `Smoke production media` after this fix is merged.
+
+## Follow-Up Fix: Production Media Smoke Rerun Safety
+
+Date: 2026-07-07
+
+The second production media smoke run reached upload, completion, admin preview,
+and approval, then failed before approval because the script expected the whole
+timeline range to be empty. The previous failed smoke run had already approved a
+test media asset in the same controlled range, so the empty-range assumption was
+not rerunnable.
+
+Fix:
+
+- Replace the pre-approval empty-timeline assertion with a targeted assertion
+  that the current run's new `mediaAssetId` is absent before approval.
+- Keep the post-approval assertion that the current run's `mediaAssetId` appears
+  in the public timeline and downloads byte-for-byte through a presigned
+  playback URL.
+- Require the targeted pre-approval assertion in the workflow policy verifier.
+
+Verification:
+
+- `bash -n scripts/verify-production-media-smoke.sh scripts/verify-production-media-smoke-workflow.sh`
+  through Git Bash: passed.
+- `git diff --check`: passed.
+- Re-run `Smoke production media` after this fix is merged.

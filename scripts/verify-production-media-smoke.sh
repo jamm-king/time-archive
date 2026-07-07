@@ -315,6 +315,25 @@ print(media_url)
 ' "$expected_media_asset_id" "$stored_media_url"
 }
 
+assert_public_timeline_segment_absent() {
+  local timeline_json="$1"
+  local expected_absent_media_asset_id="$2"
+
+  TIMELINE_JSON="$timeline_json" "$PYTHON_BIN" -c '
+import json
+import os
+import sys
+
+data = json.loads(os.environ["TIMELINE_JSON"])
+expected_absent_media_asset_id = sys.argv[1]
+
+segments = data.get("segments", [])
+for segment in segments:
+    if segment.get("mediaAssetId") == expected_absent_media_asset_id:
+        raise SystemExit("unapproved media segment was returned")
+'
+}
+
 download_playback_file() {
   local playback_url="$1"
   local output_path="$2"
@@ -486,8 +505,7 @@ cmp -s "$UPLOAD_FILE_PATH" "$DOWNLOAD_FILE_PATH" || fail "Preview download bytes
 log "Preview URL downloaded uploaded object bytes"
 
 pre_approval_timeline="$(request_json GET "$BASE_URL/api/timeline?from=$START_SECOND&to=$END_SECOND" 200 "$OWNER_COOKIE_FILE")"
-pre_approval_segment_count="$(printf '%s' "$pre_approval_timeline" | json_get "segments")"
-[[ "$pre_approval_segment_count" == "[]" ]] || fail "Expected no public timeline segments before admin approval"
+assert_public_timeline_segment_absent "$pre_approval_timeline" "$MEDIA_ASSET_ID"
 log "Unapproved media is hidden from public timeline"
 
 admin_csrf_token="$(csrf_token_for "$ADMIN_COOKIE_FILE")"
