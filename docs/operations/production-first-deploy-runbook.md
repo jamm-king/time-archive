@@ -359,3 +359,31 @@ Notes:
 
 Do not record credentials, raw webhook payloads, cookies, CSRF tokens, session
 IDs, private payer information, R2 keys, PayPal secrets, or presigned URLs.
+
+## First Production Public Smoke Record
+
+Date: 2026-07-07
+
+Repository-safe result:
+
+```text
+Production hostname: https://time-archive.com
+Production deployment: completed through SSM after production image publication
+Cloudflare production route: configured
+Smoke production public: PASS
+Smoke production security headers: PASS
+Smoke production auth: PASS
+Verified scope:
+- Web root over HTTPS
+- Public timeline over HTTPS
+- Security headers on Web and public API proxy paths
+- CSRF rejection for mutation without token
+- Disposable production auth-smoke registration
+- Secure session cookie attributes
+- Logout, login, and /api/me
+Known remaining gates:
+- Production R2 upload, admin preview, and playback verification
+- Production PayPal Live low-value payment drill
+- Production restore drill
+- Production observability/alert verification
+```
