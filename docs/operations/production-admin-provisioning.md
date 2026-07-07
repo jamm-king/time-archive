@@ -117,5 +117,25 @@ After a production admin user exists:
 - use the admin account for the production R2 media verification only when the
   target test media and owner account are explicitly controlled.
 
+The manual GitHub Actions workflow:
+
+```text
+Smoke production admin
+```
+
+uses the `production` GitHub Environment and requires these environment
+secrets:
+
+- `PRODUCTION_ADMIN_EMAIL`
+- `PRODUCTION_ADMIN_PASSWORD`
+
+It verifies:
+
+- unauthenticated admin API requests return `401`;
+- disposable non-admin users receive `403`;
+- the configured production admin user can read the moderation list.
+
+The workflow does not approve, reject, hide, preview, or otherwise mutate media.
+
 An admin invitation UI can be considered later, after email verification, MFA,
 and broader role management exist.

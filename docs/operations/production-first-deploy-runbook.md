@@ -251,6 +251,7 @@ After public Web and auth checks pass, create or confirm the controlled
 production admin user through [Production Admin Provisioning](production-admin-provisioning.md),
 then verify production R2:
 
+- `Smoke production admin` passes against `https://time-archive.com`;
 - bucket is `time-archive-production`;
 - bucket is not publicly listable or anonymously readable;
 - CORS allows only `https://time-archive.com`;
