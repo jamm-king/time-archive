@@ -143,6 +143,7 @@ def validate(workflow, script_text):
         "/api/timeline?from=$START_SECOND&to=$END_SECOND",
         "assert_public_timeline_segment_absent",
         "unapproved media segment was returned",
+        "' \"$expected_absent_media_asset_id\"",
         "PRODUCTION_MEDIA_OWNER_EMAIL",
         "PRODUCTION_MEDIA_OWNER_PASSWORD",
         "PRODUCTION_ADMIN_EMAIL",

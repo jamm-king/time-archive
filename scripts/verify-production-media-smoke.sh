@@ -331,7 +331,7 @@ segments = data.get("segments", [])
 for segment in segments:
     if segment.get("mediaAssetId") == expected_absent_media_asset_id:
         raise SystemExit("unapproved media segment was returned")
-'
+' "$expected_absent_media_asset_id"
 }
 
 download_playback_file() {

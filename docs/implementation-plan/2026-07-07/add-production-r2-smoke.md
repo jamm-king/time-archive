@@ -215,3 +215,25 @@ Verification:
   through Git Bash: passed.
 - `git diff --check`: passed.
 - Re-run `Smoke production media` after this fix is merged.
+
+## Follow-Up Fix: Production Media Smoke Absent Assertion Argument
+
+Date: 2026-07-07
+
+The third production media smoke run reached upload, completion, admin preview,
+and preview download, then failed in the targeted pre-approval timeline
+assertion with `IndexError: list index out of range`. The helper function read
+`sys.argv[1]` but did not pass the expected absent media asset id into the
+embedded Python process.
+
+Fix:
+
+- Pass `expected_absent_media_asset_id` into the embedded Python process.
+- Require the argument-passing pattern in the workflow policy verifier.
+
+Verification:
+
+- `bash -n scripts/verify-production-media-smoke.sh scripts/verify-production-media-smoke-workflow.sh`
+  through Git Bash: passed.
+- `git diff --check`: passed.
+- Re-run `Smoke production media` after this fix is merged.
