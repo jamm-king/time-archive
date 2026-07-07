@@ -373,6 +373,8 @@ done
 (( START_SECOND < END_SECOND )) || fail "start second must be less than end second"
 (( END_SECOND <= 86400 )) || fail "end second must be at most 86400"
 BASE_URL="${BASE_URL%/}"
+export START_SECOND
+export END_SECOND
 [[ -n "${PRODUCTION_MEDIA_OWNER_EMAIL:-}" ]] || fail "PRODUCTION_MEDIA_OWNER_EMAIL is required"
 [[ -n "${PRODUCTION_MEDIA_OWNER_PASSWORD:-}" ]] || fail "PRODUCTION_MEDIA_OWNER_PASSWORD is required"
 [[ -n "${PRODUCTION_ADMIN_EMAIL:-}" ]] || fail "PRODUCTION_ADMIN_EMAIL is required"
