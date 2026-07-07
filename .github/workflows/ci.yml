@@ -67,6 +67,9 @@ jobs:
       - name: Verify staging security headers smoke workflow
         run: ./scripts/verify-staging-security-headers-workflow.sh
 
+      - name: Verify production public smoke workflows
+        run: ./scripts/verify-production-public-smoke-workflows.sh
+
       - name: Verify staging admin role grant script
         run: ./scripts/verify-staging-admin-role-grant.sh
 
