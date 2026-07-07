@@ -247,7 +247,9 @@ The same value may be supplied through each workflow's optional
 
 ## Phase 7: Production R2 Verification
 
-After public Web and auth checks pass, verify production R2:
+After public Web and auth checks pass, create or confirm the controlled
+production admin user through [Production Admin Provisioning](production-admin-provisioning.md),
+then verify production R2:
 
 - bucket is `time-archive-production`;
 - bucket is not publicly listable or anonymously readable;
