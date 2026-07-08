@@ -15,6 +15,24 @@ The workflow is:
 
 It is manually dispatched and must run from `main`.
 
+## On-Demand Staging Availability
+
+Staging is no longer assumed to be running all the time. The CloudFormation
+stack remains in place, but the staging EC2 instance and RDS DB instance can be
+started and stopped on demand to reduce compute cost. See
+[Staging On-Demand Runbook](staging-on-demand-runbook.md).
+
+If staging is stopped:
+
+- `Deploy staging` cannot succeed until staging is started;
+- public staging smoke workflows are expected to fail;
+- `staging.time-archive.com` is expected to be unavailable;
+- Cloudflare Tunnel is disconnected because `cloudflared` runs on the staging
+  EC2 instance.
+
+After starting staging, run `Deploy staging` if a fresh release is needed, then
+run the relevant staging smoke workflows.
+
 ## Required GitHub Configuration
 
 Repository variables:
