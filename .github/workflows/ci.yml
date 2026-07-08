@@ -52,6 +52,9 @@ jobs:
       - name: Verify staging deployment workflow
         run: ./scripts/verify-staging-deploy-workflow.sh
 
+      - name: Verify staging on-demand operations
+        run: ./scripts/verify-staging-on-demand-operations.sh
+
       - name: Verify production deployment workflow
         run: ./scripts/verify-production-deploy-workflow.sh
 

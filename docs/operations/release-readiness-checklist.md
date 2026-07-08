@@ -140,6 +140,7 @@ Required checks before merging a release candidate:
 - Staging provisioning input and read-only command policy validation.
 - Staging image-publication workflow policy validation.
 - Staging deployment workflow policy validation.
+- Staging on-demand operation script policy validation.
 - Staging public smoke workflow policy validation.
 - Staging request ID smoke workflow policy validation.
 - Staging auth smoke workflow policy validation.
@@ -172,7 +173,7 @@ Release candidate verification:
 | Area | Status | Release Gate |
 | --- | --- | --- |
 | Deployment architecture | Ready | EC2, RDS PostgreSQL, Redis on EC2, R2, Cloudflare Tunnel, SSM Parameter Store, CloudWatch, and Sentry Developer are selected and documented. The production CloudFormation foundation mirrors staging with production-isolated resources and stronger RDS backup/deletion-protection defaults. |
-| Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. |
+| Staging infrastructure as code | Ready | Corrected 34-resource stack reached `CREATE_COMPLETE`; EC2 bootstrap, private RDS, ECR, IAM/OIDC, logs, alarms, and network boundaries were verified, with database egress hardening tracked separately. Staging is now documented as an on-demand environment whose EC2 and RDS compute can be stopped when idle. |
 | Production infrastructure as code | Ready | Production CloudFormation change set was reviewed and executed after explicit approval. The stack reached `CREATE_COMPLETE`; EC2, private RDS, ECR, IAM/OIDC roles, log groups, alarms, security groups, RDS backup retention, RDS deletion protection, SNS subscription, runtime SSM metadata, DB user bootstrap, and runtime rendering were verified. |
 | Staging provisioning preflight | Ready | Non-root SSO, real operator inputs, GitHub OIDC metadata, SSM SecureString metadata, RDS offering, and target-account template validation passed in `ap-northeast-2`; no change set has been created. |
 | Staging image publication | Ready | Manual OIDC workflow publishes paired ARM64 images with immutable full Git SHA tags, provenance, SBOM, and digest verification from `main`. |
@@ -183,9 +184,9 @@ Release candidate verification:
 | Committed secret defaults | Ready | Compose and Spring no longer provide committed database, object storage, or rate-limit secret fallbacks. |
 | HTTPS | Ready | Cloudflare-managed edge TLS and Tunnel ingress were verified in staging and production. Production public smoke, security-header smoke, and auth smoke workflows passed against `https://time-archive.com`, including secure session cookie attributes. |
 | Cloudflare | Ready for staging | Staging Published Application routing to `web:3000`, exact PayPal webhook path routing to `api:8080`, cache bypass, Free plan custom rules, auth endpoint edge rate limiting, trusted client IP runtime configuration, and staging smoke workflows were verified. Production routing to `https://time-archive.com` is verified by public, security-header, and auth smoke workflows, but Production still needs edge policy review and exact PayPal webhook routing verification during the PayPal Live drill. |
-| Staging deployment workflow | Ready | Manual SSM Run Command workflow deploys immutable API/Web image SHAs from `main` with digest-pinned Redis/cloudflared images. The workflow has been reused for PayPal runtime parameter rotation and verification. |
+| Staging deployment workflow | Ready | Manual SSM Run Command workflow deploys immutable API/Web image SHAs from `main` with digest-pinned Redis/cloudflared images. The workflow has been reused for PayPal runtime parameter rotation and verification. If staging is stopped, start it through the on-demand runbook before deployment or smoke workflows. |
 | Production deployment workflow | Ready | Manual production image publication and deployment workflows ran from `main`, deployment completed through SSM, private health checks passed, Cloudflare production route was configured, and production public, security-header, and auth smoke workflows passed against `https://time-archive.com`. R2, PayPal Live, restore, and observability gates remain separate release blockers. |
-| Application health checks | Ready | Staging API, Web, and Redis containers were healthy; API returned `UP`, Web responded internally, `cloudflared` passed connectivity prechecks, and a manual public smoke workflow is available for the staging hostname. |
+| Application health checks | Ready | Staging API, Web, and Redis containers were healthy when staging was running; API returned `UP`, Web responded internally, `cloudflared` passed connectivity prechecks, and manual smoke workflows are available for the staging hostname. Staging smoke checks require staging to be started first. |
 | Rollback | Ready | Staging image rollback and forward recovery were verified on 2026-06-30 using the documented drill. Database rollback remains a separate high-impact recovery procedure. |
 
 ## Observability And Operations
