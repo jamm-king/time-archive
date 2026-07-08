@@ -33,6 +33,33 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
 }
 
+wait_for_rds_stopped() {
+  local attempt status
+
+  for attempt in {1..80}; do
+    status="$("${AWS_CLI[@]}" rds describe-db-instances \
+      --db-instance-identifier "$DB_INSTANCE_IDENTIFIER" \
+      --query "DBInstances[0].DBInstanceStatus" \
+      --output text)"
+
+    case "$status" in
+      stopped)
+        log "RDS $DB_INSTANCE_IDENTIFIER is stopped"
+        return 0
+        ;;
+      stopping)
+        log "RDS $DB_INSTANCE_IDENTIFIER is stopping"
+        sleep 30
+        ;;
+      *)
+        fail "RDS $DB_INSTANCE_IDENTIFIER entered unexpected status while stopping: $status"
+        ;;
+    esac
+  done
+
+  fail "Timed out waiting for RDS $DB_INSTANCE_IDENTIFIER to stop"
+}
+
 if command -v python3 >/dev/null 2>&1 && python3 -c 'import json' >/dev/null 2>&1; then
   PYTHON_BIN=python3
 elif command -v python >/dev/null 2>&1 && python -c 'import json' >/dev/null 2>&1; then
@@ -198,7 +225,6 @@ case "$db_status" in
 esac
 
 log "Waiting for RDS $DB_INSTANCE_IDENTIFIER to be stopped"
-"${AWS_CLI[@]}" rds wait db-instance-stopped \
-  --db-instance-identifier "$DB_INSTANCE_IDENTIFIER"
+wait_for_rds_stopped
 
 log "Staging resources are stopped. RDS can automatically restart after seven consecutive stopped days."

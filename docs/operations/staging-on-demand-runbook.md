@@ -116,9 +116,14 @@ The script:
 - stops the staging EC2 application instance first;
 - waits for EC2 to stop;
 - stops `time-archive-staging-postgres`;
-- waits for RDS to stop.
+- waits for RDS to stop through explicit `describe-db-instances` polling.
 
 The script does not create snapshots, delete resources, or touch production.
+
+The script intentionally does not use `aws rds wait db-instance-stopped`
+because the installed AWS CLI used during the first staging stop did not expose
+that waiter. The explicit polling loop treats `stopping` as in progress,
+`stopped` as success, and any other post-stop status as a failure.
 
 ## After Starting
 

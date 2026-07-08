@@ -91,7 +91,9 @@ stop_required = [
     "ec2 stop-instances",
     "ec2 wait instance-stopped",
     "rds stop-db-instance",
-    "rds wait db-instance-stopped",
+    "wait_for_rds_stopped",
+    "Timed out waiting for RDS $DB_INSTANCE_IDENTIFIER to stop",
+    "entered unexpected status while stopping",
     "automatically restart after seven consecutive stopped days",
 ]
 for text in stop_required:
