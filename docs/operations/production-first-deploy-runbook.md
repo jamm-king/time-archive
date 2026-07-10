@@ -391,8 +391,8 @@ Verified scope:
 - Secure session cookie attributes
 - Logout, login, and /api/me
 Known remaining gates:
-- Production R2 upload, admin preview, and playback verification
 - Production PayPal Live low-value payment drill
 - Production restore drill
 - Production observability/alert verification
+- Production media hidden/rejected exclusion verification
 ```

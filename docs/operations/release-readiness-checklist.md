@@ -91,7 +91,7 @@ MVP-ready areas after target-environment verification:
 | --- | --- | --- |
 | Local MinIO flow | Ready | Verified by local upload, public timeline, and admin preview scripts. |
 | Local Cloudflare R2 flow | Ready | Separate local R2 configuration, bucket isolation, and an R2-backed media upload were verified without committing credentials. |
-| Production Cloudflare R2 | Needs verification | Production R2 requirements are documented in [Production R2 Readiness](production-r2-readiness.md). Production media smoke workflow and controlled owned-range grant tooling are prepared; run the approved production range grant, then verify upload, preview, approval, and playback against production before marking this Ready. |
+| Production Cloudflare R2 | Ready | Production R2 requirements are documented in [Production R2 Readiness](production-r2-readiness.md). The controlled production range `[7000, 7001)` was granted through SSM command `f58cd1f5-0d37-4d24-9fb5-2b0fe53753d7`, and `Smoke production media` passed against `https://time-archive.com`, verifying upload, completion, admin preview, approval, and public playback. Hidden/rejected exclusion remains a separate follow-up. |
 | Presigned upload URLs | Ready | After applying the staging R2 bucket CORS policy, the manual staging presigned upload CORS smoke workflow passed and verified upload request creation, CORS preflight for `PUT` with `content-type`, and actual presigned `PUT` response CORS headers from the deployed Web origin. Repeat after storage bucket, CORS, Web origin, or upload-header changes. |
 | Staging media upload and admin preview | Ready | Manual staging media preview smoke passed through the public HTTPS hostname using the pre-granted `[7000, 7001)` range. It verifies owner login, owned range lookup, presigned object upload, completion, admin moderation-list visibility, short-lived admin preview URL creation, and preview download byte equality. |
 | Upload completion verification | Ready | Existing checks cover object existence, expected content length, expected content type, ownership, and expiration. |
@@ -209,7 +209,6 @@ Release candidate verification:
 - No user-facing support or dispute workflow exists.
 - No resale or secondary market exists.
 - No admin invitation or role management UI exists.
-- No production R2 environment is verified yet.
 - No automated data cleanup jobs exist yet.
 - Production Cloudflare edge limits, PayPal webhook route, and trusted-client
   attribution are not configured yet.

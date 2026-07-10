@@ -194,3 +194,35 @@ If production R2 fails after launch:
 Production Cloudflare R2 can be marked ready only after production bucket,
 credential, CORS, upload, preview, and playback verification all pass against
 the production deployment.
+
+## Production Verification Record
+
+Date: 2026-07-08
+
+Repository-safe result:
+
+```text
+Production hostname: https://time-archive.com
+Production bucket: time-archive-production
+Controlled owner range: [7000, 7001)
+Owned range grant SSM command ID: f58cd1f5-0d37-4d24-9fb5-2b0fe53753d7
+Smoke production media: PASS
+Verified scope:
+- owner login and owned range lookup
+- presigned upload request creation
+- R2 PUT through presigned upload URL
+- upload completion with storage metadata validation
+- admin moderation-list visibility
+- admin original preview URL creation
+- byte-for-byte admin preview download
+- pre-approval exclusion for the current uploaded media asset
+- admin approval using the stored object reference
+- public timeline inclusion through a short-lived presigned playback URL
+- byte-for-byte public playback download
+Known remaining follow-up:
+- production hidden/rejected timeline exclusion smoke
+- production media cleanup procedure for controlled smoke assets
+```
+
+Do not add credentials, cookies, CSRF tokens, presigned URLs, R2 access keys, or
+private user/payment payloads to this record.
