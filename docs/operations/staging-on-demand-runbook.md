@@ -168,6 +168,28 @@ Notes:
 Do not record credentials, session cookies, CSRF tokens, PayPal private data,
 R2 keys, presigned URLs, raw webhook payloads, or private payer information.
 
+## Staging Stop Record
+
+Date: 2026-07-08
+
+Repository-safe result:
+
+```text
+Action: stop
+AWS account: 231851555445
+Stack: time-archive-staging
+EC2 instance ID: i-0c79f02f3c5eea3ba
+RDS DB instance identifier: time-archive-staging-postgres
+Dry-run result: EC2 running, RDS available
+Command result: EC2 stopped, RDS stopped
+Notes:
+- The original stop command sent both EC2 and RDS stop requests.
+- The command exited non-zero because the installed AWS CLI did not support
+  `rds wait db-instance-stopped`.
+- Follow-up fix `fix: poll staging rds stop status` replaced the unsupported
+  waiter with explicit RDS status polling.
+```
+
 ## Rollback
 
 If start fails:
