@@ -1,5 +1,17 @@
 # Production First Deploy Runbook
 
+## Archived Status
+
+This runbook is archived. The `time-archive-production` CloudFormation stack
+was deleted on 2026-07-27, and the outputs, EC2 instance, RDS instance, IAM
+roles, ECR repositories, VPC resources, and stack-managed log groups described
+below no longer exist.
+
+Do not run these deployment instructions against the deleted environment. Any
+future production launch must start with a new approved provisioning design.
+See [Project Decommissioning](project-decommissioning.md) for the retained
+resources and follow-up cleanup scope.
+
 ## Purpose
 
 This runbook defines the first controlled production image publication and
