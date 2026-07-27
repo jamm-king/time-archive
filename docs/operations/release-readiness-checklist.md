@@ -1,5 +1,15 @@
 # Release Readiness Checklist
 
+## Archived Status
+
+This checklist was superseded by project decommissioning on 2026-07-27. The
+staging and production AWS CloudFormation stacks were deleted, so it is not an
+active release gate. It remains in the repository as historical evidence of
+the release-readiness work and its unresolved risks.
+
+See [Project Decommissioning](project-decommissioning.md) for the current
+infrastructure state and retained external resources.
+
 This checklist is the release gate for the Time Archive MVP. It focuses on the
 work required before exposing the application outside local development.
 

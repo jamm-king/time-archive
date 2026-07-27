@@ -13,11 +13,17 @@ ownership management, upload, and moderation remain secondary flows.
 
 ## Current Status
 
-This repository is a local MVP. It is suitable for local development, CI
-verification, and private demos. It is not ready for a public or paid production
-launch until the release blockers are resolved.
+This repository was archived on 2026-07-27. The AWS staging and production
+CloudFormation stacks have been deleted, so no Time Archive application is
+currently deployed. The repository remains available as an engineering
+reference for the MVP, CI/CD, testing, deployment, and operational work.
 
-Implemented MVP areas:
+Do not run the archived staging or production deployment runbooks without a
+new, explicitly approved provisioning effort. See
+[Project Decommissioning](docs/operations/project-decommissioning.md) for the
+deleted infrastructure, retained resources, and follow-up cleanup scope.
+
+Historical implemented MVP areas:
 
 - One canonical 24-hour archive with 86,400 seconds.
 - Server-side session authentication.
@@ -38,19 +44,8 @@ Implemented MVP areas:
 - Redis-backed application rate limiting.
 - Externalized local secrets and an isolated local R2 verification path.
 
-Production blockers:
-
-- PayPal integration and signature-verified webhooks.
-- Production Cloudflare R2 provisioning and staging verification.
-- Production SSM Parameter Store injection and IAM controls.
-- RDS provisioning, backup, restore, and migration procedures.
-- Cloudflare edge abuse controls and trusted client-address propagation.
-- Observability, error tracking, and alerting.
-- Media signature validation, malware scanning, and production media
-  processing policy.
-
-See [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
-for the release gate.
+The previous release gate is retained as a historical record in the
+[Release Readiness Checklist](docs/operations/release-readiness-checklist.md).
 
 ## Architecture And Operations
 
@@ -67,6 +62,7 @@ for the release gate.
 - [Cloudflare Tunnel HTTPS](docs/operations/cloudflare-tunnel-https.md)
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 - [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)
+- [Project Decommissioning](docs/operations/project-decommissioning.md)
 
 ## API Contract
 

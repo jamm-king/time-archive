@@ -1,5 +1,17 @@
 # Staging On-Demand Runbook
 
+## Archived Status
+
+This runbook is archived. The `time-archive-staging` CloudFormation stack was
+deleted on 2026-07-27, and the EC2 instance, RDS instance, ECR repositories,
+VPC resources, IAM roles, and stack-managed log groups described below no
+longer exist.
+
+Do not run these start or stop instructions against the deleted environment.
+Any future staging environment must be provisioned as a new, explicitly
+approved environment. See [Project Decommissioning](project-decommissioning.md)
+for the retained resources and follow-up cleanup scope.
+
 ## Purpose
 
 This runbook defines how to keep the staging CloudFormation stack available
