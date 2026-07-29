@@ -63,6 +63,7 @@ The previous release gate is retained as a historical record in the
 - [Release Readiness Checklist](docs/operations/release-readiness-checklist.md)
 - [Cloudflare R2 Storage Setup](docs/operations/r2-storage-setup.md)
 - [Project Decommissioning](docs/operations/project-decommissioning.md)
+- [Project Retrospective](docs/project-retrospective.md)
 
 ## API Contract
 
